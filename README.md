@@ -17,7 +17,7 @@ Läuft als Web-App im Browser, lässt sich auf den Startbildschirm legen und fun
 - **Sicherung** als Text zum Kopieren und Zurückspielen
 
 ## Einrichten
-Im Browser öffnen, Menü → **App installieren**.
+https://djkamma420.github.io/StundenplanNothing/ im Browser öffnen, Menü → **App installieren**.
 
 ## Erste Schritte
 
