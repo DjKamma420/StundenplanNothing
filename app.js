@@ -6,7 +6,7 @@
    ===================================================================== */
 
 const STANDARD = {
-  klasse: "FOT25-2",
+  klasse: "Klasse",
   /* std = welche Stundennummern dieses Feld abdeckt.
      "1,2" = ein 90-Minuten-Block. "1" = eine Einzelstunde. */
   slots: [
@@ -394,8 +394,8 @@ function listenKlick(e){
 
 /* ---------------------------------------------------------------
    Plan einfügen
-   Erkennt "WZET, B005 (CH)"        → Lehrkraft in runden Klammern
-   und     "SOET, C107 [FOS25_PO_A]" → Klasse in eckigen Klammern
+   Erkennt "CH, B005 (BMMT)"        → Lehrkraft in runden Klammern
+   und     "PO, C107 [KOMT]" → Lehrkraft in eckigen Klammern
 ---------------------------------------------------------------- */
 function parseZelle(t){
   const m = t.trim().match(/^(.+?),\s*(.+?)\s*([([])(.+?)[)\]]$/);
