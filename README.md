@@ -50,5 +50,6 @@ Die App liegt auf `github.io`, der Stundenplan auf einem anderen Server. Der Bro
 Praktisch fällt das kaum ins Gewicht: Ein Stundenplan gilt ein halbes Jahr. Zwei Wochen einmal eintragen deckt das gesamte Halbjahr ab, weil sich der Rhythmus wiederholt. Nur Vertretungen musst du weiter auf der Schulseite nachsehen.
 
 ## Daten
-
+  !!!WICHTIG!!!
+  
 Alles liegt im `localStorage` des Browsers. Nichts wird übertragen, nichts gespeichert außerhalb des Geräts. Achtung: „Browserdaten löschen" löscht auch den Plan — vorher unter **⚙ → Sicherung** den Text kopieren und irgendwo ablegen.
