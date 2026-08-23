@@ -211,10 +211,10 @@ textarea{min-height:120px;font-family:var(--mono);font-size:12px}
 <dialog id="dlgBlock">
   <h2 id="dlgBlockTitel">Block</h2>
   <div class="eyebrow" id="dlgBlockZeit"></div>
-  <label><span>Fach</span><input type="text" id="fFach" placeholder="WZET" autocapitalize="characters"></label>
+  <label><span>Fach</span><input type="text" id="fFach" placeholder="Fach" autocapitalize="characters"></label>
   <div class="zwei">
-    <label><span>Raum</span><input type="text" id="fRaum" placeholder="B005" autocapitalize="characters"></label>
-    <label><span>Lehrkraft</span><input type="text" id="fLK" placeholder="CH" autocapitalize="characters"></label>
+    <label><span>Raum</span><input type="text" id="fRaum" placeholder="Raum" autocapitalize="characters"></label>
+    <label><span>Lehrkraft</span><input type="text" id="fLK" placeholder="Lehre" autocapitalize="characters"></label>
   </div>
   <p class="hinweis hidden" id="hinweisWoche"></p>
   <div class="reihe">
@@ -240,8 +240,8 @@ textarea{min-height:120px;font-family:var(--mono);font-size:12px}
   <label class="hidden" id="eFachFreiWrap"><span>Fach eintippen</span>
     <input type="text" id="eFachFrei" autocapitalize="characters"></label>
   <label><span>Datum</span><input type="date" id="eDatum"></label>
-  <label><span>Was</span><input type="text" id="eText" placeholder="S. 42 Nr. 3–7"></label>
-  <label><span>Notizen</span><textarea id="eNotiz" placeholder="Formelsammlung mitbringen"></textarea></label>
+  <label><span>Was</span><input type="text" id="eText" placeholder="Aufgabe"></label>
+  <label><span>Notizen</span><textarea id="eNotiz" placeholder="Details"></textarea></label>
   <div class="reihe">
     <button type="button" class="weg hidden" id="bEintragWeg">×</button>
     <button type="button" id="bEintragAb">Zurück</button>
@@ -271,7 +271,7 @@ textarea{min-height:120px;font-family:var(--mono);font-size:12px}
 <!-- ---------- Dialog: Einstellungen ---------- -->
 <dialog id="dlgEinst">
   <h2>Einstellungen</h2>
-  <label><span>Klasse</span><input type="text" id="sKlasse" placeholder="FOT25-2"></label>
+  <label><span>Klasse</span><input type="text" id="sKlasse" placeholder="Deine Klasse"></label>
 
   <div class="eyebrow" style="margin-top:22px">Stundenraster</div>
   <p class="hinweis">Eine Zeile pro Feld im Plan. „Std." sind die Stundennummern, die dieses Feld
