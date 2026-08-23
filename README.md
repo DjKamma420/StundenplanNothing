@@ -13,17 +13,11 @@ Läuft als Web-App im Browser, lässt sich auf den Startbildschirm legen und fun
 - **Hausaufgaben, Klausuren, Notizen** mit Fach, Datum, Text und Notizfeld
 - **K / H / N** in Rot am Tag, am Fach und im Kalender
 - **Kalender** mit Monatsübersicht und Liste dessen, was als Nächstes ansteht
-- **Wochenendreiter**, damit samstags nicht der Montag ausgewählt ist
 - **Import** aus dem virtuellen Stundenplan per Kopieren und Einfügen
 - **Sicherung** als Text zum Kopieren und Zurückspielen
 
 ## Einrichten
-
-1. Auf GitHub ein **öffentliches** Repository anlegen.
-2. Alle Dateien hochladen: `index.html`, `app.js`, `manifest.webmanifest`, `sw.js`, `icon-192.png`, `icon-512.png`.
-3. **Settings → Pages** → Source: *Deploy from a branch* → Branch `main`, Ordner `/ (root)` → **Save**.
-4. Nach ein bis zwei Minuten ist die Adresse erreichbar: `https://BENUTZERNAME.github.io/REPOSITORY/`
-5. Im Browser öffnen, Menü → **App installieren**.
+Im Browser öffnen, Menü → **App installieren**.
 
 ## Erste Schritte
 
@@ -54,12 +48,6 @@ Für abweichende Zellformate im Import: Der Ausdruck steht in `app.js` in der Fu
 Die App liegt auf `github.io`, der Stundenplan auf einem anderen Server. Der Browser verbietet den Zugriff über Domaingrenzen hinweg — das ist die Same-Origin-Regel und lässt sich nicht wegprogrammieren. Nötig wäre entweder ein Vermittler-Dienst oder ein Skript, das direkt auf der Schulseite läuft.
 
 Praktisch fällt das kaum ins Gewicht: Ein Stundenplan gilt ein halbes Jahr. Zwei Wochen einmal eintragen deckt das gesamte Halbjahr ab, weil sich der Rhythmus wiederholt. Nur Vertretungen musst du weiter auf der Schulseite nachsehen.
-
-## Ändern
-
-Datei auf GitHub antippen → Stift → bearbeiten → **Commit changes**.
-
-Danach in `sw.js` die Zeile `const VERSION = "v2"` auf `"v3"` hochsetzen, sonst zeigt der Offline-Speicher weiter die alte Fassung.
 
 ## Daten
 
