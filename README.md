@@ -37,46 +37,12 @@ Du brauchst **keine Programmierkenntnisse**. Zehn Minuten, alles am Handy.
 |---|---|
 | **Gerät** | Handy, Tablet oder Rechner — Android, iOS, Windows, Mac, Linux |
 | **Browser** | Chrome, Edge, Firefox oder Safari, jeweils aktuell |
-| **GitHub-Konto** | kostenlos, um die Dateien abzulegen |
 | **Internet** | beim Einrichten und zum Laden der Ferientermine. Danach läuft alles offline |
 | **Deinen Stundenplan** | auf Papier oder als Tabelle zum Kopieren |
 
 Nicht nötig: ein Editor, Node.js, ein Build-Vorgang, eine Datenbank, ein Konto bei der App.
 
-### Schritt 1 — Dateien besorgen
-
-Oben auf dieser Seite auf den grünen Knopf **Code** → **Download ZIP**. Entpacken. Du brauchst diese Dateien:
-
-```
-index.html   manifest.webmanifest   icon-192.png
-app.js       sw.js                  icon-512.png
-```
-
-### Schritt 2 — Eigenes Repository anlegen
-
-1. Auf **github.com** einloggen.
-2. Oben rechts **+** → **New repository**.
-3. Name frei wählen, z. B. `stundenplan`.
-4. Sichtbarkeit: **Public**. (Muss öffentlich sein — GitHub Pages ist bei privaten Repositories kostenpflichtig.)
-5. **Create repository**.
-
-### Schritt 3 — Dateien hochladen
-
-1. Auf der leeren Seite **uploading an existing file** antippen.
-2. **choose your files** → alle sechs Dateien auswählen.
-3. Unten **Commit changes**.
-
-Achte darauf, dass die Dateien **direkt im Repository** liegen, nicht in einem Unterordner.
-
-### Schritt 4 — Veröffentlichen
-
-1. **Settings** (ggf. hinter dem `…`-Menü) → links **Pages**.
-2. Source: **Deploy from a branch**
-3. Branch: **main**, Ordner: **/ (root)** → **Save**.
-4. Ein bis zwei Minuten warten, Seite neu laden. Oben steht deine Adresse:
-   `https://DEINNAME.github.io/stundenplan/`
-
-### Schritt 5 — Installieren
+### Installieren
 
 - **Android/Chrome:** Adresse öffnen → Menü ⋮ → *Installieren und Verknüpfen* bzw. *App installieren*
 - **iPhone/Safari:** Adresse öffnen → Teilen → *Zum Home-Bildschirm*
@@ -84,7 +50,7 @@ Achte darauf, dass die Dateien **direkt im Repository** liegen, nicht in einem U
 
 Das Icon liegt jetzt neben deinen anderen Apps und startet ohne Browserleiste.
 
-### Schritt 6 — Einrichten
+### Einrichten
 
 1. **⚙ oben rechts** öffnen.
 2. **Klasse** eintragen.
@@ -93,7 +59,7 @@ Das Icon liegt jetzt neben deinen anderen Apps und startet ohne Browserleiste.
 5. **Bundesland** wählen und **Ferien laden**.
 6. Optional **Akzentfarbe**, **heller Modus** und **Schriftart** einstellen.
 
-### Schritt 7 — Plan eintragen
+### Plan eintragen
 
 Zwei Wege:
 
@@ -161,7 +127,7 @@ Bei der Datumsauswahl bekommt jeder Tag einen **roten Punkt**, an dem das gewäh
 
 Beliebig viele je Fach, jedes mit Datum und Uhrzeit. Zeilenumbrüche und Einrückungen bleiben erhalten, Darstellung in Monospace — Formeln bleiben ausgerichtet.
 
-**Bilder** lassen sich einfügen (Screenshot vom Tafelbild, Foto einer Seite). Sie werden automatisch auf 1000 px verkleinert und komprimiert. Trotzdem gilt: Der Browserspeicher fasst rund 5 MB. Unter ⚙ → Speicher siehst du den Stand.
+**Bilder** lassen sich einfügen (Fotos vom Tafelbild oder einer Seite). Sie werden automatisch auf 1000 px verkleinert und komprimiert. Trotzdem gilt: Der Browserspeicher fasst rund 5 MB. Unter ⚙ → Speicher siehst du den Stand.
 
 ### Fehlzeiten
 
@@ -237,16 +203,6 @@ Nötig wäre ein Vermittler-Dienst oder ein Skript, das direkt auf der Portalsei
 Praktisch fällt es kaum ins Gewicht: Der Plan gilt ein halbes Jahr. Nur Vertretungen musst du im Portal nachsehen — und die trägst du mit zwei Tipps als *Fällt aus* oder *Vertretung* ein.
 
 Die Ferientermine kommen dagegen automatisch, weil [openholidaysapi.org](https://openholidaysapi.org) den Zugriff erlaubt.
-
----
-
-## Änderungen am Code
-
-Datei auf GitHub antippen → Stift → bearbeiten → **Commit changes**.
-
-Danach in `sw.js` die Zeile `const VERSION = "v31"` hochzählen. Das ist die **einzige** Stelle mit einer Versionsnummer. Die App fragt sie beim laufenden Service Worker ab und vergleicht sie mit der auf dem Server. Unten in der App steht die laufende Fassung; weicht sie ab, erscheint dort *Update verfügbar* und ein Tipp darauf lädt neu.
-
-**Wenn du eine Änderung nicht siehst**, hängt dein Gerät am Zwischenspeicher: Version unten prüfen, notfalls Icon entfernen und neu installieren. Die Daten überleben das, weil sie an der Adresse hängen, nicht am Icon.
 
 ---
 
