@@ -33,7 +33,7 @@ Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume und Lehrkrä
 
 ## Einrichten
 
-https://github.com/DjKamma420/StundenplanNothing.git Öffnen und installieren:
+https://djkamma420.github.io/StundenplanNothing/ Öffnen und installieren:
    - **Android/Chrome:** Menü → *App installieren*
    - **iPhone/Safari:** Teilen → *Zum Home-Bildschirm*
    - **Desktop:** Installationssymbol in der Adressleiste
