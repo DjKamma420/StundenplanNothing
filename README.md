@@ -28,7 +28,9 @@ Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume und Lehrkrä
 **Profile**
 - Mehrere Profile auf einem Gerät, wie bei Streamingdiensten
 - Jedes Profil hat eigenen Plan, eigene Einträge, eigene Noten und eigene Einstellungen — nichts wird geteilt
-- Umschalten über den Buchstaben oben rechts
+- Beim Öffnen erscheint eine Auswahl im Vollbild, sobald es mehr als ein Profil gibt — Kacheln mit Punktraster und Initial
+- Jederzeit erreichbar über den Buchstaben oben rechts
+- Unter „Verwalten" lassen sich Profile anlegen, umbenennen und samt Daten löschen
 
 **Noten und Zeugnis**
 - Noten je Fach, getrennt nach mündlich und schriftlich, mit Feld für „wofür" und Notizen

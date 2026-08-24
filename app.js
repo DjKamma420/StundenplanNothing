@@ -5,6 +5,32 @@
    und Bundesland stehen in den Einstellungen.
    ===================================================================== */
 
+/* ---------------------------------------------------------------
+   Fehleranzeige. Eine weiße oder leere Seite sagt niemandem etwas —
+   deshalb landet jeder Startfehler sichtbar oben auf dem Bildschirm.
+---------------------------------------------------------------- */
+function zeigeFehler(text, quelle){
+  try{
+    let k = document.getElementById("fehlerkasten");
+    if(!k){
+      k = document.createElement("div");
+      k.id = "fehlerkasten";
+      k.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99;background:#e5382b;"
+        + "color:#fff;font:12px ui-monospace,monospace;padding:12px 14px;line-height:1.5;"
+        + "white-space:pre-wrap;max-height:52vh;overflow:auto";
+      (document.body || document.documentElement).appendChild(k);
+    }
+    k.textContent = "Fehler beim Start\n" + text + (quelle ? "\n" + quelle : "")
+      + "\n\nBitte diesen Text weitergeben. Deine Daten sind nicht betroffen.";
+  }catch(e){}
+}
+window.addEventListener("error", e => {
+  const datei = (e.filename || "").split("/").pop();
+  zeigeFehler(e.message, datei ? `${datei}, Zeile ${e.lineno}` : "");
+});
+window.addEventListener("unhandledrejection", e =>
+  zeigeFehler("Unerledigtes Versprechen: " + (e.reason && e.reason.message || e.reason)));
+
 /* Die Version steht ausschließlich in sw.js. Die App erfragt sie beim
    laufenden Service Worker und vergleicht sie mit der auf dem Server.
    Weichen beide ab, hängt das Gerät an alten Dateien. */
@@ -284,10 +310,14 @@ function zeichne(){
   const punkte = $("#wischPunkte");
   if(punkte) [...punkte.children].forEach((p,i) =>
     p.classList.toggle("an", typeof ANSICHTEN !== "undefined" && ANSICHTEN[i] === ansicht));
-  if(ansicht === "tag") zeichneTag();
-  else if(ansicht === "kalender") zeichneKalender();
-  else if(ansicht === "zeugnis") zeichneZeugnis();
-  else zeichneEintraege();
+  try{
+    if(ansicht === "tag") zeichneTag();
+    else if(ansicht === "kalender") zeichneKalender();
+    else if(ansicht === "zeugnis") zeichneZeugnis();
+    else zeichneEintraege();
+  }catch(e){
+    zeigeFehler("Ansicht \u201e" + ansicht + "\u201c: " + e.message, (e.stack || "").split("\n")[1] || "");
+  }
 }
 
 function zeichneTag(){
@@ -746,7 +776,6 @@ function wischen(el, beiWisch){
 }
 wischen($("#ansichtTag"), r => { gewaehlt = plusTage(gewaehlt, r); zeichne(); });
 wischen($("#dlgEinst"), () => $("#bEinstSpeichern").click());
-wischen($("#dlgProfil"), () => dlgProfil.close());
 wischen($("#ansichtKal"), r => {
   kalMonat = new Date(kalMonat.getFullYear(), kalMonat.getMonth() + r, 1); zeichne();
 });
@@ -1287,51 +1316,93 @@ function slotsAuslesen(){
    Profile bedienen
 ---------------------------------------------------------------- */
 function profilKnopf(){
-  $("#btnProfil").textContent = (profilName().trim()[0] || "P").toUpperCase();
-  $("#btnProfil").setAttribute("aria-label", "Profil: " + profilName());
+  const el = $("#btnProfil"); if(!el) return;
+  el.textContent = (profilName().trim()[0] || "P").toUpperCase();
+  el.setAttribute("aria-label", "Profil: " + profilName());
 }
-function zeichneProfile(){
-  $("#profilListe").innerHTML = profile.map(x => `<li style="display:block;padding:0;border:0">
-    <div class="profilzeile">
-      <span class="name" data-wechsel="${x.id}">${esc(x.name)}</span>
-      ${x.id === profilId ? '<span class="aktivmarke">aktiv</span>' : ""}
-      <button class="mini" data-umbenennen="${x.id}">Name</button>
-      ${profile.length > 1 ? `<button class="mini" data-profilweg="${x.id}"
-         style="border-color:var(--red);color:var(--red)">×</button>` : ""}
-    </div></li>`).join("");
+
+/* ---------------------------------------------------------------
+   Profilauswahl im Vollbild — beim Start, wenn es mehrere gibt,
+   sonst jederzeit über den Buchstaben oben rechts.
+---------------------------------------------------------------- */
+let profilVerwalten = false;
+let profilManuell = false;
+
+function zeichneProfilAuswahl(){
+  $("#pFrage").textContent = profilVerwalten ? "Profile verwalten" : "Wer bist du?";
+  $("#pVerwalten").textContent = profilVerwalten ? "Fertig" : "Verwalten";
+  $("#pZurueck").classList.toggle("hidden", !profilManuell || profilVerwalten);
+
+  const kacheln = profile.map((x,i) => `<div>
+    <button type="button" class="kachel" data-wechsel="${x.id}" aria-current="${x.id === profilId}">
+      <div class="feld"><span>${esc((x.name.trim()[0] || "P").toUpperCase())}</span></div>
+      <div class="kname">${esc(x.name)}</div>
+      <div class="knum">Profil ${String(i+1).padStart(2,"0")}</div>
+    </button>
+    ${profilVerwalten ? `<div class="kwerkzeug">
+      <button type="button" data-umbenennen="${x.id}">Name</button>
+      ${profile.length > 1 ? `<button type="button" class="loesch" data-profilweg="${x.id}">×</button>` : ""}
+    </div>` : ""}
+  </div>`).join("");
+
+  const neu = profilVerwalten ? `<div><button type="button" class="kachel neu" id="kachelNeu">
+      <div class="feld"><span>+</span></div>
+      <div class="kname">Neues Profil</div>
+      <div class="knum">Anlegen</div></button></div>` : "";
+
+  $("#pGitter").innerHTML = kacheln + neu;
 }
-$("#btnProfil").onclick = () => { pNeu.value = ""; zeichneProfile(); dlgProfil.showModal(); };
-$("#bProfilAb").onclick = () => dlgProfil.close();
-$("#bProfilNeu").onclick = () => {
-  const name = pNeu.value.trim(); if(!name) return;
-  const id = String(Date.now());
-  profile.push({id, name}); profilId = id; profileSichern();
-  zustandLaden(); normalisiere(); sichern();
-  dlgProfil.close(); profilKnopf(); ansicht = "tag"; zeichne();
-};
-$("#profilListe").onclick = e => {
-  const w = e.target.closest("[data-wechsel]");
-  if(w){
-    profilId = w.dataset.wechsel; profileSichern(); zustandLaden(); normalisiere();
-    dlgProfil.close(); profilKnopf(); ansicht = "tag"; zeichne(); return;
+function profilAuswahlZeigen(manuell){
+  profilManuell = !!manuell;
+  profilVerwalten = false;
+  zeichneProfilAuswahl();
+  $("#profilStart").classList.remove("hidden");
+}
+function profilAuswahlSchliessen(){
+  $("#profilStart").classList.add("hidden");
+  profilVerwalten = false;
+}
+function profilWechseln(id){
+  profilId = id; profileSichern();
+  zustandLaden(); normalisiere();
+  profilKnopf(); ansicht = "tag"; einSub = null; gewaehlt = new Date();
+  profilAuswahlSchliessen(); zeichne();
+}
+
+$("#btnProfil").onclick = () => profilAuswahlZeigen(true);
+$("#pZurueck").onclick = () => profilAuswahlSchliessen();
+$("#pVerwalten").onclick = () => { profilVerwalten = !profilVerwalten; zeichneProfilAuswahl(); };
+$("#pGitter").onclick = e => {
+  const neu = e.target.closest("#kachelNeu");
+  if(neu){
+    const name = prompt("Name des neuen Profils", "Profil " + (profile.length + 1));
+    if(!name || !name.trim()) return;
+    const id = String(Date.now());
+    profile.push({id, name:name.trim()}); profilId = id; profileSichern();
+    zustandLaden(); normalisiere(); sichern();
+    profilVerwalten = false; profilKnopf(); ansicht = "tag";
+    profilAuswahlSchliessen(); zeichne();
+    return;
   }
   const u = e.target.closest("[data-umbenennen]");
   if(u){
     const x = profile.find(y => y.id === u.dataset.umbenennen);
     const name = prompt("Neuer Name", x.name);
-    if(name && name.trim()){ x.name = name.trim(); profileSichern(); zeichneProfile(); profilKnopf(); }
+    if(name && name.trim()){ x.name = name.trim(); profileSichern(); zeichneProfilAuswahl(); profilKnopf(); }
     return;
   }
   const d = e.target.closest("[data-profilweg]");
   if(d){
     const x = profile.find(y => y.id === d.dataset.profilweg);
-    if(!confirm(`Profil „${x.name}" mit allen Daten löschen? Das lässt sich nicht rückgängig machen.`)) return;
+    if(!confirm(`Profil \u201e${x.name}\u201c mit allen Daten löschen? Das lässt sich nicht rückgängig machen.`)) return;
     DATEN.forEach(k => { try{ localStorage.removeItem("p" + x.id + "_" + k); }catch(e){} });
     profile = profile.filter(y => y.id !== x.id);
-    if(profilId === x.id) profilId = profile[0].id;
-    profileSichern(); zustandLaden(); normalisiere();
-    zeichneProfile(); profilKnopf(); zeichne();
+    if(profilId === x.id){ profilId = profile[0].id; zustandLaden(); normalisiere(); }
+    profileSichern(); profilKnopf(); zeichneProfilAuswahl(); zeichne();
+    return;
   }
+  const w = e.target.closest("[data-wechsel]");
+  if(w && !profilVerwalten) profilWechseln(w.dataset.wechsel);
 };
 
 /* Aus den Einstellungen geöffnete Dialoge kehren dorthin zurück */
@@ -1523,8 +1594,17 @@ async function aktualisieren(){
   location.reload();
 }
 
-normalisiere();
-profilKnopf();
-zeichne();
-versionPruefen();
+function starten(){
+  if(!cfg || !Array.isArray(cfg.slots) || !cfg.slots.length){
+    cfg = Object.assign({}, STANDARD, cfg || {});   // beschädigte Einstellung auffangen
+    cfg.slots = STANDARD.slots.slice();
+  }
+  normalisiere();
+  profilKnopf();
+  zeichne();
+  versionPruefen();
+  if(profile.length > 1) profilAuswahlZeigen(false);
+}
+try{ starten(); }
+catch(e){ zeigeFehler(e.message, (e.stack || "").split("\n")[1] || ""); }
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

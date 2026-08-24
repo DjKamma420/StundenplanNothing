@@ -160,6 +160,32 @@ section{margin-top:30px}
 .gross{width:100%;margin-top:26px;background:var(--text);color:var(--ink);border-radius:14px;
   padding:17px;font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
 
+/* ---------- Profilauswahl ---------- */
+#profilStart{position:fixed;inset:0;z-index:20;background:var(--ink);
+  display:flex;align-items:center;justify-content:center;
+  padding:32px 20px calc(32px + env(safe-area-inset-bottom));overflow-y:auto}
+.pInhalt{width:100%;max-width:520px}
+.pKopf{margin-bottom:32px}
+.pKopf h1{font-size:32px;line-height:1.05;letter-spacing:-.02em;margin:8px 0 0;font-weight:600}
+.pGitter{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:14px}
+.kachel{text-align:left}
+.kachel .feld{aspect-ratio:1;border:1px solid var(--line);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
+  background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:11px 11px}
+.kachel .feld span{font-family:var(--mono);font-size:40px;font-weight:600;color:var(--text);
+  background:var(--ink);padding:0 12px;line-height:1.15}
+.kachel[aria-current=true] .feld{border-color:var(--red)}
+.kachel[aria-current=true] .feld span{color:var(--red)}
+.kachel .kname{font-size:15px;margin-top:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kachel .knum{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--dim);margin-top:2px}
+.kachel.neu .feld{border-style:dashed;background-image:none}
+.kachel.neu .feld span{font-size:30px;color:var(--muted)}
+.kwerkzeug{display:flex;gap:6px;margin-top:8px}
+.kwerkzeug button{flex:1;font-family:var(--mono);font-size:10.5px;border:1px solid var(--line);
+  border-radius:8px;padding:6px 0;color:var(--muted)}
+.kwerkzeug .loesch{border-color:var(--red);color:var(--red);flex:0 0 34px}
+.pFuss{display:flex;gap:8px;margin-top:32px}
+
 /* ---------- Dialoge ---------- */
 dialog{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:16px;
   padding:20px;width:min(93vw,440px);max-height:86vh}
@@ -240,6 +266,21 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 </style>
 </head>
 <body>
+
+<!-- ============ PROFILAUSWAHL ============ -->
+<div id="profilStart" class="hidden">
+  <div class="pInhalt">
+    <div class="pKopf">
+      <div class="eyebrow">Stundenplan</div>
+      <h1 id="pFrage">Wer bist du?</h1>
+    </div>
+    <div class="pGitter" id="pGitter"></div>
+    <div class="pFuss">
+      <button class="mini" id="pVerwalten">Verwalten</button>
+      <button class="mini hidden" id="pZurueck">Zurück</button>
+    </div>
+  </div>
+</div>
 
 <div class="top">
   <div class="reiter" role="group" aria-label="Ansicht">
@@ -427,17 +468,6 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <button type="button" id="bEintragAb">Zurück</button>
     <button type="button" class="haupt" id="bEintragSpeichern">Speichern</button>
   </div>
-</dialog>
-
-<!-- ---------- Profile ---------- -->
-<dialog id="dlgProfil">
-  <h2>Profile</h2>
-  <p class="hinweis">Jedes Profil hat einen eigenen Plan, eigene Einträge und eigene Noten.
-     Nichts davon wird geteilt.</p>
-  <ul class="liste" id="profilListe"></ul>
-  <label><span>Neues Profil</span><input type="text" id="pNeu" placeholder="Name"></label>
-  <div class="chips"><button type="button" id="bProfilNeu">Anlegen</button></div>
-  <div class="reihe"><button type="button" id="bProfilAb">Zurück</button></div>
 </dialog>
 
 <!-- ---------- Verhältnis je Fach ---------- -->
