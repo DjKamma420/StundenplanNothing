@@ -12,11 +12,41 @@ Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume, Lehrkräfte
 
 ## Das Wichtigste zuerst
 
-**Deine Daten liegen Ausschließlich im Speicher deines Browsers.**
+**Deine Daten liegen ausschließlich im Speicher deines Browsers.**
 
-Das Heißt konkret:
+Das heißt konkret:
 
-- Löschst du in Chrome die **Cookies und Websitedaten"**, ist dein kompletter Plan weg. Samt Noten, Hausaufgaben und Merkblättern. Unwiederbringlich.
+- Löschst du in Chrome die **Cookies und Websitedaten**, ist dein kompletter Plan weg. Samt Noten, Hausaufgaben und Merkblättern. Unwiederbringlich.
+- Deinstallierst du die App oder wechselst das Handy, ist alles weg.
+- Der private oder Inkognito-Modus vergisst alles beim Schließen.
+- Niemand kann dir die Daten wiederherstellen – auch ich nicht, denn sie waren nie irgendwo anders.
+
+**Deshalb: Mach regelmäßig eine Sicherung.** ⚙ → Sicherung → *Als Datei sichern*. Die Datei landet in deinen Downloads; schick sie dir selbst per Mail oder leg sie in eine Cloud. Die App erinnert dich nach vier Wochen daran.
+
+Zurückholen geht über ⚙ → Sicherung → *Datei einlesen*.
+
+---
+
+## Einrichten Schritt für Schritt
+
+Du brauchst **keine Programmierkenntnisse**. Zehn Minuten, alles am Handy.
+
+### Was du brauchst
+
+| | |
+|---|---|
+| **Gerät** | Handy, Tablet oder Rechner — Android, iOS, Windows, Mac, Linux |
+| **Browser** | Chrome, Edge, Firefox oder Safari, jeweils aktuell |
+| **GitHub-Konto** | kostenlos, um die Dateien abzulegen |
+| **Internet** | beim Einrichten und zum Laden der Ferientermine. Danach läuft alles offline |
+| **Deinen Stundenplan** | auf Papier oder als Tabelle zum Kopieren |
+
+Nicht nötig: ein Editor, Node.js, ein Build-Vorgang, eine Datenbank, ein Konto bei der App.
+
+### Schritt 1 — Dateien besorgen
+
+Oben auf dieser Seite auf den grünen Knopf **Code** → **Download ZIP**. Entpacken. Du brauchst diese Dateien:
+
 - Deinstallierst du die App oder wechselst das Handy, ist alles weg.
 - Der private oder Inkognito-Modus vergisst alles beim Schließen.
 - Niemand kann dir die Daten wiederherstellen” auch ich nicht, denn sie waren nie irgendwo anders.
