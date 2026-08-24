@@ -33,11 +33,7 @@ Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume und Lehrkrä
 
 ## Einrichten
 
-1. Auf GitHub ein **öffentliches** Repository anlegen.
-2. Alle Dateien hochladen: `index.html`, `app.js`, `manifest.webmanifest`, `sw.js`, `icon-192.png`, `icon-512.png`.
-3. **Settings → Pages** → Source: *Deploy from a branch* → Branch `main`, Ordner `/ (root)` → **Save**.
-4. Nach ein bis zwei Minuten ist die Adresse erreichbar: `https://BENUTZERNAME.github.io/REPOSITORY/`
-5. Öffnen und installieren:
+https://github.com/DjKamma420/StundenplanNothing Öffnen und installieren:
    - **Android/Chrome:** Menü → *App installieren*
    - **iPhone/Safari:** Teilen → *Zum Home-Bildschirm*
    - **Desktop:** Installationssymbol in der Adressleiste
@@ -91,12 +87,7 @@ Die App liegt auf `github.io`, das Portal auf einem anderen Server. Der Browser 
 
 Praktisch fällt das kaum ins Gewicht: Ein Stundenplan gilt ein halbes Jahr. Zwei Wochen einmal eintragen deckt das gesamte Halbjahr ab, weil sich der Rhythmus wiederholt. Nur Vertretungen musst du weiter im Portal nachsehen.
 
-## Ändern
-
-Datei auf GitHub antippen → Stift → bearbeiten → **Commit changes**.
-
-Danach in `sw.js` die Zeile `const VERSION = "v8"` hochzählen, sonst zeigt der Offline-Speicher weiter die alte Fassung.
 
 ## Daten
-
+‼️WICHTIG‼️
 Alles liegt im `localStorage` des Browsers. Nichts wird übertragen, nichts außerhalb des Geräts gespeichert. Achtung: „Browserdaten löschen" löscht auch den Plan — vorher unter **⚙ → Sicherung** den Text kopieren und ablegen.
