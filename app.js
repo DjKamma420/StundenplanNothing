@@ -5,9 +5,10 @@
    und Bundesland stehen in den Einstellungen.
    ===================================================================== */
 
-/* Sichtbare Kennung der laufenden Fassung. Steht unten in der Wischzone.
-   Stimmt sie nicht mit sw.js überein, zeigt der Browser noch alte Dateien. */
-const BUILD = "v12";
+/* Die Version steht ausschließlich in sw.js. Die App erfragt sie beim
+   laufenden Service Worker und vergleicht sie mit der auf dem Server.
+   Weichen beide ab, hängt das Gerät an alten Dateien. */
+let BUILD = "…";
 
 const STANDARD = {
   klasse: "",
@@ -491,10 +492,10 @@ function wischzoneSichern(){
   if(!z){
     z = document.createElement("div");
     z.id = "wischzone"; z.className = "wischzone";
-    z.innerHTML = '<div class="punkte" id="wischPunkte"><i></i><i></i><i></i></div><span></span>';
+    z.innerHTML = '<div class="punkte" id="wischPunkte"><i></i><i></i><i></i></div><span id="wischText"></span>';
     (document.getElementById("btnEintrag") || document.body).after(z);
   }
-  z.querySelector("span").textContent = "Wischen wechselt die Ansicht · " + BUILD;
+  z.querySelector("span").id = "wischText";
   return z;
 }
 wischzoneSichern();
@@ -908,6 +909,7 @@ $("#btnEinst").onclick = () => {
   ferienStand();
   sDaten.value = sicherungsText();
   $("#sVersion").textContent = BUILD;
+  versionPruefen();
   $("#ankerJetzt").textContent =
     `Diese Woche ist KW ${kalenderwoche(new Date())}, also ${kalenderwoche(new Date()) % 2 === 1 ? "A" : "B"}.`;
   $("#ankerWrap").classList.toggle("hidden", !cfg.zweiWochen);
@@ -981,7 +983,58 @@ setInterval(() => {
 }, 30000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden) zeichne(); });
 
+/* ---------------------------------------------------------------
+   Version — eine einzige Quelle: sw.js
+---------------------------------------------------------------- */
+function mitZeitgrenze(versprechen, ms){
+  return Promise.race([versprechen, new Promise(r => setTimeout(() => r(null), ms))]);
+}
+async function laufendeVersion(){
+  if(!("serviceWorker" in navigator)) return null;
+  const reg = await mitZeitgrenze(navigator.serviceWorker.ready, 2000);
+  const sw = reg && (reg.active || navigator.serviceWorker.controller);
+  if(!sw) return null;
+  return mitZeitgrenze(new Promise(fertig => {
+    const kanal = new MessageChannel();
+    kanal.port1.onmessage = e => fertig(e.data);
+    sw.postMessage("version", [kanal.port2]);
+  }), 2000);
+}
+async function serverVersion(){
+  try{
+    const t = await (await fetch("sw.js", {cache:"no-store"})).text();
+    const m = t.match(/VERSION\s*=\s*"([^"]+)"/);
+    return m ? m[1] : null;
+  }catch(e){ return null; }
+}
+async function versionPruefen(){
+  const [laeuft, server] = await Promise.all([laufendeVersion(), serverVersion()]);
+  BUILD = laeuft || server || "—";
+  const veraltet = laeuft && server && laeuft !== server;
+  const text = veraltet ? `${laeuft} · ${server} verfügbar — tippen zum Aktualisieren`
+                        : "Wischen wechselt die Ansicht · " + BUILD;
+  const w = $("#wischText");
+  if(w){
+    w.textContent = text;
+    w.style.color = veraltet ? "var(--red)" : "";
+    w.onclick = veraltet ? aktualisieren : null;
+  }
+  const v = $("#sVersion");
+  if(v) v.textContent = veraltet ? `${laeuft} (neu: ${server})` : BUILD;
+  return {laeuft, server, veraltet};
+}
+async function aktualisieren(){
+  try{
+    const reg = await navigator.serviceWorker.getRegistration();
+    if(reg){
+      await reg.update();
+      if(reg.waiting) reg.waiting.postMessage("sofort");
+    }
+  }catch(e){}
+  location.reload();
+}
+
 normalisiere();
 zeichne();
-console.log("Stundenplan " + BUILD + " geladen");
+versionPruefen();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

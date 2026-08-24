@@ -1,7 +1,7 @@
 /* Service Worker — hält die App offline verfügbar.
    WICHTIG: VERSION hochzählen, sobald du index.html oder app.js änderst.
    Sonst zeigt der Offline-Speicher stur die alte Fassung. */
-const VERSION = "v21";
+const VERSION = "v13";
 const DATEIEN = ["./", "./index.html", "./app.js", "./manifest.webmanifest",
                  "./icon-192.png", "./icon-512.png"];
 
@@ -13,6 +13,13 @@ self.addEventListener("activate", e => {
   e.waitUntil(caches.keys()
     .then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
+});
+
+/* Die App fragt hier nach der laufenden Version. Dadurch muss die Nummer
+   nur an dieser einen Stelle hochgezählt werden. */
+self.addEventListener("message", e => {
+  if(e.data === "version" && e.ports && e.ports[0]) e.ports[0].postMessage(VERSION);
+  if(e.data === "sofort") self.skipWaiting();
 });
 
 self.addEventListener("fetch", e => {
