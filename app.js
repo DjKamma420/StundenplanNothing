@@ -99,7 +99,7 @@ const Speicher = {
    Beim ersten Start werden vorhandene Daten in das erste Profil
    übernommen, damit nichts verloren geht.
 ---------------------------------------------------------------- */
-const DATEN = ["cfg","plan","eintraege","ferien","sonder","noten"];
+const DATEN = ["cfg","plan","eintraege","ferien","sonder","noten","merkblatt"];
 let profile = [], profilId = "1";
 
 function profileSichern(){
@@ -130,7 +130,7 @@ function profileLaden(){
 profileLaden();
 const profilName = () => (profile.find(x => x.id === profilId) || {}).name || "Profil";
 
-let cfg, plan, eintraege, ferien, sonder, noten;
+let cfg, plan, eintraege, ferien, sonder, noten, merkblatt;
 function zustandLaden(){
   Speicher.puffer = {};
   cfg       = Object.assign({}, STANDARD, Speicher.lies("cfg", {}));
@@ -139,6 +139,7 @@ function zustandLaden(){
   ferien    = Speicher.lies("ferien", []);   // [{von,bis,name,typ}]
   sonder    = Speicher.lies("sonder", []);   // [{id,datum,slot,titel,raum,notiz,geloescht}]
   noten     = Speicher.lies("noten", []);    // [{id,fach,art,wert,datum,titel,notiz,geloescht}]
+  merkblatt = Speicher.lies("merkblatt", {}); // {FACH: "Text"}
 }
 zustandLaden();
 
@@ -220,6 +221,7 @@ function sichern(){
   Speicher.schreib("cfg", cfg); Speicher.schreib("plan", plan);
   Speicher.schreib("eintraege", eintraege); Speicher.schreib("ferien", ferien);
   Speicher.schreib("sonder", sonder); Speicher.schreib("noten", noten);
+  Speicher.schreib("merkblatt", merkblatt);
 }
 const sonderAktiv = () => sonder.filter(o => !o.geloescht);
 const notenAktiv  = () => noten.filter(n => !n.geloescht);
@@ -562,12 +564,14 @@ function zeichneEintraege(){
     $("#zahlN").textContent = offen("N") ? `${offen("N")} vorhanden` : "keine";
     $("#zahlE").textContent = kommendeEreignisse().length ? `${kommendeEreignisse().length} geplant` : "keine";
     $("#zahlNoten").textContent = notenAktiv().length ? `${notenAktiv().length} eingetragen` : "keine";
+    const mb = Object.keys(merkblatt || {}).length;
+    $("#zahlMerk").textContent = mb ? `${mb} ${mb === 1 ? "Fach" : "Fächer"}` : "keine";
     $("#zahlArchiv").textContent = archivListe().length ? `${archivListe().length} im Archiv` : "leer";
     return;
   }
 
   const titel = {H:"Hausaufgaben", K:"Klausuren", N:"Notizen", E:"Ereignisse",
-                 noten:"Noten", archiv:"Archiv"}[einSub];
+                 noten:"Noten", merk:"Merkblätter", archiv:"Archiv"}[einSub];
   $("#einTitel").textContent = titel;
   $("#archivHinweis").classList.toggle("hidden", einSub !== "archiv");
 
@@ -589,6 +593,21 @@ function zeichneEintraege(){
   }
 
   if(einSub === "noten"){ zeichneNoten(); return; }
+
+  if(einSub === "merk"){
+    const liste = notenFaecher();
+    $("#einListe").innerHTML = liste.map(f => {
+      const t = merkText(f);
+      return `<li style="display:block;padding:0;border:0">
+        <button type="button" class="merkzeile" data-merk="${esc(f)}">
+          <span class="fach">${esc(fachName(f))}</span>
+          <span class="stand">${t ? t.split("\n").length + " Zeilen" : "leer"}</span>
+        </button></li>`;
+    }).join("");
+    $("#einNix").textContent = "Trag zuerst deinen Stundenplan ein — dann erscheinen hier die Fächer.";
+    $("#einNix").hidden = liste.length > 0;
+    return;
+  }
 
   if(einSub === "archiv"){
     const liste = archivListe();
@@ -703,6 +722,8 @@ $("#bAnSpeichern").onclick = () => {
 
 $("#einKopf").onclick = e => { if(e.target.closest("#bNotePlus")) noteOeffnen(null); };
 $("#einListe").addEventListener("click", e => {
+  const mk = e.target.closest("[data-merk]");
+  if(mk){ merkOeffnen(mk.dataset.merk); return; }
   const an = e.target.closest("[data-anteil]");
   if(an){ anteilOeffnen(an.dataset.anteil); return; }
   const b = e.target.closest("[data-note]");
@@ -852,11 +873,13 @@ let langDruck = false;
   });
 })();
 
+let fachInfoFach = null;
 /** Alles, was die App über ein Fach weiß, auf einen Blick. */
 function fachInfo(i){
   const f = plan[wocheFuer(gewaehlt)][TAGE[tagIndex(gewaehlt)]][i];
   if(!f){ return; }
   const k = f.fach.toUpperCase();
+  fachInfoFach = k;
 
   let stunden = 0;
   ["A","B"].forEach(w => TAGE.forEach(t =>
@@ -883,9 +906,37 @@ function fachInfo(i){
     zeile("Schnitt", notenText(sch.gesamt)) +
     zeile("mündlich / schriftlich", `${notenText(sch.m)} / ${notenText(sch.s)}`) +
     zeile("Offen", offen.length ? offen.map(e => e.typ).join(" ") : "nichts");
+  const mb = merkText(k);
+  $("#fiMerk").innerHTML = mb ? `<div class="merkvorschau">${esc(mb)}</div>` : "";
+  $("#bFachMerk").textContent = mb ? "Merkblatt ändern" : "Merkblatt anlegen";
   dlgFach.showModal();
 }
 $("#bFachAb").onclick = () => dlgFach.close();
+
+/* ---------------------------------------------------------------
+   Merkblatt je Fach
+---------------------------------------------------------------- */
+let merkFach = null;
+const merkText = f => (merkblatt && merkblatt[f]) || "";
+
+function merkOeffnen(fach){
+  merkFach = fach;
+  $("#mkTitel").textContent = "Merkblatt · " + fachName(fach);
+  mkText.value = merkText(fach);
+  dlgMerk.showModal();
+}
+$("#bMerkAb").onclick = () => dlgMerk.close();
+$("#bMerkSpeichern").onclick = () => {
+  const t = mkText.value.trim();
+  if(!merkblatt) merkblatt = {};
+  if(t) merkblatt[merkFach] = t; else delete merkblatt[merkFach];
+  sichern(); dlgMerk.close(); zeichne();
+};
+$("#bMerkLeeren").onclick = () => {
+  if(!confirm("Merkblatt leeren?")) return;
+  delete merkblatt[merkFach]; sichern(); dlgMerk.close(); zeichne();
+};
+$("#bFachMerk").onclick = () => { const f = fachInfoFach; dlgFach.close(); if(f) merkOeffnen(f); };
 
 $("#plan").onclick = e => {
   const plus = e.target.closest("[data-weplus]");
@@ -1482,7 +1533,7 @@ $("#sSlotPlus").onclick = () => {
 };
 document.querySelectorAll("[data-vorlage]").forEach(b =>
   b.onclick = () => slotEditorZeichnen(VORLAGEN[b.dataset.vorlage]));
-function sicherungsText(){ return JSON.stringify({cfg, plan, eintraege, ferien, sonder, noten}, null, 2); }
+function sicherungsText(){ return JSON.stringify({cfg, plan, eintraege, ferien, sonder, noten, merkblatt}, null, 2); }
 $("#sDatei").onclick = () => {
   const url = URL.createObjectURL(new Blob([sicherungsText()], {type:"application/json"}));
   const a = document.createElement("a");
@@ -1509,12 +1560,13 @@ $("#sLaden").onclick = () => {
     if(Array.isArray(d.ferien)) ferien = d.ferien;
     if(Array.isArray(d.sonder)) sonder = d.sonder;
     if(Array.isArray(d.noten)) noten = d.noten;
+    if(d.merkblatt && typeof d.merkblatt === "object") merkblatt = d.merkblatt;
     sichern(); dlgEinst.close(); zeichne();
   }catch(e){ alert("Der Text lässt sich nicht lesen."); }
 };
 $("#sReset").onclick = () => {
   if(!confirm("Plan, Einträge, Noten und Archiv löschen?")) return;
-  cfg = Object.assign({}, STANDARD); plan = {}; eintraege = []; ferien = []; sonder = []; noten = [];
+  cfg = Object.assign({}, STANDARD); plan = {}; eintraege = []; ferien = []; sonder = []; noten = []; merkblatt = {};
   normalisiere(); sichern(); dlgEinst.close(); zeichne();
 };
 $("#bEinstAb").onclick = () => dlgEinst.close();

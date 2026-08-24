@@ -39,6 +39,12 @@ Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume und Lehrkrä
 - Noten legst du über denselben Knopf an wie alles andere
 - Eigener Zeugnis-Reiter mit dem Stand aller Fächer, gerundeter Zeugnisnote und Gesamtschnitt — auch ohne eingetragene Noten sichtbar
 
+**Merkblätter**
+- Ein freier Textbereich je Fach — Formeln, Regeln, Vokabeln, Laborvorschriften
+- Zeilenumbrüche und Einrückungen bleiben erhalten, Darstellung in Monospace
+- Erreichbar über die Fach-Info (Stunde gedrückt halten) oder den Einträge-Reiter
+- Eine Vorschau steht direkt in der Fach-Info
+
 **Einträge**
 - Getrennt nach Hausaufgaben, Klausuren und Notizen
 - Jeder Eintrag mit Fach, Datum, Text und Notizfeld
@@ -67,6 +73,7 @@ Nichts außer einem Browser und einem GitHub-Konto. Kein Server, kein Geld, kein
 |---|---|
 | **Gerät** | Handy, Tablet oder Rechner. Android, iOS, Windows, Mac, Linux — die App läuft im Browser. |
 | **Browser** | Chrome, Edge, Firefox, Safari, jeweils aktuell. Für die Installation auf dem Startbildschirm: Chrome auf Android, Safari auf iOS. |
+| **GitHub-Konto** | Kostenlos, um die Dateien abzulegen und über GitHub Pages auszuliefern. Wer schon eine eigene Webadresse hat, kann die Dateien auch dort hinlegen. |
 | **Internet** | Beim Einrichten und für das Laden der Ferientermine. Danach läuft die App offline. |
 | **Deinen Stundenplan** | Auf Papier oder als kopierbare Tabelle aus dem Schulportal. Zwei Wochen reichen für ein ganzes Halbjahr. |
 

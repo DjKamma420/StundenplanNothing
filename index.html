@@ -97,6 +97,13 @@ header h1 span{color:var(--muted);font-weight:400}
 #zeuSchnitt{color:var(--red)}
 .fiZeile{display:flex;justify-content:space-between;gap:12px;padding:9px 0;
   border-top:1px solid var(--line);font-size:14px}
+.merkvorschau{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:10px;
+  font-family:var(--mono);font-size:12px;line-height:1.65;white-space:pre-wrap;color:var(--muted);
+  max-height:150px;overflow:auto}
+.merkzeile{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line);
+  width:100%;text-align:left}
+.merkzeile .fach{flex:1;font-size:16px}
+.merkzeile .stand{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
 .fiZeile span:first-child{color:var(--muted);font-family:var(--mono);font-size:11.5px;
   letter-spacing:.08em;text-transform:uppercase}
 .bearbeiten #plan .block{border-left:2px solid var(--red);padding-left:10px}
@@ -350,6 +357,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
       <button type="button" data-sub="N">Notizen<small id="zahlN"></small></button>
       <button type="button" data-sub="E">Ereignisse<small id="zahlE"></small></button>
       <button type="button" data-sub="noten">Noten<small id="zahlNoten"></small></button>
+      <button type="button" data-sub="merk">Merkblätter<small id="zahlMerk"></small></button>
       <button type="button" data-sub="archiv">Archiv<small id="zahlArchiv"></small></button>
     </div>
   </div>
@@ -484,12 +492,30 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
 </dialog>
 
+<!-- ---------- Merkblatt ---------- -->
+<dialog id="dlgMerk">
+  <h2 id="mkTitel">Merkblatt</h2>
+  <p class="hinweis">Alles, was du im Fach immer wieder brauchst — Formeln, Regeln, Vokabeln.
+     Zeilenumbrüche und Einrückungen bleiben erhalten.</p>
+  <label><span>Inhalt</span><textarea id="mkText" style="min-height:240px"
+     placeholder="p = F / A&#10;1 bar = 100 000 Pa"></textarea></label>
+  <div class="reihe">
+    <button type="button" class="weg" id="bMerkLeeren">×</button>
+    <button type="button" id="bMerkAb">Zurück</button>
+    <button type="button" class="haupt" id="bMerkSpeichern">Speichern</button>
+  </div>
+</dialog>
+
 <!-- ---------- Fach-Info ---------- -->
 <dialog id="dlgFach">
   <h2 id="fiTitel">Fach</h2>
   <div class="eyebrow" id="fiKuerzel"></div>
   <div id="fiInhalt"></div>
-  <div class="reihe"><button type="button" id="bFachAb">Zurück</button></div>
+  <div id="fiMerk"></div>
+  <div class="reihe">
+    <button type="button" id="bFachMerk">Merkblatt</button>
+    <button type="button" id="bFachAb">Zurück</button>
+  </div>
 </dialog>
 
 <!-- ---------- Plan einfügen ---------- -->
