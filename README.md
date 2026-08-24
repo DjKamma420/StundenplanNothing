@@ -10,17 +10,26 @@ Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume und Lehrkrä
 
 **Tag**
 - Blöcke mit echten Uhrzeiten statt bloßer Stundennummern
-- Fortschrittsbalken mit laufendem Fach und verbleibenden Minuten
+- Fortschrittsbalken der **laufenden Stunde** mit Fach, Raum und verbleibenden Minuten
+- In der Pause ein eigener Balken mit Countdown bis zur nächsten Stunde
+- Laufende Stunde rot hervorgehoben; außerhalb des Unterrichts markiert eine rote Linie die aktuelle Stelle im Plan
 - Wischen nach links oder rechts wechselt den Tag
 - A- und B-Woche getrennt, für Pläne mit wechselnden Räumen im Zweiwochentakt
-- Freie Stunden lassen sich mit einmaligen Ereignissen füllen — Projektarbeit, Vortrag, Ausflug
+- Einmalige Ereignisse für Projektarbeit, Vortrag oder Ausflug — in freien Stunden, als Ersatz einer belegten Stunde oder für einen ganzen Tag, auch am Wochenende
 - Wochenendreiter, damit samstags nicht der Montag ausgewählt ist
 - Ferien und Feiertage werden als solche angezeigt
 
 **Stunde antippen**
-- Belegte Stunde: Hausaufgabe für die nächste Stunde dieses Fachs, Notiz für heute, oder Klausurtermin
+- Belegte Stunde: Hausaufgabe für die nächste Stunde dieses Fachs, Notiz für heute, Klausurtermin oder Stunde einmalig ersetzen
 - Freie Stunde: einmaliges Ereignis nur für diesen Tag
+- **Gedrückt halten**: Fach-Info mit ausgeschriebenem Namen, Lehrkraft, Wochenstunden, nächsten Terminen, Notenschnitt und Offenem
 - Mit ✎ im Kopf: Fach, Raum und Lehrkraft dauerhaft ändern
+
+**Noten und Zeugnis**
+- Noten je Fach, getrennt nach mündlich und schriftlich, mit Feld für „wofür" und Notizen
+- Das Verhältnis mündlich zu schriftlich lässt sich **je Fach einzeln** einstellen, mit einem Standardwert für den Rest
+- Umschaltbar zwischen Noten 1–6 und Punkten 0–15
+- Eigener Zeugnis-Reiter mit dem Stand aller Fächer, gerundeter Zeugnisnote und Gesamtschnitt
 
 **Einträge**
 - Getrennt nach Hausaufgaben, Klausuren und Notizen
@@ -36,8 +45,9 @@ Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume und Lehrkrä
 - Darunter die Einträge des angetippten Tages
 
 **Zwischen den Ansichten**
-- Wischen im Bereich unter dem Eintragsknopf wechselt zwischen Tag, Kalender und Einträgen
-- Die drei Punkte zeigen, wo du gerade bist, und lassen sich auch antippen
+- Wischen im Bereich unter dem Eintragsknopf wechselt zwischen Tag, Kalender, Einträgen und Zeugnis
+- Die vier Punkte zeigen, wo du gerade bist, und lassen sich auch antippen
+- Steht eine Unterliste offen, führt der erste Wisch zurück ins Menü
 
 ## Einrichten
 
@@ -52,6 +62,17 @@ https://djkamma420.github.io/StundenplanNothing/ Öffnen und installieren:
 2. Wer wechselnde Wochen hat: *A- und B-Woche getrennt führen* anhaken. Welche Woche welche ist, steht fest: **ungerade Kalenderwoche = A, gerade = B**.
 3. Bundesland wählen und **Ferien laden** — Schulferien und Feiertage kommen dann automatisch in den Plan.
 4. Plan füllen: **✎** antippen, dann jedes Feld ausfüllen. Oder in den Einstellungen **Plan einfügen** und eine kopierte Tabelle übernehmen.
+
+## Namen statt Kürzel
+
+Unter **⚙ → Lehrkräfte** und **⚙ → Fachnamen** trägst du je Zeile ein Kürzel und den Namen ein:
+
+```
+WZET = Frau Wietzet
+CH = Chemie
+```
+
+Der Plan zeigt weiter die kurzen Kürzel — sonst passt er nicht auf den Bildschirm. Die ausgeschriebenen Namen erscheinen in der Fach-Info und im Zeugnis.
 
 ## An eine andere Schule anpassen
 
@@ -102,4 +123,4 @@ Praktisch fällt das kaum ins Gewicht: Ein Stundenplan gilt ein halbes Jahr. Zwe
 
 ## Daten
 ‼️WICHTIG‼️
-Alles liegt im `localStorage` des Browsers. Nichts wird übertragen, nichts außerhalb des Geräts gespeichert. Achtung: „Browserdaten löschen" löscht auch den Plan — vorher unter **⚙ → Sicherung** den Text kopieren und ablegen.
+Alles liegt im `localStorage` des Browsers. Nichts wird übertragen, nichts außerhalb des Geräts gespeichert. Achtung: „Browserdaten löschen" löscht auch den Plan — vorher unter **⚙ → Sicherung** entweder den Text kopieren oder **Als Datei sichern** antippen. Zurück geht es über **Datei einlesen**.

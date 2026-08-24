@@ -26,8 +26,8 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* ---------- Kopfzeile ---------- */
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 .reiter{display:flex;gap:3px;border:1px solid var(--line);border-radius:99px;padding:3px;flex:1;min-width:0}
-.reiter button{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
-  padding:7px 4px;border-radius:99px;color:var(--muted);flex:1}
+.reiter button{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;
+  padding:7px 2px;border-radius:99px;color:var(--muted);flex:1}
 .reiter button[aria-pressed=true]{background:var(--text);color:var(--ink)}
 .ikon{border:1px solid var(--line);border-radius:10px;width:38px;height:38px;font-size:15px;color:var(--muted);flex:none}
 .ikon[aria-pressed=true]{border-color:var(--red);color:var(--red)}
@@ -81,6 +81,20 @@ header h1 span{color:var(--muted);font-weight:400}
 .notenchips button{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);
   border-radius:8px;padding:6px 9px;color:var(--text)}
 .notenchips button small{color:var(--muted);margin-left:5px}
+.notenzeile{display:flex;align-items:baseline;gap:11px;padding:9px 0;border-top:1px solid var(--line2)}
+.notenzeile .wert{font-family:var(--mono);font-size:15px;font-weight:600;min-width:38px}
+.notenzeile .art{font-family:var(--mono);font-size:10px;color:var(--muted);
+  border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.notenzeile .wofuer{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notenzeile .tag{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.anteilchip{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line);
+  border-radius:99px;padding:4px 9px;color:var(--muted)}
+.zeuZeile{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line);width:100%;text-align:left}
+.zeuZeile .fach{flex:1;min-width:0}
+.zeuZeile .fach small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:3px}
+.zeuZeile .roh{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.zeuZeile .note{font-size:26px;font-weight:600;min-width:44px;text-align:right}
+#zeuSchnitt{color:var(--red)}
 .fiZeile{display:flex;justify-content:space-between;gap:12px;padding:9px 0;
   border-top:1px solid var(--line);font-size:14px}
 .fiZeile span:first-child{color:var(--muted);font-family:var(--mono);font-size:11.5px;
@@ -219,6 +233,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <button type="button" id="rTag" aria-pressed="true">Tag</button>
     <button type="button" id="rKal" aria-pressed="false">Kalender</button>
     <button type="button" id="rEin" aria-pressed="false">Einträge</button>
+    <button type="button" id="rZeu" aria-pressed="false">Zeugnis</button>
   </div>
   <button class="ikon" id="btnEdit" aria-pressed="false" aria-label="Plan bearbeiten">✎</button>
   <button class="ikon" id="btnEinst" aria-label="Einstellungen">⚙</button>
@@ -296,10 +311,21 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
 </div>
 
+<!-- ============ ZEUGNIS ============ -->
+<div id="ansichtZeu" class="hidden">
+  <header style="margin-bottom:18px">
+    <div class="eyebrow">Stand heute</div>
+    <h1>Zeugnis <span id="zeuSchnitt"></span></h1>
+  </header>
+  <p class="hinweis" id="zeuHinweis"></p>
+  <div id="zeuListe"></div>
+  <p class="nix" id="zeuNix" hidden>Noch keine Noten eingetragen.</p>
+</div>
+
 <div id="fuss">
   <button class="gross" id="btnEintrag">+ Eintrag</button>
   <div class="wischzone" id="wischzone">
-    <div class="punkte" id="wischPunkte"><i></i><i></i><i></i></div>
+    <div class="punkte" id="wischPunkte"><i></i><i></i><i></i><i></i></div>
     <span id="wischText">Wischen wechselt die Ansicht</span>
   </div>
 </div>
@@ -393,11 +419,26 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <label><span id="nWertLabel">Note</span><input type="text" id="nWert" inputmode="decimal" placeholder="2,3"></label>
     <label><span>Datum</span><input type="date" id="nDatum"></label>
   </div>
-  <label><span>Wofür</span><input type="text" id="nTitel" placeholder="Klausur Nr. 1"></label>
+  <label><span>Wofür</span><input type="text" id="nTitel" placeholder="Präsentation, Klausur Nr. 1 …"></label>
+  <label><span>Notizen</span><textarea id="nNotiz" style="min-height:80px" placeholder="Details"></textarea></label>
   <div class="reihe">
     <button type="button" class="weg hidden" id="bNoteWeg">×</button>
     <button type="button" id="bNoteAb">Zurück</button>
     <button type="button" class="haupt" id="bNoteSpeichern">Speichern</button>
+  </div>
+</dialog>
+
+<!-- ---------- Verhältnis je Fach ---------- -->
+<dialog id="dlgAnteil">
+  <h2 id="anTitel">Verhältnis</h2>
+  <p class="hinweis">Wie stark zählt die mündliche Note in diesem Fach?
+     Der Rest entfällt auf die schriftliche.</p>
+  <label><span>mündlich %</span><input type="number" id="anWert" min="0" max="100" step="5"></label>
+  <p class="hinweis" id="anHinweis"></p>
+  <div class="reihe">
+    <button type="button" id="bAnStandard">Standard</button>
+    <button type="button" id="bAnAb">Zurück</button>
+    <button type="button" class="haupt" id="bAnSpeichern">Speichern</button>
   </div>
 </dialog>
 

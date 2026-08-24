@@ -23,7 +23,8 @@ const STANDARD = {
   zweiWochen: false,
   land: "",          // z.B. "DE-NI"
   notenSystem: "note6",   // "note6" = 1–6, "punkte15" = 0–15
-  anteilM: 50,            // Gewicht mündlich in Prozent, Rest ist schriftlich
+  anteilM: 50,            // Standardgewicht mündlich in Prozent, Rest ist schriftlich
+  anteile: {},            // je Fach abweichendes Gewicht, z.B. {MA: 40}
   lehrer: {},             // Kürzel -> Name
   fachnamen: {}           // Kürzel -> ausgeschriebener Name
 };
@@ -167,13 +168,20 @@ const fachName   = k => (cfg.fachnamen && cfg.fachnamen[k]) || k || "";
 /* Notenschnitt je Fach. Mündlich und schriftlich werden getrennt gemittelt
    und dann nach dem eingestellten Verhältnis verrechnet. Fehlt eine der
    beiden Arten, zählt die andere allein. */
+const anteilFuer = fach => {
+  const eigen = cfg.anteile && cfg.anteile[fach];
+  const wert = (eigen === undefined || eigen === null) ? cfg.anteilM : eigen;
+  return Math.max(0, Math.min(100, Number(wert) || 0));
+};
+const hatEigenenAnteil = fach => cfg.anteile && cfg.anteile[fach] !== undefined && cfg.anteile[fach] !== null;
+
 function notenSchnitt(fach){
   const teil = art => {
     const l = noten.filter(n => n.fach === fach && n.art === art);
     return l.length ? l.reduce((sum,n) => sum + n.wert, 0) / l.length : null;
   };
   const m = teil("m"), sch = teil("s");
-  const aM = Math.max(0, Math.min(100, Number(cfg.anteilM) || 0));
+  const aM = anteilFuer(fach);
   if(m === null && sch === null) return {m:null, s:null, gesamt:null};
   if(m === null)   return {m:null, s:sch, gesamt:sch};
   if(sch === null) return {m, s:null, gesamt:m};
@@ -181,6 +189,8 @@ function notenSchnitt(fach){
 }
 const notenText = w => w === null || w === undefined ? "—"
   : (cfg.notenSystem === "punkte15" ? w.toFixed(1) : w.toFixed(2).replace(".", ","));
+/** Ganze Zeugnisnote aus dem Schnitt. Bei Noten gilt: kleiner ist besser. */
+const zeugnisNote = w => w === null || w === undefined ? null : Math.round(w);
 const notenFaecher = () => [...new Set([...faecher(), ...noten.map(n => n.fach)])].filter(Boolean).sort();
 
 const aktiv = () => eintraege.filter(e => !e.geloescht);
@@ -221,15 +231,18 @@ function zeichne(){
   $("#ansichtTag").classList.toggle("hidden", ansicht !== "tag");
   $("#ansichtKal").classList.toggle("hidden", ansicht !== "kalender");
   $("#ansichtEin").classList.toggle("hidden", ansicht !== "eintraege");
+  $("#ansichtZeu").classList.toggle("hidden", ansicht !== "zeugnis");
   $("#rTag").setAttribute("aria-pressed", ansicht === "tag");
   $("#rKal").setAttribute("aria-pressed", ansicht === "kalender");
   $("#rEin").setAttribute("aria-pressed", ansicht === "eintraege");
+  $("#rZeu").setAttribute("aria-pressed", ansicht === "zeugnis");
   $("#btnEdit").classList.toggle("hidden", ansicht !== "tag");
   const punkte = $("#wischPunkte");
   if(punkte) [...punkte.children].forEach((p,i) =>
     p.classList.toggle("an", typeof ANSICHTEN !== "undefined" && ANSICHTEN[i] === ansicht));
   if(ansicht === "tag") zeichneTag();
   else if(ansicht === "kalender") zeichneKalender();
+  else if(ansicht === "zeugnis") zeichneZeugnis();
   else zeichneEintraege();
 }
 
@@ -512,32 +525,98 @@ function zeichneEintraege(){
   }
 }
 function zeichneNoten(){
-  const aM = Number(cfg.anteilM) || 0;
   $("#einKopf").innerHTML =
-    `<p class="hinweis">Verhältnis ${aM} % mündlich zu ${100-aM} % schriftlich.
-       Änderbar in den Einstellungen.</p>
+    `<p class="hinweis">Das Verhältnis mündlich zu schriftlich lässt sich je Fach einstellen —
+       auf den Wert in der Fachzeile tippen. Standard: ${Number(cfg.anteilM)||0} % mündlich.</p>
      <div class="notenchips"><button type="button" id="bNotePlus">+ Note</button></div>`;
 
   const liste = notenFaecher().filter(f => noten.some(n => n.fach === f));
   $("#einListe").innerHTML = liste.map(f => {
     const sch = notenSchnitt(f);
-    const eigene = noten.filter(n => n.fach === f)
-      .sort((a,b) => b.datum.localeCompare(a.datum));
+    const aM = anteilFuer(f);
+    const eigene = noten.filter(n => n.fach === f).sort((a,b) => b.datum.localeCompare(a.datum));
     return `<li style="display:block;padding:0;border:0"><div class="notenkarte">
       <div class="kopfz">
         <div><div style="font-size:17px">${esc(fachName(f))}</div>
           <div class="teil">mündlich ${notenText(sch.m)} · schriftlich ${notenText(sch.s)}</div></div>
         <div class="schnitt">${notenText(sch.gesamt)}</div>
       </div>
-      <div class="notenchips">${eigene.map(n => `<button type="button" data-note="${n.id}">
-        ${notenText(n.wert)}<small>${n.art === "m" ? "m" : "s"}</small></button>`).join("")}</div>
+      <div class="notenchips">
+        <button type="button" class="anteilchip" data-anteil="${esc(f)}">
+          ${aM} % mündlich${hatEigenenAnteil(f) ? " ·  eigen" : ""}</button>
+      </div>
+      ${eigene.map(n => `<div class="notenzeile" data-note="${n.id}">
+          <span class="wert">${notenText(n.wert)}</span>
+          <span class="art">${n.art === "m" ? "mündl." : "schriftl."}</span>
+          <span class="wofuer">${esc(n.titel) || "—"}</span>
+          <span class="tag">${zeigDatum(n.datum)}</span>
+        </div>`).join("")}
     </div></li>`;
   }).join("");
   $("#einNix").textContent = "Noch keine Noten eingetragen.";
   $("#einNix").hidden = liste.length > 0;
 }
+
+/* --- Zeugnis: alle Fächer auf dem aktuellen Stand --- */
+function zeichneZeugnis(){
+  const liste = notenFaecher().filter(f => noten.some(n => n.fach === f));
+  const schnitte = liste.map(f => notenSchnitt(f).gesamt).filter(w => w !== null);
+  const gesamt = schnitte.length ? schnitte.reduce((a,b) => a+b, 0) / schnitte.length : null;
+
+  $("#zeuSchnitt").textContent = gesamt === null ? "" : notenText(gesamt);
+  $("#zeuHinweis").textContent = liste.length
+    ? `Aus ${noten.length} Noten in ${liste.length} Fächern. Eigene Rechnung, keine amtliche Auskunft — `
+      + `Lehrkräfte gewichten oft anders.`
+    : "";
+
+  $("#zeuListe").innerHTML = liste.map(f => {
+    const sch = notenSchnitt(f);
+    const ganz = zeugnisNote(sch.gesamt);
+    const anzahl = noten.filter(n => n.fach === f).length;
+    return `<button type="button" class="zeuZeile" data-zeufach="${esc(f)}">
+      <div class="fach">${esc(fachName(f))}
+        <small>${anzahl} ${anzahl === 1 ? "Note" : "Noten"} · ${anteilFuer(f)} % mündlich</small></div>
+      <div class="roh">${notenText(sch.gesamt)}</div>
+      <div class="note">${ganz === null ? "—" : ganz}</div>
+    </button>`;
+  }).join("");
+  $("#zeuNix").hidden = liste.length > 0;
+}
+$("#zeuListe").onclick = e => {
+  const b = e.target.closest("[data-zeufach]"); if(!b) return;
+  anteilOeffnen(b.dataset.zeufach);
+};
+
+/* --- Verhältnis je Fach --- */
+let anteilFach = null;
+function anteilOeffnen(fach){
+  anteilFach = fach;
+  $("#anTitel").textContent = fachName(fach);
+  anWert.value = anteilFuer(fach);
+  anteilVorschau();
+  dlgAnteil.showModal();
+}
+function anteilVorschau(){
+  const m = Math.max(0, Math.min(100, Number(anWert.value) || 0));
+  $("#anHinweis").textContent = `${m} % mündlich, ${100-m} % schriftlich.`
+    + (hatEigenenAnteil(anteilFach) ? "" : ` Zurzeit gilt der Standard.`);
+}
+anWert.oninput = anteilVorschau;
+$("#bAnAb").onclick = () => dlgAnteil.close();
+$("#bAnStandard").onclick = () => {
+  if(cfg.anteile) delete cfg.anteile[anteilFach];
+  sichern(); dlgAnteil.close(); zeichne();
+};
+$("#bAnSpeichern").onclick = () => {
+  if(!cfg.anteile) cfg.anteile = {};
+  cfg.anteile[anteilFach] = Math.max(0, Math.min(100, Number(anWert.value) || 0));
+  sichern(); dlgAnteil.close(); zeichne();
+};
+
 $("#einKopf").onclick = e => { if(e.target.closest("#bNotePlus")) noteOeffnen(null); };
 $("#einListe").addEventListener("click", e => {
+  const an = e.target.closest("[data-anteil]");
+  if(an){ anteilOeffnen(an.dataset.anteil); return; }
   const b = e.target.closest("[data-note]");
   if(b) noteOeffnen(noten.find(n => n.id === b.dataset.note));
 });
@@ -555,6 +634,7 @@ function noteOeffnen(n){
   nWert.value = n ? String(n.wert).replace(".", ",") : "";
   nDatum.value = n ? n.datum : iso(new Date());
   nTitel.value = n ? (n.titel || "") : "";
+  nNotiz.value = n ? (n.notiz || "") : "";
   $("#bNoteWeg").classList.toggle("hidden", !n);
   dlgNote.showModal();
 }
@@ -567,7 +647,8 @@ $("#bNoteSpeichern").onclick = () => {
     alert(`Bitte einen Wert zwischen ${grenze[0]} und ${grenze[1]} eingeben.`); return;
   }
   const daten = {fach:nFach.value, art:nArt.value, wert,
-                 datum:nDatum.value || iso(new Date()), titel:nTitel.value.trim()};
+                 datum:nDatum.value || iso(new Date()),
+                 titel:nTitel.value.trim(), notiz:nNotiz.value.trim()};
   if(noteId) Object.assign(noten.find(x => x.id === noteId), daten);
   else noten.push(Object.assign({id:String(Date.now())}, daten));
   sichern(); dlgNote.close(); zeichne();
@@ -585,6 +666,7 @@ $("#einZurueck").onclick = () => { einSub = null; zeichne(); };
 $("#rTag").onclick = () => { ansicht = "tag"; zeichne(); };
 $("#rKal").onclick = () => { ansicht = "kalender"; kalMonat = new Date(gewaehlt); kalTag = new Date(gewaehlt); zeichne(); };
 $("#rEin").onclick = () => { ansicht = "eintraege"; einSub = null; zeichne(); };
+$("#rZeu").onclick = () => { ansicht = "zeugnis"; zeichne(); };
 $("#btnEdit").onclick = () => { bearbeiten = !bearbeiten; zeichne(); };
 $("#btnHeute").onclick = () => { gewaehlt = new Date(); zeichne(); };
 $("#wocheZurueck").onclick = () => { gewaehlt = plusTage(gewaehlt, -7); zeichne(); };
@@ -625,7 +707,7 @@ wischen($("#ansichtTag"), r => { gewaehlt = plusTage(gewaehlt, r); zeichne(); })
 wischen($("#ansichtKal"), r => {
   kalMonat = new Date(kalMonat.getFullYear(), kalMonat.getMonth() + r, 1); zeichne();
 });
-const ANSICHTEN = ["tag", "kalender", "eintraege"];
+const ANSICHTEN = ["tag", "kalender", "eintraege", "zeugnis"];
 
 /* Fehlt die Wischzone im HTML — etwa weil der Browser noch eine ältere
    index.html im Speicher hat — wird sie hier angelegt. So bleibt die App
