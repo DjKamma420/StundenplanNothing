@@ -1,0 +1,27 @@
+{
+  "name": "Stundenplan",
+  "short_name": "Plan",
+  "description": "Stundenplan mit Hausaufgaben, Klausuren, Noten und Merkblättern. Offline, ohne Konto.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "de",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Hausaufgaben", "short_name": "HA", "url": "./?sub=H",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Klausuren", "short_name": "Klausuren", "url": "./?sub=K",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Kalender", "short_name": "Kalender", "url": "./?ansicht=kalender",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] },
+    { "name": "Zeugnis", "short_name": "Zeugnis", "url": "./?ansicht=zeugnis",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }] }
+  ]
+}

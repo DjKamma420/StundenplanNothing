@@ -9,117 +9,94 @@
 <link rel="icon" href="icon-192.png">
 <style>
 :root{
+  --akzent:#e5382b;
   --ink:#0a0a0a; --surface:#141414; --line:#262626; --line2:#1a1a1a;
-  --text:#ededed; --muted:#7a7a7a; --dim:#3a3a3a; --red:#e5382b;
+  --text:#ededed; --muted:#7a7a7a; --dim:#3a3a3a;
+  --red:var(--akzent);
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
+body.hell{
+  --ink:#f7f7f5; --surface:#fff; --line:#dcdcd8; --line2:#ebebe7;
+  --text:#141414; --muted:#6b6b66; --dim:#b8b8b2;
+}
+body.schrift-mono{ --sans:var(--mono) }
+body.schrift-serif{ --sans:ui-serif,Georgia,"Times New Roman",serif }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--ink);color:var(--text);font-family:var(--sans);
   -webkit-tap-highlight-color:transparent}
-body{padding:14px 16px calc(28px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto}
+body{padding:14px 16px 158px;max-width:640px;margin:0 auto}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+:focus-visible{outline:2px solid var(--akzent);outline-offset:2px}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
 .hidden{display:none !important}
+.mitte{text-align:center}
 
-/* ---------- Kopfzeile ---------- */
-.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
-.reiter{display:flex;gap:3px;border:1px solid var(--line);border-radius:99px;padding:3px;flex:1;min-width:0}
+/* Kopf */
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.reiter{display:flex;gap:2px;border:1px solid var(--line);border-radius:99px;padding:3px;flex:1;min-width:0}
 .reiter button{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;
   padding:7px 2px;border-radius:99px;color:var(--muted);flex:1}
 .reiter button[aria-pressed=true]{background:var(--text);color:var(--ink)}
-.ikon{border:1px solid var(--line);border-radius:10px;width:38px;height:38px;font-size:15px;color:var(--muted);flex:none}
-.ikon[aria-pressed=true]{border-color:var(--red);color:var(--red)}
-
+.ikon{border:1px solid var(--line);border-radius:10px;width:36px;height:36px;font-size:14px;color:var(--muted);flex:none}
+.ikon[aria-pressed=true]{border-color:var(--akzent);color:var(--akzent)}
 header h1{font-size:29px;line-height:1;letter-spacing:-.02em;margin:5px 0 0;font-weight:600}
 header h1 span{color:var(--muted);font-weight:400}
-.kw{display:flex;align-items:center;gap:8px;margin-top:12px}
+.countdown{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;margin-top:8px}
+.kw{display:flex;align-items:center;gap:8px;margin-top:10px}
 .kw button{font-family:var(--mono);font-size:14px;border:1px solid var(--line);border-radius:9px;
   width:34px;height:32px;color:var(--muted)}
 .kw .label{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
-.ab{font-family:var(--mono);font-size:11px;border:1px solid var(--red);color:var(--red);
+.ab{font-family:var(--mono);font-size:11px;border:1px solid var(--akzent);color:var(--akzent);
   border-radius:99px;padding:2px 8px;letter-spacing:.1em}
 
-/* ---------- Fortschritt ---------- */
+/* Fortschritt */
 .fortschritt{margin:16px 0 4px}
 .balken{height:2px;background:var(--line2);position:relative;overflow:hidden}
-.balken i{position:absolute;inset:0 auto 0 0;background:var(--red);width:0}
+.balken i{position:absolute;inset:0 auto 0 0;background:var(--akzent);width:0}
 .fortschritt .zeile{display:flex;justify-content:space-between;margin-top:7px;
   font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em}
 .fortschritt .zeile b{color:var(--text);font-weight:500}
 
-/* ---------- Tagesauswahl ---------- */
+/* Tage */
 .tage{display:grid;grid-template-columns:repeat(5,1fr) .62fr;gap:5px;margin:18px 0 4px}
 .tage button{font-family:var(--mono);font-size:12px;padding:9px 0;border:1px solid var(--line);
-  border-radius:10px;color:var(--muted);position:relative}
+  border-radius:10px;color:var(--muted)}
 .tage button[aria-pressed=true]{background:var(--text);color:var(--ink);border-color:var(--text)}
-.punkt{display:block;width:4px;height:4px;border-radius:99px;background:var(--red);margin:5px auto 0}
+.punkt{display:block;width:4px;height:4px;border-radius:99px;background:var(--akzent);margin:5px auto 0}
 
-/* ---------- Blöcke ---------- */
-.frei-banner{border:1px solid var(--red);border-radius:12px;padding:12px 14px;margin:16px 0 0}
-.frei-banner b{color:var(--red);font-size:15px}
+/* Blöcke */
+.frei-banner{border:1px solid var(--akzent);border-radius:12px;padding:12px 14px;margin:16px 0 0}
+.frei-banner b{color:var(--akzent);font-size:15px}
 .frei-banner div{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:3px}
 .block{display:grid;grid-template-columns:58px 1fr;gap:14px;align-items:start;
   border-top:1px solid var(--line);padding:15px 0;width:100%;text-align:left}
 #plan .block:last-child{border-bottom:1px solid var(--line)}
-.block.jetzt{background:linear-gradient(90deg,#e5382b1a,transparent 65%);
-  border-left:2px solid var(--red);padding-left:10px;margin-left:-12px}
-.block.jetzt .fach{color:var(--red)}
-.block.jetzt .zeit b{color:var(--red)}
-.block.ersetzt .fach{color:var(--text)}
-.durch{text-decoration:line-through;color:var(--dim)}
-.jetztlinie{display:flex;align-items:center;gap:9px;margin:0;padding:0}
-.jetztlinie::after{content:"";flex:1;height:1px;background:var(--red)}
-.jetztlinie span{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--red)}
-.notenkarte{border-top:1px solid var(--line);padding:14px 0}
-.notenkarte .kopfz{display:flex;align-items:baseline;gap:10px}
-.notenkarte .schnitt{font-size:22px;font-weight:600;margin-left:auto}
-.notenkarte .teil{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px}
-.notenchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-.notenchips button{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);
-  border-radius:8px;padding:6px 9px;color:var(--text)}
-.notenchips button small{color:var(--muted);margin-left:5px}
-.notenzeile{display:flex;align-items:baseline;gap:11px;padding:9px 0;border-top:1px solid var(--line2)}
-.notenzeile .wert{font-family:var(--mono);font-size:15px;font-weight:600;min-width:38px}
-.notenzeile .art{font-family:var(--mono);font-size:10px;color:var(--muted);
-  border:1px solid var(--line);border-radius:4px;padding:1px 5px}
-.notenzeile .wofuer{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.notenzeile .tag{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
-.anteilchip{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line);
-  border-radius:99px;padding:4px 9px;color:var(--muted)}
-.zeuZeile{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line);width:100%;text-align:left}
-.zeuZeile .fach{flex:1;min-width:0}
-.zeuZeile .fach small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:3px}
-.zeuZeile .roh{font-family:var(--mono);font-size:12px;color:var(--muted)}
-.zeuZeile .note{font-size:26px;font-weight:600;min-width:44px;text-align:right}
-#zeuSchnitt{color:var(--red)}
-.fiZeile{display:flex;justify-content:space-between;gap:12px;padding:9px 0;
-  border-top:1px solid var(--line);font-size:14px}
-.merkvorschau{margin-top:14px;padding:12px;border:1px solid var(--line);border-radius:10px;
-  font-family:var(--mono);font-size:12px;line-height:1.65;white-space:pre-wrap;color:var(--muted);
-  max-height:150px;overflow:auto}
-.merkzeile{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line);
-  width:100%;text-align:left}
-.merkzeile .fach{flex:1;font-size:16px}
-.merkzeile .stand{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
-.fiZeile span:first-child{color:var(--muted);font-family:var(--mono);font-size:11.5px;
-  letter-spacing:.08em;text-transform:uppercase}
-.bearbeiten #plan .block{border-left:2px solid var(--red);padding-left:10px}
+.block.jetzt{background:linear-gradient(90deg,color-mix(in srgb,var(--akzent) 12%,transparent),transparent 65%);
+  border-left:2px solid var(--akzent);padding-left:10px;margin-left:-12px}
+.block.jetzt .fach,.block.jetzt .zeit b{color:var(--akzent)}
+.block.ausfall .fach{color:var(--dim);text-decoration:line-through}
 .zeit{font-family:var(--mono);font-size:12.5px;color:var(--muted);line-height:1.55;padding-top:2px}
 .zeit b{display:block;color:var(--text);font-weight:500}
 .fach{font-size:18.5px;letter-spacing:-.01em}
 .fach.leer{color:var(--dim)}
 .detail{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:4px;letter-spacing:.04em}
+.durch{text-decoration:line-through;color:var(--dim)}
 .marker{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.schluss{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);border-top:1px solid var(--line);padding:12px 0 0;margin-top:0}
+.jetztlinie{display:flex;align-items:center;gap:9px}
+.jetztlinie::after{content:"";flex:1;height:1px;background:var(--akzent)}
+.jetztlinie span{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--akzent)}
 
-/* ---------- K / H / N ---------- */
 .khn{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.06em;
-  border:1px solid var(--red);color:var(--red);border-radius:4px;padding:1px 5px;line-height:1.5}
+  border:1px solid var(--akzent);color:var(--akzent);border-radius:4px;padding:1px 5px;line-height:1.5}
 .khn.aus{border-color:var(--dim);color:var(--dim)}
+.einmalig{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
+  border:1px dashed var(--muted);color:var(--muted);border-radius:2px;padding:1px 5px}
 
-/* ---------- Listen ---------- */
+/* Listen */
 section{margin-top:30px}
 .liste{list-style:none;padding:0;margin:10px 0 0}
 .liste li{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
@@ -134,11 +111,9 @@ section{margin-top:30px}
 .nix{color:var(--muted);font-size:14px;margin:12px 0 0}
 .mini{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
   border:1px solid var(--line);border-radius:8px;padding:6px 9px;color:var(--muted)}
-
-/* ---------- Wochenende ---------- */
 .we-teil{border-top:1px solid var(--line);padding:14px 0}
 
-/* ---------- Kalender ---------- */
+/* Kalender */
 .monat{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .monat b{font-size:18px;font-weight:600}
 .monat.klein{margin-bottom:8px}
@@ -149,25 +124,66 @@ section{margin-top:30px}
 .tagfeld{aspect-ratio:1;border:1px solid transparent;border-radius:9px;display:flex;
   flex-direction:column;align-items:center;justify-content:center;gap:2px;font-family:var(--mono);font-size:13px}
 .tagfeld.fremd{color:var(--dim)}
-.tagfeld.heute{border-color:var(--red)}
+.tagfeld.heute{border-color:var(--akzent)}
 .tagfeld.ferien{background:var(--line2)}
 .tagfeld[aria-pressed=true]{background:var(--text);color:var(--ink)}
-.tagfeld .zeichen{display:flex;gap:3px;align-items:center;font-size:9px;font-weight:700;color:var(--red);line-height:1}
+.tagfeld .zeichen{display:flex;gap:3px;align-items:center;font-size:9px;font-weight:700;color:var(--akzent);line-height:1}
 .tagfeld[aria-pressed=true] .zeichen{color:var(--ink)}
-.punktfach{width:5px;height:5px;border-radius:99px;background:var(--red);flex:none}
-.quadratfach{width:5px;height:5px;border-radius:1px;background:var(--red);flex:none}
-.tagfeld[aria-pressed=true] .quadratfach{background:var(--ink)}
-.fusszeile{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);
-  font-family:var(--mono);font-size:10.5px;line-height:1.9;color:var(--dim);letter-spacing:.04em}
-.fusszeile a{color:var(--muted)}
-.fusszeile b{color:var(--muted);font-weight:500}
-.tagfeld[aria-pressed=true] .punktfach{background:var(--ink)}
+.punktfach{width:5px;height:5px;border-radius:99px;background:var(--akzent);flex:none}
+.quadratfach{width:5px;height:5px;border-radius:1px;background:var(--akzent);flex:none}
+.tagfeld[aria-pressed=true] .punktfach,.tagfeld[aria-pressed=true] .quadratfach{background:var(--ink)}
 
-/* ---------- Großer Knopf ---------- */
-.gross{width:100%;margin-top:26px;background:var(--text);color:var(--ink);border-radius:14px;
+/* Noten und Zeugnis */
+.notenkarte{border-top:1px solid var(--line);padding:14px 0}
+.notenkarte .kopfz{display:flex;align-items:baseline;gap:10px}
+.notenkarte .schnitt{font-size:22px;font-weight:600;margin-left:auto}
+.notenkarte .teil{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px}
+.notenchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.notenchips button{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);
+  border-radius:8px;padding:6px 9px;color:var(--text)}
+.anteilchip{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line);
+  border-radius:99px;padding:4px 9px;color:var(--muted)}
+.notenzeile{display:flex;align-items:baseline;gap:11px;padding:9px 0;border-top:1px solid var(--line2)}
+.notenzeile .wert{font-family:var(--mono);font-size:15px;font-weight:600;min-width:38px}
+.notenzeile .art{font-family:var(--mono);font-size:10px;color:var(--muted);
+  border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.notenzeile .wofuer{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.notenzeile .tag{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.zeuZeile{display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line);width:100%;text-align:left}
+.zeuZeile .fachn{flex:1;min-width:0}
+.zeuZeile .fachn small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:3px}
+.zeuZeile .roh{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.zeuZeile .note{font-size:26px;font-weight:600;min-width:44px;text-align:right}
+#zeuSchnitt{color:var(--akzent)}
+
+/* Merkblätter */
+.merkzeile{display:block;width:100%;text-align:center;padding:16px 0;border-top:1px solid var(--line)}
+.merkzeile .mtitel{font-size:16px}
+.merkzeile .mstand{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:4px}
+.merkschau{white-space:pre-wrap;font-family:var(--mono);font-size:12.5px;line-height:1.7;
+  margin-top:14px;text-align:left}
+.bilder{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:14px}
+.bilder img{width:100%;border-radius:10px;border:1px solid var(--line);display:block}
+.bildweg{position:relative}
+.bildweg button{position:absolute;top:5px;right:5px;background:var(--ink);border:1px solid var(--akzent);
+  color:var(--akzent);border-radius:8px;width:26px;height:26px;font-size:13px}
+
+/* Fuß */
+#fuss{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--ink);
+  border-top:1px solid var(--line2);touch-action:pan-y;
+  padding:12px 16px calc(8px + env(safe-area-inset-bottom))}
+#fuss > *{max-width:608px;margin-left:auto;margin-right:auto}
+.gross{width:100%;background:var(--text);color:var(--ink);border-radius:14px;
   padding:17px;font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.wischzone{margin-top:10px;padding:6px 0 2px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:7px;touch-action:pan-y}
+.wischzone span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--dim)}
+.punkte{display:flex;gap:7px}
+.punkte i{width:6px;height:6px;border-radius:99px;background:var(--line)}
+.punkte i.an{background:var(--akzent)}
 
-/* ---------- Profilauswahl ---------- */
+/* Profilauswahl */
 #profilStart{position:fixed;inset:0;z-index:20;background:var(--ink);
   display:flex;align-items:center;justify-content:center;
   padding:32px 20px calc(32px + env(safe-area-inset-bottom));overflow-y:auto}
@@ -177,12 +193,12 @@ section{margin-top:30px}
 .pGitter{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:14px}
 .kachel{text-align:left}
 .kachel .feld{aspect-ratio:1;border:1px solid var(--line);border-radius:16px;
-  display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
   background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:11px 11px}
 .kachel .feld span{font-family:var(--mono);font-size:40px;font-weight:600;color:var(--text);
   background:var(--ink);padding:0 12px;line-height:1.15}
-.kachel[aria-current=true] .feld{border-color:var(--red)}
-.kachel[aria-current=true] .feld span{color:var(--red)}
+.kachel[aria-current=true] .feld{border-color:var(--akzent)}
+.kachel[aria-current=true] .feld span{color:var(--akzent)}
 .kachel .kname{font-size:15px;margin-top:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kachel .knum{font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--dim);margin-top:2px}
 .kachel.neu .feld{border-style:dashed;background-image:none}
@@ -190,10 +206,10 @@ section{margin-top:30px}
 .kwerkzeug{display:flex;gap:6px;margin-top:8px}
 .kwerkzeug button{flex:1;font-family:var(--mono);font-size:10.5px;border:1px solid var(--line);
   border-radius:8px;padding:6px 0;color:var(--muted)}
-.kwerkzeug .loesch{border-color:var(--red);color:var(--red);flex:0 0 34px}
+.kwerkzeug .loesch{border-color:var(--akzent);color:var(--akzent);flex:0 0 34px}
 .pFuss{display:flex;gap:8px;margin-top:32px}
 
-/* ---------- Dialoge ---------- */
+/* Dialoge */
 dialog{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:16px;
   padding:20px;width:min(93vw,440px);max-height:86vh}
 dialog::backdrop{background:#000c}
@@ -202,6 +218,7 @@ label{display:block;margin-top:14px}
 label span{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 input,select,textarea{width:100%;margin-top:6px;background:var(--ink);color:var(--text);
   border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit}
+input[type=color]{padding:4px;height:46px}
 textarea{min-height:120px;font-family:var(--mono);font-size:12px}
 .zwei{display:flex;gap:10px}
 .zwei label{flex:1}
@@ -209,78 +226,52 @@ textarea{min-height:120px;font-family:var(--mono);font-size:12px}
 .reihe button{flex:1;border:1px solid var(--line);border-radius:10px;padding:12px;
   font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase}
 .reihe .haupt{background:var(--text);color:var(--ink);border-color:var(--text)}
-.reihe .weg{border-color:var(--red);color:var(--red);flex:0 0 54px}
+.reihe .weg{border-color:var(--akzent);color:var(--akzent);flex:0 0 54px}
 .stapel{display:flex;flex-direction:column;gap:9px;margin-top:18px}
 .stapel button{border:1px solid var(--line);border-radius:12px;padding:15px;text-align:left;font-size:15px}
 .stapel button small{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px}
 .hinweis{font-size:13px;color:var(--muted);margin:6px 0 0;line-height:1.5}
-
-/* Datumsauswahl */
+.fangfokus{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .datumfeld{width:100%;margin-top:6px;background:var(--ink);border:1px solid var(--line);
   border-radius:10px;padding:11px;text-align:left;font:inherit}
 .datumfeld[aria-expanded=true]{border-color:var(--text)}
 .datumwahl{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:12px}
-
-/* Fußbereich: Knopf und Wischzone teilen sich eine Wischfläche,
-   die den restlichen Platz der Seite ausfüllt. */
-/* Der Fußbereich steht fest am unteren Rand. So bleibt der Eintragsknopf
-   immer an derselben Stelle, egal wie lang der Inhalt darüber ist. */
-body{padding-bottom:148px}
-#fuss{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--ink);
-  border-top:1px solid var(--line2);touch-action:pan-y;
-  padding:12px 16px calc(8px + env(safe-area-inset-bottom))}
-#fuss > *{max-width:608px;margin-left:auto;margin-right:auto}
-.gross{margin-top:0}
-.wischzone{margin-top:10px;padding:6px 0 2px;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:7px;touch-action:pan-y}
-.profilzeile{display:flex;align-items:center;gap:11px;padding:12px 0;border-top:1px solid var(--line)}
-.profilzeile .name{flex:1;font-size:15px}
-.profilzeile .aktivmarke{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
-  text-transform:uppercase;color:var(--red);border:1px solid var(--red);border-radius:99px;padding:2px 8px}
-.anteilzeile{display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;margin-top:7px}
-.anteilzeile span{font-family:var(--mono);font-size:12px;color:var(--muted)}
-.anteilzeile input{margin-top:0;padding:9px;text-align:center;font-family:var(--mono);font-size:12.5px}
-.wischzone span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;
-  text-transform:uppercase;color:var(--dim)}
-.punkte{display:flex;gap:7px}
-.punkte i{width:6px;height:6px;border-radius:99px;background:var(--line)}
-.punkte i.an{background:var(--red)}
-
-/* Einmaliges Ereignis im Plan */
-.einmalig{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-  border:1px dashed var(--muted);color:var(--muted);border-radius:2px;padding:1px 5px}
-
-/* Importtabelle */
-.kopfzeile.vier{grid-template-columns:44px 1fr 1fr .8fr}
-.izeile{display:grid;grid-template-columns:44px 1fr 1fr .8fr;gap:6px;margin-top:7px;align-items:center}
-.izeile .std{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center}
-.izeile input{margin-top:0;padding:9px 7px;font-family:var(--mono);font-size:12.5px;text-align:center}
-details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--muted);cursor:pointer;padding:8px 0}
-
-/* Rastereditor */
 .slot{display:grid;grid-template-columns:1fr 1fr 1fr 34px;gap:6px;margin-top:7px;align-items:center}
 .slot input{margin-top:0;padding:9px;font-family:var(--mono);font-size:12.5px;text-align:center}
 .slot button{color:var(--muted);font-size:16px}
 .kopfzeile{display:grid;grid-template-columns:1fr 1fr 1fr 34px;gap:6px;margin-top:12px}
+.kopfzeile.vier{grid-template-columns:44px 1fr 1fr .8fr}
 .kopfzeile span{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--muted);text-align:center}
+.izeile{display:grid;grid-template-columns:44px 1fr 1fr .8fr;gap:6px;margin-top:7px;align-items:center}
+.izeile .std{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center}
+.izeile input{margin-top:0;padding:9px 7px;font-family:var(--mono);font-size:12.5px;text-align:center}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .chips button{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:99px;
   padding:7px 11px;color:var(--muted)}
+.anteilzeile{display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;margin-top:7px}
+.anteilzeile span{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.anteilzeile input{margin-top:0;padding:9px;text-align:center;font-family:var(--mono);font-size:12.5px}
+.fiZeile{display:flex;justify-content:space-between;gap:12px;padding:9px 0;
+  border-top:1px solid var(--line);font-size:14px}
+.fiZeile span:first-child{color:var(--muted);font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.08em;text-transform:uppercase}
+.fusszeile{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:10.5px;line-height:1.9;color:var(--dim);letter-spacing:.04em}
+.fusszeile a{color:var(--muted)}
+.fusszeile b{color:var(--muted);font-weight:500}
+details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);cursor:pointer;padding:8px 0}
 @media (prefers-reduced-motion:no-preference){dialog[open]{animation:auf .16s ease}}
 @keyframes auf{from{opacity:0;transform:translateY(8px)}}
 </style>
 </head>
 <body>
 
-<!-- ============ PROFILAUSWAHL ============ -->
+<!-- PROFILAUSWAHL -->
 <div id="profilStart" class="hidden">
   <div class="pInhalt">
-    <div class="pKopf">
-      <div class="eyebrow">Stundenplan</div>
-      <h1 id="pFrage">Wer bist du?</h1>
-    </div>
+    <div class="pKopf"><div class="eyebrow">Stundenplan</div><h1 id="pFrage">Wer bist du?</h1></div>
     <div class="pGitter" id="pGitter"></div>
     <div class="pFuss">
       <button class="mini" id="pVerwalten">Verwalten</button>
@@ -301,11 +292,12 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <button class="ikon" id="btnEinst" aria-label="Einstellungen">⚙</button>
 </div>
 
-<!-- ============ TAG ============ -->
+<!-- TAG -->
 <div id="ansichtTag">
   <header>
     <div class="eyebrow" id="klasseAnzeige">—</div>
     <h1 id="titel">—</h1>
+    <div class="countdown" id="countdown"></div>
     <div class="kw">
       <button type="button" id="wocheZurueck" aria-label="Woche zurück">‹</button>
       <button type="button" id="wocheVor" aria-label="Woche vor">›</button>
@@ -314,17 +306,14 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
       <button type="button" id="btnHeute" style="margin-left:auto;width:auto;padding:0 12px">Heute</button>
     </div>
   </header>
-
   <div class="fortschritt hidden" id="fortschritt">
     <div class="balken"><i id="balkenFuell"></i></div>
     <div class="zeile"><span id="fortLinks"></span><span id="fortRechts"></span></div>
   </div>
-
   <div class="frei-banner hidden" id="freiBanner"></div>
   <nav class="tage" id="tage" aria-label="Wochentag"></nav>
   <div id="plan"></div>
   <p class="hinweis hidden" id="editHinweis">Bearbeiten ist an: Antippen ändert Fach, Raum und Lehrkraft.</p>
-
   <section>
     <div class="eyebrow">An diesem Tag</div>
     <ul class="liste" id="tagListe"></ul>
@@ -332,7 +321,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </section>
 </div>
 
-<!-- ============ KALENDER ============ -->
+<!-- KALENDER -->
 <div id="ansichtKal" class="hidden">
   <div class="monat">
     <button class="ikon" id="monatMinus" aria-label="Monat zurück">‹</button>
@@ -348,40 +337,39 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </section>
 </div>
 
-<!-- ============ EINTRÄGE ============ -->
+<!-- EINTRÄGE -->
 <div id="ansichtEin" class="hidden">
   <div id="einMenu">
-    <div class="stapel" style="margin-top:4px">
+    <label style="margin-top:0"><span>Suche</span><input type="text" id="suchFeld" placeholder="Fach, Aufgabe, Notiz …"></label>
+    <div class="stapel" id="einKacheln">
       <button type="button" data-sub="H">Hausaufgaben<small id="zahlH"></small></button>
       <button type="button" data-sub="K">Klausuren<small id="zahlK"></small></button>
       <button type="button" data-sub="N">Notizen<small id="zahlN"></small></button>
       <button type="button" data-sub="E">Ereignisse<small id="zahlE"></small></button>
-      <button type="button" data-sub="noten">Noten<small id="zahlNoten"></small></button>
-      <button type="button" data-sub="merk">Merkblätter<small id="zahlMerk"></small></button>
+      <button type="button" data-sub="G">Noten<small id="zahlG"></small></button>
+      <button type="button" data-sub="M">Merkblätter<small id="zahlM"></small></button>
+      <button type="button" data-sub="F">Fehlzeiten<small id="zahlF"></small></button>
       <button type="button" data-sub="archiv">Archiv<small id="zahlArchiv"></small></button>
     </div>
+    <ul class="liste" id="suchListe"></ul>
   </div>
   <div id="einDetail" class="hidden">
-    <div style="display:flex;align-items:center;gap:12px">
-      <button class="mini" id="einZurueck">‹ Zurück</button>
-      <div class="eyebrow" id="einTitel"></div>
-    </div>
-    <p class="hinweis hidden" id="archivHinweis">Gelöschtes landet hier.
-       Zum endgültigen Entfernen ein zweites Mal löschen.</p>
+    <div class="eyebrow mitte" id="einTitel"></div>
+    <p class="hinweis mitte" id="einSubHinweis"></p>
     <div id="einKopf"></div>
     <ul class="liste" id="einListe"></ul>
-    <p class="nix" id="einNix" hidden></p>
+    <p class="nix mitte" id="einNix" hidden></p>
   </div>
 </div>
 
-<!-- ============ ZEUGNIS ============ -->
+<!-- ZEUGNIS -->
 <div id="ansichtZeu" class="hidden">
   <header style="margin-bottom:18px">
     <div class="eyebrow">Stand heute</div>
     <h1>Zeugnis <span id="zeuSchnitt"></span></h1>
   </header>
   <p class="hinweis" id="zeuHinweis"></p>
-  <p class="hinweis" style="color:var(--red)">Nur eine Schätzung. Die App gewichtet alle Noten einer
+  <p class="hinweis" style="color:var(--akzent)">Nur eine Schätzung. Die App gewichtet alle Noten einer
      Art gleich; Lehrkräfte rechnen oft anders. Keine amtliche Auskunft.</p>
   <div id="zeuListe"></div>
   <p class="nix" id="zeuNix" hidden>Trag zuerst deinen Stundenplan ein — dann erscheinen hier die Fächer.</p>
@@ -395,8 +383,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
 </div>
 
-<!-- ---------- Block bearbeiten ---------- -->
-<dialog id="dlgBlock">
+<!-- Block bearbeiten -->
+<dialog id="dlgBlock"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <h2 id="dlgBlockTitel">Block</h2>
   <div class="eyebrow" id="dlgBlockZeit"></div>
   <label><span>Fach</span><input type="text" id="fFach" placeholder="Fach" autocapitalize="characters"></label>
@@ -412,25 +400,23 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
 </dialog>
 
-<!-- ---------- Schnellzugriff auf eine Stunde ---------- -->
-<dialog id="dlgSchnell">
-  <h2 id="schnellTitel">Fach</h2>
-  <div class="eyebrow" id="schnellZeit"></div>
+<!-- Schnellzugriff -->
+<dialog id="dlgSchnell"><button class="fangfokus" autofocus aria-hidden="true"></button>
+  <h2 id="schnellTitel" class="mitte">Fach</h2>
+  <div class="eyebrow mitte" id="schnellZeit"></div>
   <div class="stapel">
-    <button type="button" id="bSchnellHA">Hausaufgabe
-      <small id="bSchnellHAZiel">bis zur nächsten Stunde</small></button>
-    <button type="button" id="bSchnellNotiz">Notiz
-      <small>was heute dran war</small></button>
-    <button type="button" id="bSchnellKlausur">Klausur
-      <small>Termin eintragen</small></button>
-    <button type="button" id="bSchnellErsatz">Stunde ersetzen
-      <small>nur an diesem Tag</small></button>
+    <button type="button" id="bSchnellHA">Hausaufgabe<small id="bSchnellHAZiel"></small></button>
+    <button type="button" id="bSchnellNotiz">Notiz<small>was heute dran war</small></button>
+    <button type="button" id="bSchnellKlausur">Klausur<small>Termin eintragen</small></button>
+    <button type="button" id="bSchnellFehl">Fehlzeit<small>diese Stunde versäumt</small></button>
+    <button type="button" id="bSchnellAusfall">Fällt aus<small>nur an diesem Tag</small></button>
+    <button type="button" id="bSchnellVertretung">Vertretung<small>anderes Fach oder Raum</small></button>
+    <button type="button" id="bSchnellErsatz">Sonstiges Ereignis<small>nur an diesem Tag</small></button>
   </div>
-  <div class="reihe"><button type="button" id="bSchnellAb">Zurück</button></div>
 </dialog>
 
-<!-- ---------- Eintrag ---------- -->
-<dialog id="dlgEintrag">
+<!-- Eintrag -->
+<dialog id="dlgEintrag"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <h2 id="dlgEintragTitel">Eintrag</h2>
   <div class="zwei">
     <label><span>Art</span>
@@ -440,23 +426,30 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
         <option value="N">Notiz</option>
         <option value="E">Ereignis</option>
         <option value="G">Note</option>
+        <option value="M">Merkblatt</option>
+        <option value="F">Fehlzeit</option>
       </select>
     </label>
     <label id="eFachWrap"><span>Fach</span><select id="eFach"></select></label>
   </div>
+  <label class="hidden" id="eFachFreiWrap"><span>Fach eintippen</span>
+    <input type="text" id="eFachFrei" autocapitalize="characters"></label>
   <div class="zwei hidden" id="eNoteWrap">
     <label><span id="eWertLabel">Note</span><input type="text" id="eWert" inputmode="decimal" placeholder="2,3"></label>
     <label><span>Art</span>
-      <select id="eNArt"><option value="s">schriftlich</option><option value="m">mündlich</option></select>
-    </label>
+      <select id="eNArt"><option value="s">schriftlich</option><option value="m">mündlich</option></select></label>
   </div>
   <div class="zwei hidden" id="eEreignisWrap">
     <label><span>Wo</span><input type="text" id="eOrt" placeholder="Raum oder Ort"></label>
     <label><span>Stunde</span><select id="eStunde"></select></label>
   </div>
-  <label class="hidden" id="eFachFreiWrap"><span>Fach eintippen</span>
-    <input type="text" id="eFachFrei" autocapitalize="characters"></label>
-  <label><span>Datum</span>
+  <label class="hidden" id="eFehlWrap"><span>Fehlzeit</span>
+    <select id="eFehlArt">
+      <option value="entschuldigt">entschuldigt</option>
+      <option value="unentschuldigt">unentschuldigt</option>
+      <option value="verspätet">verspätet</option>
+    </select></label>
+  <label id="eDatumWrap"><span>Datum</span>
     <input type="hidden" id="eDatum">
     <button type="button" class="datumfeld" id="eDatumFeld" aria-expanded="false">—</button>
   </label>
@@ -469,8 +462,16 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <div class="gitter" id="eGitter"></div>
     <p class="hinweis" id="eGitterHinweis"></p>
   </div>
-  <label><span>Was</span><input type="text" id="eText" placeholder="Aufgabe"></label>
-  <label><span>Notizen</span><textarea id="eNotiz" placeholder="Details"></textarea></label>
+  <label id="eTextWrap"><span id="eTextLabel">Was</span><input type="text" id="eText" placeholder="Aufgabe"></label>
+  <label><span id="eNotizLabel">Notizen</span><textarea id="eNotiz" placeholder="Details"></textarea></label>
+  <div class="hidden" id="eBildWrap">
+    <div class="chips">
+      <button type="button" id="bBildWahl">Bild hinzufügen</button>
+      <span class="hinweis" id="bildStand" style="margin:0;align-self:center"></span>
+    </div>
+    <input type="file" id="bildDatei" accept="image/*" multiple style="display:none">
+    <div class="bilder" id="eBilder"></div>
+  </div>
   <div class="reihe">
     <button type="button" class="weg hidden" id="bEintragWeg">×</button>
     <button type="button" id="bEintragAb">Zurück</button>
@@ -478,62 +479,63 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
 </dialog>
 
-<!-- ---------- Verhältnis je Fach ---------- -->
-<dialog id="dlgAnteil">
+<!-- Merkblatt ansehen -->
+<dialog id="dlgSchau"><button class="fangfokus" autofocus aria-hidden="true"></button>
+  <h2 id="schauTitel" class="mitte">Merkblatt</h2>
+  <div class="eyebrow mitte" id="schauStand"></div>
+  <div class="merkschau" id="schauText"></div>
+  <div class="bilder" id="schauBilder"></div>
+  <div class="reihe">
+    <button type="button" id="bSchauBearbeiten">Bearbeiten</button>
+    <button type="button" class="haupt" id="bSchauAb">Fertig</button>
+  </div>
+</dialog>
+
+<!-- Verhältnis je Fach -->
+<dialog id="dlgAnteil"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <h2 id="anTitel">Verhältnis</h2>
-  <p class="hinweis">Wie stark zählt die mündliche Note in diesem Fach?
-     Der Rest entfällt auf die schriftliche.</p>
+  <p class="hinweis">Wie stark zählt die mündliche Note in diesem Fach?</p>
   <label><span>mündlich %</span><input type="number" id="anWert" min="0" max="100" step="5"></label>
   <p class="hinweis" id="anHinweis"></p>
+  <div class="eyebrow" style="margin-top:20px">Zielnote</div>
+  <p class="hinweis">Was müsste die nächste Note sein, um dieses Ziel zu erreichen?</p>
+  <div class="zwei">
+    <label><span>Ziel</span><input type="text" id="anZiel" inputmode="decimal" placeholder="2,0"></label>
+    <label><span>als</span>
+      <select id="anZielArt"><option value="s">schriftlich</option><option value="m">mündlich</option></select></label>
+  </div>
+  <p class="hinweis" id="anZielErgebnis"></p>
   <div class="reihe">
     <button type="button" id="bAnStandard">Standard</button>
-    <button type="button" id="bAnAb">Zurück</button>
     <button type="button" class="haupt" id="bAnSpeichern">Speichern</button>
   </div>
 </dialog>
 
-<!-- ---------- Merkblatt ---------- -->
-<dialog id="dlgMerk">
-  <h2 id="mkTitel">Merkblatt</h2>
-  <p class="hinweis">Alles, was du im Fach immer wieder brauchst — Formeln, Regeln, Vokabeln.
-     Zeilenumbrüche und Einrückungen bleiben erhalten.</p>
-  <label><span>Inhalt</span><textarea id="mkText" style="min-height:240px"
-     placeholder="p = F / A&#10;1 bar = 100 000 Pa"></textarea></label>
-  <div class="reihe">
-    <button type="button" class="weg" id="bMerkLeeren">×</button>
-    <button type="button" id="bMerkAb">Zurück</button>
-    <button type="button" class="haupt" id="bMerkSpeichern">Speichern</button>
-  </div>
-</dialog>
-
-<!-- ---------- Fach-Info ---------- -->
-<dialog id="dlgFach">
-  <h2 id="fiTitel">Fach</h2>
-  <div class="eyebrow" id="fiKuerzel"></div>
+<!-- Fach-Info -->
+<dialog id="dlgFach"><button class="fangfokus" autofocus aria-hidden="true"></button>
+  <h2 id="fiTitel" class="mitte">Fach</h2>
+  <div class="eyebrow mitte" id="fiKuerzel"></div>
   <div id="fiInhalt"></div>
-  <div id="fiMerk"></div>
   <div class="reihe">
-    <button type="button" id="bFachMerk">Merkblatt</button>
-    <button type="button" id="bFachAb">Zurück</button>
+    <button type="button" id="bFachMerk">Merkblätter</button>
+    <button type="button" class="haupt" id="bFachAb">Zurück</button>
   </div>
 </dialog>
 
-<!-- ---------- Plan einfügen ---------- -->
-<dialog id="dlgImport">
+<!-- Plan einfügen -->
+<dialog id="dlgImport"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <h2>Plan einfügen</h2>
   <div class="zwei">
     <label><span>Tag</span><select id="iTag"></select></label>
     <label id="iWocheWrap"><span>Woche</span>
       <select id="iWoche"><option value="A">A</option><option value="B">B</option></select></label>
   </div>
-  <div class="kopfzeile vier" style="margin-top:16px">
-    <span>Std.</span><span>Fach</span><span>Raum</span><span>LK</span></div>
+  <div class="kopfzeile vier" style="margin-top:16px"><span>Std.</span><span>Fach</span><span>Raum</span><span>LK</span></div>
   <div id="iTabelle"></div>
   <details style="margin-top:16px">
     <summary>Aus der Zwischenablage füllen</summary>
-    <p class="hinweis">Tabelle im Schulportal kopieren und hier einfügen. Erwartet wird je Stunde
-       eine Zeile im Format <b>FACH, RAUM (LEHRKRAFT)</b>.</p>
-    <textarea id="iText" placeholder="1&#10;FACH, RAUM (LEHRER)&#10;2&#10;FACH, RAUM (LEHRER)"></textarea>
+    <p class="hinweis">Erwartet je Stunde eine Zeile im Format <b>FACH, RAUM (LEHRKRAFT)</b>.</p>
+    <textarea id="iText" placeholder="1&#10;FACH, RAUM (LEHRER)"></textarea>
     <div class="chips"><button type="button" id="bImportText">In die Tabelle übernehmen</button></div>
     <p class="hinweis" id="iErgebnis"></p>
   </details>
@@ -543,17 +545,33 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
 </dialog>
 
-<!-- ---------- Einstellungen ---------- -->
-<dialog id="dlgEinst">
+<!-- Einstellungen -->
+<dialog id="dlgEinst"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <h2>Einstellungen</h2>
-  <label><span>Klasse</span><input type="text" id="sKlasse" placeholder="Deine Klasse"></label>
 
-  <div class="eyebrow" style="margin-top:22px">Stundenplan</div>
+  <div class="eyebrow" style="margin-top:18px">Darstellung</div>
+  <div class="zwei">
+    <label><span>Akzentfarbe</span><input type="color" id="sFarbe"></label>
+    <label><span>Hex</span><input type="text" id="sFarbeHex" placeholder="#e5382b"></label>
+  </div>
+  <div class="chips" id="sFarbVorlagen"></div>
+  <div class="zwei">
+    <label><span>Modus</span>
+      <select id="sModus"><option value="dunkel">Dunkel</option><option value="hell">Hell</option></select></label>
+    <label><span>Schrift</span>
+      <select id="sSchrift">
+        <option value="system">System</option>
+        <option value="mono">Technisch</option>
+        <option value="serif">Serif</option>
+      </select></label>
+  </div>
+
+  <div class="eyebrow" style="margin-top:22px">Schule</div>
+  <label><span>Klasse</span><input type="text" id="sKlasse" placeholder="Deine Klasse"></label>
   <div class="chips"><button type="button" id="sImport">Plan einfügen</button></div>
 
   <div class="eyebrow" style="margin-top:22px">Stundenraster</div>
-  <p class="hinweis">Eine Zeile pro Feld im Plan. „Std." sind die Stundennummern, die dieses Feld
-     abdeckt — daran erkennt der Import die richtige Zeile.</p>
+  <p class="hinweis">„Std." sind die Stundennummern, die dieses Feld abdeckt.</p>
   <div class="chips">
     <button type="button" data-vorlage="block90">4 Blöcke à 90 min</button>
     <button type="button" data-vorlage="einzel45">8 Einzelstunden</button>
@@ -568,8 +586,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)">
       A- und B-Woche getrennt führen</span>
   </label>
-  <p class="hinweis" id="ankerWrap">Feste Regel: ungerade Kalenderwoche = <b>A</b>,
-     gerade Kalenderwoche = <b>B</b>. <span id="ankerJetzt"></span></p>
+  <p class="hinweis" id="ankerWrap">Feste Regel: ungerade Kalenderwoche = <b>A</b>, gerade = <b>B</b>.
+     <span id="ankerJetzt"></span></p>
 
   <div class="eyebrow" style="margin-top:22px">Noten</div>
   <div class="zwei">
@@ -577,26 +595,29 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
       <select id="sNotenSystem">
         <option value="note6">Noten 1–6</option>
         <option value="punkte15">Punkte 0–15</option>
-      </select>
-    </label>
+      </select></label>
     <label><span>mündlich %</span><input type="number" id="sAnteilM" min="0" max="100" step="5"></label>
   </div>
   <p class="hinweis" id="sAnteilHinweis"></p>
   <div class="eyebrow" style="margin-top:16px">Verhältnis je Fach</div>
-  <p class="hinweis">Leer lassen heißt: Standard von oben. Sonst der Prozentsatz für mündlich.</p>
+  <p class="hinweis">Leer lassen heißt: Standard von oben.</p>
   <div id="sAnteilFaecher"></div>
 
-  <div class="eyebrow" style="margin-top:22px">Lehrkräfte</div>
-  <p class="hinweis">Je Zeile ein Kürzel und der Name, getrennt durch ein Gleichheitszeichen.</p>
-  <textarea id="sLehrer" style="min-height:90px" placeholder="WZET = Frau Wietzet&#10;KOMT = Herr Komt"></textarea>
-
-  <div class="eyebrow" style="margin-top:22px">Fachnamen</div>
-  <p class="hinweis">Ebenso — damit die Fach-Info den ausgeschriebenen Namen zeigt.</p>
-  <textarea id="sFaecher" style="min-height:90px" placeholder="CH = Chemie&#10;MA = Mathematik"></textarea>
+  <div class="eyebrow" style="margin-top:22px">Erinnerungen</div>
+  <p class="hinweis">Die App kann sich nicht selbst wecken. Sie meldet sich beim Öffnen —
+     für echte Wecker nutze den Kalender-Export.</p>
+  <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
+    <input type="checkbox" id="sMelden" style="width:18px;flex:none;margin:0">
+    <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)">
+      Beim Öffnen an Klausuren und Hausaufgaben erinnern</span>
+  </label>
+  <div class="chips">
+    <button type="button" id="sMeldeRecht">Benachrichtigungen erlauben</button>
+    <button type="button" id="sIcs">Kalender-Export (.ics)</button>
+  </div>
+  <p class="hinweis" id="sMeldeStand"></p>
 
   <div class="eyebrow" style="margin-top:22px">Ferien und Feiertage</div>
-  <p class="hinweis">Holt Schulferien und gesetzliche Feiertage deines Bundeslandes.
-     Einmal laden reicht, die Daten bleiben gespeichert.</p>
   <label><span>Bundesland</span><select id="sLand"></select></label>
   <div class="chips">
     <button type="button" id="sFerienLaden">Ferien laden</button>
@@ -604,21 +625,31 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
   <p class="hinweis" id="sFerienStand"></p>
 
+  <div class="eyebrow" style="margin-top:22px">Lehrkräfte</div>
+  <p class="hinweis">Je Zeile ein Kürzel und der Name, getrennt durch ein Gleichheitszeichen.</p>
+  <textarea id="sLehrer" style="min-height:90px" placeholder="KÜRZEL = Name"></textarea>
+  <div class="eyebrow" style="margin-top:22px">Fachnamen</div>
+  <textarea id="sFaecher" style="min-height:90px" placeholder="KÜRZEL = Fachname"></textarea>
+
   <div class="eyebrow" style="margin-top:22px">Sicherung</div>
-  <p class="hinweis">Kopiere den Text und leg ihn irgendwo ab. Zum Zurückholen einfügen und speichern.</p>
-  <textarea id="sDaten"></textarea>
+  <p class="hinweis" id="sSicherStand"></p>
   <div class="chips">
     <button type="button" id="sDatei">Als Datei sichern</button>
     <button type="button" id="sDateiWahl">Datei einlesen</button>
+    <button type="button" id="sTeilen">Teilen</button>
   </div>
   <input type="file" id="sDateiLesen" accept="application/json,.json" style="display:none">
+  <textarea id="sDaten"></textarea>
   <div class="chips">
     <button type="button" id="sLaden">Text übernehmen</button>
     <button type="button" id="sReset">Alles löschen</button>
   </div>
 
+  <div class="eyebrow" style="margin-top:22px">Speicher</div>
+  <p class="hinweis" id="sSpeicher"></p>
+
   <div class="reihe">
-    <button type="button" id="bEinstAb">Zurück</button>
+    <button type="button" id="sUpdate">Nach Update suchen</button>
     <button type="button" class="haupt" id="bEinstSpeichern">Speichern</button>
   </div>
 
@@ -629,6 +660,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <div>MIT-Lizenz — Weiterverwendung erlaubt, Urheberhinweis behalten</div>
     <div>Ferien und Feiertage von
        <a href="https://openholidaysapi.org" target="_blank" rel="noopener">openholidaysapi.org</a></div>
+    <div>Entwickelt mit KI-Unterstützung</div>
   </div>
 </dialog>
 
