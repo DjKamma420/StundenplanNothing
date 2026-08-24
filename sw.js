@@ -1,7 +1,7 @@
 /* Service Worker — hält die App offline verfügbar.
    WICHTIG: VERSION hochzählen, sobald du index.html oder app.js änderst.
    Sonst zeigt der Offline-Speicher stur die alte Fassung. */
-const VERSION = "v13";
+const VERSION = "v22";
 const DATEIEN = ["./", "./index.html", "./app.js", "./manifest.webmanifest",
                  "./icon-192.png", "./icon-512.png"];
 
