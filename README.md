@@ -1,0 +1,105 @@
+# Stundenplan
+
+Ein Stundenplan fürs Handy, der zeigt, was viele Schulportale nicht zeigen: Uhrzeiten, alle Kurse in einer Ansicht, Hausaufgaben, Klausuren und Notizen.
+
+Läuft als Web-App im Browser, lässt sich auf den Startbildschirm legen und funktioniert offline. Kein Server, kein Konto, keine Zugangsdaten. Alle Daten bleiben auf dem Gerät.
+
+Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume und Lehrkräfte entstehen allein aus dem, was du einträgst.
+
+## Was sie kann
+
+**Tag**
+- Blöcke mit echten Uhrzeiten statt bloßer Stundennummern
+- Fortschrittsbalken mit laufendem Fach und verbleibenden Minuten
+- Wischen nach links oder rechts wechselt den Tag
+- A- und B-Woche getrennt, für Pläne mit wechselnden Räumen im Zweiwochentakt
+- Freie Stunden lassen sich mit einmaligen Ereignissen füllen — Projektarbeit, Vortrag, Ausflug
+- Wochenendreiter, damit samstags nicht der Montag ausgewählt ist
+- Ferien und Feiertage werden als solche angezeigt
+
+**Stunde antippen**
+- Belegte Stunde: Hausaufgabe für die nächste Stunde dieses Fachs, Notiz für heute, oder Klausurtermin
+- Freie Stunde: einmaliges Ereignis nur für diesen Tag
+- Mit ✎ im Kopf: Fach, Raum und Lehrkraft dauerhaft ändern
+
+**Einträge**
+- Getrennt nach Hausaufgaben, Klausuren und Notizen
+- Jeder Eintrag mit Fach, Datum, Text und Notizfeld
+- Bei der Datumsauswahl bekommt jeder Tag einen roten Punkt, an dem das gewählte Fach im Plan steht
+- Archiv: Gelöschtes bleibt erst einmal erhalten und muss zum endgültigen Entfernen ein zweites Mal gelöscht werden
+- Abgehakte Hausaufgaben und Klausuren wandern nach sieben Tagen von selbst ins Archiv, Notizen bleiben stehen
+
+**Kalender**
+- Monatsübersicht mit K, H und N in Rot
+- Wischen blättert durch die Monate
+- Ferienzeiten hinterlegt
+- Darunter die Einträge des angetippten Tages
+
+**Zwischen den Ansichten**
+- Wischen im Bereich unter dem Eintragsknopf wechselt zwischen Tag, Kalender und Einträgen
+- Die drei Punkte zeigen, wo du gerade bist, und lassen sich auch antippen
+
+## Einrichten
+
+https://djkamma420.github.io/StundenplanNothing/ Öffnen und installieren:
+   - **Android/Chrome:** Menü → *App installieren*
+   - **iPhone/Safari:** Teilen → *Zum Home-Bildschirm*
+   - **Desktop:** Installationssymbol in der Adressleiste
+
+## Erste Schritte
+
+1. **⚙ oben rechts** → Klasse eintragen und Stundenraster prüfen.
+2. Wer wechselnde Wochen hat: *A- und B-Woche getrennt führen* anhaken. Welche Woche welche ist, steht fest: **ungerade Kalenderwoche = A, gerade = B**.
+3. Bundesland wählen und **Ferien laden** — Schulferien und Feiertage kommen dann automatisch in den Plan.
+4. Plan füllen: **✎** antippen, dann jedes Feld ausfüllen. Oder in den Einstellungen **Plan einfügen** und eine kopierte Tabelle übernehmen.
+
+## An eine andere Schule anpassen
+
+Alles über **⚙ Einstellungen**, ohne Code:
+
+**Stundenraster.** Eine Zeile pro Feld im Plan. Die Spalte *Std.* sagt, welche Stundennummern das Feld abdeckt — daran erkennt der Import die richtige Zeile.
+
+| Std. | von | bis |
+|---|---|---|
+| 1,2 | 08:00 | 09:30 |
+| 3,4 | 09:50 | 11:20 |
+
+Wer keine Doppelstunden hat, trägt `1`, `2`, `3` … in einzelne Zeilen ein. Zwei Vorlagen sind hinterlegt: **4 Blöcke à 90 min** und **8 Einzelstunden**. Zeilen lassen sich hinzufügen und löschen, das Raster darf beliebig viele Felder haben.
+
+**Wochenwechsel.** Wer keine A/B-Wochen hat, lässt den Haken einfach weg. Ist er gesetzt, gilt: ungerade Kalenderwoche = A, gerade = B. Trage deinen Plan entsprechend ein — die App zeigt dir in den Einstellungen, welche Woche gerade läuft.
+
+## Plan einfügen
+
+Unter **⚙ → Stundenplan → Plan einfügen**. Dort steht eine Tabelle mit einer Zeile je Feld deines Rasters: Fach, Raum, Lehrkraft. Tag und Woche oben wählen, ausfüllen, speichern. Bereits eingetragene Stunden stehen schon drin und lassen sich überschreiben.
+
+Wer die Daten aus einem Schulportal hat, klappt **„Aus der Zwischenablage füllen"** auf und fügt die kopierte Tabelle ein. Erwartet wird je Stunde eine Zeile im Format `FACH, RAUM (LEHRKRAFT)`:
+
+```
+1
+CH, B005 (MUEL)
+2
+CH, B005 (MUEL)
+3
+MA, B006 (SCHM)
+```
+
+Der Text landet zunächst nur in der Tabelle — erst nach dem Prüfen speicherst du.
+
+Achte darauf, in welcher Reihenfolge dein Schulportal die Zellen ausgibt. Viele Portale können zwischen Fach-, Raum- und Lehrkraftansicht umschalten — gebraucht wird die Ansicht, bei der **das Fach zuerst** steht. Steht in eckigen Klammern eine Klasse statt einer Lehrkraft, wird sie ersatzweise übernommen.
+
+Wer ein abweichendes Format hat, ändert den Ausdruck in `app.js` in der Funktion `parseZelle`.
+
+## Ferien und Feiertage
+
+Kommen von [openholidaysapi.org](https://openholidaysapi.org), einem offenen Datenprojekt. Kein Schlüssel, keine Anmeldung. Geladen werden das laufende und das kommende Jahr, danach liegt alles lokal — die App braucht dafür kein Internet mehr.
+
+## Warum kein automatischer Abruf vom Schulportal
+
+Die App liegt auf `github.io`, das Portal auf einem anderen Server. Der Browser verbietet den Zugriff über Domaingrenzen hinweg — das ist die Same-Origin-Regel und lässt sich nicht wegprogrammieren. Nötig wäre ein Vermittler-Dienst oder ein Skript, das direkt auf der Portalseite läuft.
+
+Praktisch fällt das kaum ins Gewicht: Ein Stundenplan gilt ein halbes Jahr. Zwei Wochen einmal eintragen deckt das gesamte Halbjahr ab, weil sich der Rhythmus wiederholt. Nur Vertretungen musst du weiter im Portal nachsehen.
+
+
+## Daten
+‼️WICHTIG‼️
+Alles liegt im `localStorage` des Browsers. Nichts wird übertragen, nichts außerhalb des Geräts gespeichert. Achtung: „Browserdaten löschen" löscht auch den Plan — vorher unter **⚙ → Sicherung** den Text kopieren und ablegen.
