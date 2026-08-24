@@ -113,6 +113,12 @@ section{margin-top:30px}
 .tagfeld .zeichen{display:flex;gap:3px;align-items:center;font-size:9px;font-weight:700;color:var(--red);line-height:1}
 .tagfeld[aria-pressed=true] .zeichen{color:var(--ink)}
 .punktfach{width:5px;height:5px;border-radius:99px;background:var(--red);flex:none}
+.quadratfach{width:5px;height:5px;border-radius:1px;background:var(--red);flex:none}
+.tagfeld[aria-pressed=true] .quadratfach{background:var(--ink)}
+.fusszeile{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:10.5px;line-height:1.9;color:var(--dim);letter-spacing:.04em}
+.fusszeile a{color:var(--muted)}
+.fusszeile b{color:var(--muted);font-weight:500}
 .tagfeld[aria-pressed=true] .punktfach{background:var(--ink)}
 
 /* ---------- Großer Knopf ---------- */
@@ -161,7 +167,7 @@ body{display:flex;flex-direction:column;min-height:100dvh}
 
 /* Einmaliges Ereignis im Plan */
 .einmalig{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;
-  border:1px dashed var(--muted);color:var(--muted);border-radius:4px;padding:1px 5px}
+  border:1px dashed var(--muted);color:var(--muted);border-radius:2px;padding:1px 5px}
 
 /* Importtabelle */
 .kopfzeile.vier{grid-template-columns:44px 1fr 1fr .8fr}
@@ -426,13 +432,27 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <p class="hinweis">Kopiere den Text und leg ihn irgendwo ab. Zum Zurückholen einfügen und speichern.</p>
   <textarea id="sDaten"></textarea>
   <div class="chips">
-    <button type="button" id="sLaden">Daten übernehmen</button>
+    <button type="button" id="sDatei">Als Datei sichern</button>
+    <button type="button" id="sDateiWahl">Datei einlesen</button>
+  </div>
+  <input type="file" id="sDateiLesen" accept="application/json,.json" style="display:none">
+  <div class="chips">
+    <button type="button" id="sLaden">Text übernehmen</button>
     <button type="button" id="sReset">Alles löschen</button>
   </div>
 
   <div class="reihe">
     <button type="button" id="bEinstAb">Zurück</button>
     <button type="button" class="haupt" id="bEinstSpeichern">Speichern</button>
+  </div>
+
+  <div class="fusszeile">
+    <div>Stundenplan <b id="sVersion">—</b></div>
+    <div>von <a href="https://github.com/DjKamma420" target="_blank" rel="noopener">DjKamma420</a>
+       · <a href="https://github.com/DjKamma420/StundenplanNothing" target="_blank" rel="noopener">Quellcode</a></div>
+    <div>MIT-Lizenz — Weiterverwendung erlaubt, Urheberhinweis behalten</div>
+    <div>Ferien und Feiertage von
+       <a href="https://openholidaysapi.org" target="_blank" rel="noopener">openholidaysapi.org</a></div>
   </div>
 </dialog>
 

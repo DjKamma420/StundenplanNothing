@@ -7,7 +7,7 @@
 
 /* Sichtbare Kennung der laufenden Fassung. Steht unten in der Wischzone.
    Stimmt sie nicht mit sw.js überein, zeigt der Browser noch alte Dateien. */
-const BUILD = "v11";
+const BUILD = "v12";
 
 const STANDARD = {
   klasse: "",
@@ -121,6 +121,11 @@ function normalisiere(){
     if(e.erledigt && !e.erledigtAm) e.erledigtAm = iso(new Date());
   });
   aufraeumen();
+  /* Rasteränderungen können Ereignisse auf nicht mehr vorhandene Stunden
+     zeigen lassen. Statt sie zu verlieren, hängen sie dann am Tag. */
+  sonder.forEach(o => {
+    if(o.slot !== null && o.slot >= cfg.slots.length) o.slot = null;
+  });
 }
 
 /** Abgehakte Hausaufgaben und Klausuren wandern nach sieben Tagen ins Archiv.
@@ -316,7 +321,7 @@ function zeichneFortschritt(){
   $("#fortRechts").textContent = rechts;
 }
 
-function zeichneListe(sel, nixSel, liste){
+function zeichneListe(sel, nixSel, liste, mitNotiz = true){
   $(sel).innerHTML = liste.map(e => {
     const d = new Date(e.datum + "T12:00");
     return `<li class="${e.erledigt ? "weg" : ""}">
@@ -324,7 +329,7 @@ function zeichneListe(sel, nixSel, liste){
       <div class="wachs" data-bearbeite="${e.id}">
         <div class="kopf"><span class="khn ${e.erledigt ? "aus" : ""}">${e.typ}</span>
           <span class="titel">${e.fach ? esc(e.fach) + " — " : ""}${esc(e.titel) || ART[e.typ]}</span></div>
-        ${e.notiz ? `<div class="notiz">${esc(e.notiz)}</div>` : ""}
+        ${mitNotiz && e.notiz ? `<div class="notiz">${esc(e.notiz)}</div>` : ""}
         <div class="wann">${d.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}</div>
       </div></li>`;
   }).join("");
@@ -339,7 +344,7 @@ function zeichneKalender(){
     const d = plusTage(start, i);
     const es = eintraegeAm(d).filter(e => !e.erledigt);
     const zeichen = [...new Set(es.map(e => e.typ))].map(t => `<i>${t}</i>`).join("")
-      + (sonderTag(d).length ? '<span class="punktfach"></span>' : "");   // Projektarbeit u. Ä.
+      + (sonderTag(d).length ? '<span class="quadratfach"></span>' : "");   // Projektarbeit u. Ä.
     html += `<button type="button" class="tagfeld ${d.getMonth() !== kalMonat.getMonth() ? "fremd" : ""}
        ${gleich(d, new Date()) ? "heute" : ""} ${freiAm(d) ? "ferien" : ""}"
        aria-pressed="${gleich(d, kalTag)}" data-kal="${iso(d)}">
@@ -351,11 +356,13 @@ function zeichneKalender(){
   const frei = freiAm(kalTag);
   $("#kalFerien").classList.toggle("hidden", !frei);
   if(frei) $("#kalFerien").textContent = frei.name + (frei.typ === "feiertag" ? " · Feiertag" : " · Ferien");
-  zeichneListe("#kalListe", "#kalNix", eintraegeAm(kalTag));
+  /* Bewusst ohne Notiztext — die Details stehen im Eintrag selbst,
+     erreichbar durch Antippen. So bleibt der Monatsüberblick lesbar. */
+  zeichneListe("#kalListe", "#kalNix", eintraegeAm(kalTag), false);
   const ev = sonderTag(kalTag);
   if(ev.length){
     $("#kalListe").insertAdjacentHTML("afterbegin", ev.map(o => `<li>
-      <div class="wachs"><div class="kopf"><span class="einmalig">Ereignis</span>
+      <div class="wachs" data-ereignis="${o.id}"><div class="kopf"><span class="einmalig">Ereignis</span>
         <span class="titel">${esc(o.titel)}</span></div>
         ${o.raum ? `<div class="wann">${esc(o.raum)}</div>` : ""}</div></li>`).join(""));
     $("#kalNix").hidden = true;
@@ -423,7 +430,7 @@ $("#einZurueck").onclick = () => { einSub = null; zeichne(); };
 ---------------------------------------------------------------- */
 $("#rTag").onclick = () => { ansicht = "tag"; zeichne(); };
 $("#rKal").onclick = () => { ansicht = "kalender"; kalMonat = new Date(gewaehlt); kalTag = new Date(gewaehlt); zeichne(); };
-$("#rEin").onclick = () => { ansicht = "eintraege"; zeichne(); };
+$("#rEin").onclick = () => { ansicht = "eintraege"; einSub = null; zeichne(); };
 $("#btnEdit").onclick = () => { bearbeiten = !bearbeiten; zeichne(); };
 $("#btnHeute").onclick = () => { gewaehlt = new Date(); zeichne(); };
 $("#wocheZurueck").onclick = () => { gewaehlt = plusTage(gewaehlt, -7); zeichne(); };
@@ -493,12 +500,16 @@ function wischzoneSichern(){
 wischzoneSichern();
 const wischzone = $("#fuss") || $("#wischzone");
 wischen(wischzone, r => {
+  /* Steht eine Unterliste offen, führt der erste Wisch dorthin zurück,
+     statt gleich die ganze Ansicht zu wechseln. */
+  if(ansicht === "eintraege" && einSub !== null){ einSub = null; zeichne(); return; }
   const i = ANSICHTEN.indexOf(ansicht);
   ansicht = ANSICHTEN[(i + r + ANSICHTEN.length) % ANSICHTEN.length];
   if(ansicht === "kalender"){ kalMonat = new Date(gewaehlt); kalTag = new Date(gewaehlt); }
   zeichne();
 });
 $("#wischPunkte").onclick = () => {
+  if(ansicht === "eintraege" && einSub !== null){ einSub = null; zeichne(); return; }
   const i = ANSICHTEN.indexOf(ansicht);
   ansicht = ANSICHTEN[(i + 1) % ANSICHTEN.length]; zeichne();
 };
@@ -587,10 +598,9 @@ function sonderDialog(datum, slot, id){
   const o = id ? sonder.find(x => x.id === id)
               : (sonderKontext.slot === null ? null : sonderAn(d, sonderKontext.slot));
   if(o) sonderKontext.id = o.id;
-  const rahmen = sonderKontext.slot === null
-    ? d.toLocaleDateString("de-DE",{weekday:"long", day:"2-digit", month:"2-digit"})
-    : `${d.toLocaleDateString("de-DE",{weekday:"long", day:"2-digit", month:"2-digit"})} · ` +
-      `${cfg.slots[sonderKontext.slot].von} – ${cfg.slots[sonderKontext.slot].bis}`;
+  const tagText = d.toLocaleDateString("de-DE",{weekday:"long", day:"2-digit", month:"2-digit"});
+  const sl = sonderKontext.slot === null ? null : cfg.slots[sonderKontext.slot];
+  const rahmen = sl ? `${tagText} · ${sl.von} – ${sl.bis}` : tagText;
   $("#sonderTitel").textContent = o ? "Ereignis ändern" : "Einmaliges Ereignis";
   $("#sonderZeit").textContent = rahmen;
   oTitel.value = o ? o.titel : "";
@@ -718,6 +728,12 @@ function listenKlick(e){
     it.erledigt = hak.checked;
     it.erledigtAm = hak.checked ? iso(new Date()) : null;
     sichern(); zeichne(); return;
+  }
+  const ereignis = e.target.closest("[data-ereignis]");
+  if(ereignis){
+    const o = sonder.find(x => x.id === ereignis.dataset.ereignis);
+    if(o) sonderDialog(new Date(o.datum + "T12:00"), o.slot, o.id);
+    return;
   }
   const bea = e.target.closest("[data-bearbeite]");
   if(bea) eintragOeffnen(eintraege.find(x => x.id === bea.dataset.bearbeite));
@@ -890,7 +906,8 @@ $("#btnEinst").onclick = () => {
   sLand.innerHTML = `<option value="">— wählen —</option>` +
     Object.entries(LAENDER).map(([k,v]) => `<option value="${k}" ${cfg.land === k ? "selected" : ""}>${v}</option>`).join("");
   ferienStand();
-  sDaten.value = JSON.stringify({cfg, plan, eintraege, ferien, sonder});
+  sDaten.value = sicherungsText();
+  $("#sVersion").textContent = BUILD;
   $("#ankerJetzt").textContent =
     `Diese Woche ist KW ${kalenderwoche(new Date())}, also ${kalenderwoche(new Date()) % 2 === 1 ? "A" : "B"}.`;
   $("#ankerWrap").classList.toggle("hidden", !cfg.zweiWochen);
@@ -909,6 +926,24 @@ $("#sSlotPlus").onclick = () => {
 };
 document.querySelectorAll("[data-vorlage]").forEach(b =>
   b.onclick = () => slotEditorZeichnen(VORLAGEN[b.dataset.vorlage]));
+function sicherungsText(){ return JSON.stringify({cfg, plan, eintraege, ferien, sonder}, null, 2); }
+$("#sDatei").onclick = () => {
+  const url = URL.createObjectURL(new Blob([sicherungsText()], {type:"application/json"}));
+  const a = document.createElement("a");
+  a.href = url; a.download = `stundenplan-${iso(new Date())}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+$("#sDateiWahl").onclick = () => sDateiLesen.click();
+sDateiLesen.onchange = () => {
+  const f = sDateiLesen.files && sDateiLesen.files[0];
+  if(!f) return;
+  const leser = new FileReader();
+  leser.onload = () => { sDaten.value = leser.result; $("#sLaden").click(); };
+  leser.onerror = () => alert("Datei ließ sich nicht lesen.");
+  leser.readAsText(f);
+  sDateiLesen.value = "";
+};
 $("#sLaden").onclick = () => {
   try{
     const d = JSON.parse(sDaten.value);
