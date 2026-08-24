@@ -2,6 +2,19 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v31
+
+**Geändert**
+- Fehlzeiten zählen Unterrichtsstunden statt Fächer; das Zeugnis rechnet sie in Tage um
+- Wischen zum Ansichtswechsel funktioniert in jedem freien Bereich unterhalb des Inhalts
+
+**Neu**
+- Eigene freie Tage: Kalenderfeld gedrückt halten
+- „Heute" im Kalender
+- Reihenfolge der Einträge-Kacheln und der Fächer im Zeugnis einstellbar
+- Suche findet Kürzel und ausgeschriebenen Namen gleichermaßen
+- Stunden je Schultag einstellbar
+
 ## v30
 
 **Neu**

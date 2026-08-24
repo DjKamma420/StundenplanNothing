@@ -25,7 +25,10 @@ body.schrift-serif{ --sans:ui-serif,Georgia,"Times New Roman",serif }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--ink);color:var(--text);font-family:var(--sans);
   -webkit-tap-highlight-color:transparent}
-body{padding:14px 16px 158px;max-width:640px;margin:0 auto}
+body{padding:14px 16px 158px;max-width:640px;margin:0 auto;
+  display:flex;flex-direction:column;min-height:100dvh}
+/* Fängt jede Wischgeste unterhalb des Inhalts ab und wechselt die Ansicht. */
+#leerraum{flex:1 0 48px;touch-action:pan-y}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 :focus-visible{outline:2px solid var(--akzent);outline-offset:2px}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
@@ -251,6 +254,10 @@ textarea{min-height:120px;font-family:var(--mono);font-size:12px}
   padding:7px 11px;color:var(--muted)}
 .anteilzeile{display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;margin-top:7px}
 .anteilzeile span{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.reihezeile{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line2)}
+.reihezeile .rname{flex:1;font-size:14px}
+.reihezeile button{border:1px solid var(--line);border-radius:8px;width:34px;height:30px;
+  color:var(--muted);font-size:13px}
 .anteilzeile input{margin-top:0;padding:9px;text-align:center;font-family:var(--mono);font-size:12.5px}
 .fiZeile{display:flex;justify-content:space-between;gap:12px;padding:9px 0;
   border-top:1px solid var(--line);font-size:14px}
@@ -327,8 +334,10 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <button class="ikon" id="monatMinus" aria-label="Monat zurück">‹</button>
     <b id="monatLabel"></b>
     <button class="ikon" id="monatPlus" aria-label="Monat vor">›</button>
+    <button class="mini" id="kalHeute">Heute</button>
   </div>
   <div class="gitter" id="gitter"></div>
+  <p class="hinweis">Ein Feld gedrückt halten, um einen freien Tag einzutragen.</p>
   <section>
     <div class="eyebrow" id="kalTagLabel"></div>
     <p class="hinweis hidden" id="kalFerien"></p>
@@ -341,16 +350,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 <div id="ansichtEin" class="hidden">
   <div id="einMenu">
     <label style="margin-top:0"><span>Suche</span><input type="text" id="suchFeld" placeholder="Fach, Aufgabe, Notiz …"></label>
-    <div class="stapel" id="einKacheln">
-      <button type="button" data-sub="H">Hausaufgaben<small id="zahlH"></small></button>
-      <button type="button" data-sub="K">Klausuren<small id="zahlK"></small></button>
-      <button type="button" data-sub="N">Notizen<small id="zahlN"></small></button>
-      <button type="button" data-sub="E">Ereignisse<small id="zahlE"></small></button>
-      <button type="button" data-sub="G">Noten<small id="zahlG"></small></button>
-      <button type="button" data-sub="M">Merkblätter<small id="zahlM"></small></button>
-      <button type="button" data-sub="F">Fehlzeiten<small id="zahlF"></small></button>
-      <button type="button" data-sub="archiv">Archiv<small id="zahlArchiv"></small></button>
-    </div>
+    <div class="stapel" id="einKacheln"></div>
     <ul class="liste" id="suchListe"></ul>
   </div>
   <div id="einDetail" class="hidden">
@@ -374,6 +374,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <div id="zeuListe"></div>
   <p class="nix" id="zeuNix" hidden>Trag zuerst deinen Stundenplan ein — dann erscheinen hier die Fächer.</p>
 </div>
+
+<div id="leerraum"></div>
 
 <div id="fuss">
   <button class="gross" id="btnEintrag">+ Eintrag</button>
@@ -443,12 +445,15 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <label><span>Wo</span><input type="text" id="eOrt" placeholder="Raum oder Ort"></label>
     <label><span>Stunde</span><select id="eStunde"></select></label>
   </div>
-  <label class="hidden" id="eFehlWrap"><span>Fehlzeit</span>
-    <select id="eFehlArt">
-      <option value="entschuldigt">entschuldigt</option>
-      <option value="unentschuldigt">unentschuldigt</option>
-      <option value="verspätet">verspätet</option>
-    </select></label>
+  <div class="zwei hidden" id="eFehlWrap">
+    <label><span>Art</span>
+      <select id="eFehlArt">
+        <option value="entschuldigt">entschuldigt</option>
+        <option value="unentschuldigt">unentschuldigt</option>
+        <option value="verspätet">verspätet</option>
+      </select></label>
+    <label><span>Stunden</span><input type="number" id="eFehlStd" min="1" max="20" step="1" value="1"></label>
+  </div>
   <label id="eDatumWrap"><span>Datum</span>
     <input type="hidden" id="eDatum">
     <button type="button" class="datumfeld" id="eDatumFeld" aria-expanded="false">—</button>
@@ -488,6 +493,21 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <div class="reihe">
     <button type="button" id="bSchauBearbeiten">Bearbeiten</button>
     <button type="button" class="haupt" id="bSchauAb">Fertig</button>
+  </div>
+</dialog>
+
+<!-- Freier Tag -->
+<dialog id="dlgTagFrei"><button class="fangfokus" autofocus aria-hidden="true"></button>
+  <h2 class="mitte">Tag markieren</h2>
+  <div class="eyebrow mitte" id="tfDatum"></div>
+  <p class="hinweis">Für schuleigene freie Tage, Praktika oder Ausflüge. Der Tag wird grau
+     dargestellt und aus dem Unterricht herausgenommen.</p>
+  <label><span>Bezeichnung</span><input type="text" id="tfName" placeholder="Beweglicher Ferientag"></label>
+  <label><span>bis einschließlich</span><input type="date" id="tfBis"></label>
+  <div class="reihe">
+    <button type="button" class="weg hidden" id="bTagFreiWeg">×</button>
+    <button type="button" id="bTagFreiAb">Zurück</button>
+    <button type="button" class="haupt" id="bTagFreiSpeichern">Speichern</button>
   </div>
 </dialog>
 
@@ -602,6 +622,17 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <div class="eyebrow" style="margin-top:16px">Verhältnis je Fach</div>
   <p class="hinweis">Leer lassen heißt: Standard von oben.</p>
   <div id="sAnteilFaecher"></div>
+
+  <div class="eyebrow" style="margin-top:22px">Fehlzeiten</div>
+  <label><span>Stunden je Schultag</span><input type="number" id="sStdProTag" min="1" max="16" step="1"></label>
+  <p class="hinweis">Damit rechnet das Zeugnis versäumte Stunden in Tage um.</p>
+
+  <div class="eyebrow" style="margin-top:22px">Reihenfolge im Einträge-Menü</div>
+  <div id="sReiheEin"></div>
+
+  <div class="eyebrow" style="margin-top:22px">Reihenfolge der Fächer</div>
+  <p class="hinweis">Gilt für das Zeugnis.</p>
+  <div id="sReiheFach"></div>
 
   <div class="eyebrow" style="margin-top:22px">Erinnerungen</div>
   <p class="hinweis">Die App kann sich nicht selbst wecken. Sie meldet sich beim Öffnen —

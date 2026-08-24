@@ -2,7 +2,7 @@
    Die Versionsnummer steht NUR hier. Die App fragt sie per Nachricht ab
    und vergleicht sie mit der Fassung auf dem Server. Nach jeder Änderung
    an index.html oder app.js diese Zeile hochzählen. */
-const VERSION = "v30";
+const VERSION = "v31";
 const DATEIEN = ["./","./index.html","./app.js","./manifest.webmanifest","./icon-192.png","./icon-512.png"];
 
 self.addEventListener("install", e => {
