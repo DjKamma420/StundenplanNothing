@@ -63,7 +63,28 @@ header h1 span{color:var(--muted);font-weight:400}
 .block{display:grid;grid-template-columns:58px 1fr;gap:14px;align-items:start;
   border-top:1px solid var(--line);padding:15px 0;width:100%;text-align:left}
 #plan .block:last-child{border-bottom:1px solid var(--line)}
-.block.jetzt{background:linear-gradient(90deg,#e5382b12,transparent 60%)}
+.block.jetzt{background:linear-gradient(90deg,#e5382b1a,transparent 65%);
+  border-left:2px solid var(--red);padding-left:10px;margin-left:-12px}
+.block.jetzt .fach{color:var(--red)}
+.block.jetzt .zeit b{color:var(--red)}
+.block.ersetzt .fach{color:var(--text)}
+.durch{text-decoration:line-through;color:var(--dim)}
+.jetztlinie{display:flex;align-items:center;gap:9px;margin:0;padding:0}
+.jetztlinie::after{content:"";flex:1;height:1px;background:var(--red)}
+.jetztlinie span{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--red)}
+.notenkarte{border-top:1px solid var(--line);padding:14px 0}
+.notenkarte .kopfz{display:flex;align-items:baseline;gap:10px}
+.notenkarte .schnitt{font-size:22px;font-weight:600;margin-left:auto}
+.notenkarte .teil{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px}
+.notenchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.notenchips button{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line);
+  border-radius:8px;padding:6px 9px;color:var(--text)}
+.notenchips button small{color:var(--muted);margin-left:5px}
+.fiZeile{display:flex;justify-content:space-between;gap:12px;padding:9px 0;
+  border-top:1px solid var(--line);font-size:14px}
+.fiZeile span:first-child{color:var(--muted);font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.08em;text-transform:uppercase}
 .bearbeiten #plan .block{border-left:2px solid var(--red);padding-left:10px}
 .zeit{font-family:var(--mono);font-size:12.5px;color:var(--muted);line-height:1.55;padding-top:2px}
 .zeit b{display:block;color:var(--text);font-weight:500}
@@ -257,6 +278,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
       <button type="button" data-sub="H">Hausaufgaben<small id="zahlH"></small></button>
       <button type="button" data-sub="K">Klausuren<small id="zahlK"></small></button>
       <button type="button" data-sub="N">Notizen<small id="zahlN"></small></button>
+      <button type="button" data-sub="E">Ereignisse<small id="zahlE"></small></button>
+      <button type="button" data-sub="noten">Noten<small id="zahlNoten"></small></button>
       <button type="button" data-sub="archiv">Archiv<small id="zahlArchiv"></small></button>
     </div>
   </div>
@@ -267,6 +290,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     </div>
     <p class="hinweis hidden" id="archivHinweis">Gelöschtes landet hier.
        Zum endgültigen Entfernen ein zweites Mal löschen.</p>
+    <div id="einKopf"></div>
     <ul class="liste" id="einListe"></ul>
     <p class="nix" id="einNix" hidden></p>
   </div>
@@ -308,24 +332,10 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
       <small>was heute dran war</small></button>
     <button type="button" id="bSchnellKlausur">Klausur
       <small>Termin eintragen</small></button>
+    <button type="button" id="bSchnellErsatz">Stunde ersetzen
+      <small>nur an diesem Tag</small></button>
   </div>
   <div class="reihe"><button type="button" id="bSchnellAb">Zurück</button></div>
-</dialog>
-
-<!-- ---------- Einmaliges Ereignis ---------- -->
-<dialog id="dlgSonder">
-  <h2 id="sonderTitel">Einmaliges Ereignis</h2>
-  <div class="eyebrow" id="sonderZeit"></div>
-  <p class="hinweis">Gilt nur an diesem einen Tag — für Projektarbeit, Vortrag,
-     Ausflug oder was sonst in die freie Stunde fällt.</p>
-  <label><span>Was</span><input type="text" id="oTitel" placeholder="Projektarbeit"></label>
-  <label><span>Wo</span><input type="text" id="oRaum" placeholder="Raum oder Ort"></label>
-  <label><span>Notizen</span><textarea id="oNotiz" placeholder="Details"></textarea></label>
-  <div class="reihe">
-    <button type="button" class="weg hidden" id="bSonderWeg">×</button>
-    <button type="button" id="bSonderAb">Zurück</button>
-    <button type="button" class="haupt" id="bSonderSpeichern">Speichern</button>
-  </div>
 </dialog>
 
 <!-- ---------- Eintrag ---------- -->
@@ -337,9 +347,14 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
         <option value="H">Hausaufgabe</option>
         <option value="K">Klausur</option>
         <option value="N">Notiz</option>
+        <option value="E">Ereignis</option>
       </select>
     </label>
-    <label><span>Fach</span><select id="eFach"></select></label>
+    <label id="eFachWrap"><span>Fach</span><select id="eFach"></select></label>
+  </div>
+  <div class="zwei hidden" id="eEreignisWrap">
+    <label><span>Wo</span><input type="text" id="eOrt" placeholder="Raum oder Ort"></label>
+    <label><span>Stunde</span><select id="eStunde"></select></label>
   </div>
   <label class="hidden" id="eFachFreiWrap"><span>Fach eintippen</span>
     <input type="text" id="eFachFrei" autocapitalize="characters"></label>
@@ -363,6 +378,35 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <button type="button" id="bEintragAb">Zurück</button>
     <button type="button" class="haupt" id="bEintragSpeichern">Speichern</button>
   </div>
+</dialog>
+
+<!-- ---------- Note ---------- -->
+<dialog id="dlgNote">
+  <h2 id="noteTitel">Note</h2>
+  <div class="zwei">
+    <label><span>Fach</span><select id="nFach"></select></label>
+    <label><span>Art</span>
+      <select id="nArt"><option value="s">schriftlich</option><option value="m">mündlich</option></select>
+    </label>
+  </div>
+  <div class="zwei">
+    <label><span id="nWertLabel">Note</span><input type="text" id="nWert" inputmode="decimal" placeholder="2,3"></label>
+    <label><span>Datum</span><input type="date" id="nDatum"></label>
+  </div>
+  <label><span>Wofür</span><input type="text" id="nTitel" placeholder="Klausur Nr. 1"></label>
+  <div class="reihe">
+    <button type="button" class="weg hidden" id="bNoteWeg">×</button>
+    <button type="button" id="bNoteAb">Zurück</button>
+    <button type="button" class="haupt" id="bNoteSpeichern">Speichern</button>
+  </div>
+</dialog>
+
+<!-- ---------- Fach-Info ---------- -->
+<dialog id="dlgFach">
+  <h2 id="fiTitel">Fach</h2>
+  <div class="eyebrow" id="fiKuerzel"></div>
+  <div id="fiInhalt"></div>
+  <div class="reihe"><button type="button" id="bFachAb">Zurück</button></div>
 </dialog>
 
 <!-- ---------- Plan einfügen ---------- -->
@@ -417,6 +461,26 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </label>
   <p class="hinweis" id="ankerWrap">Feste Regel: ungerade Kalenderwoche = <b>A</b>,
      gerade Kalenderwoche = <b>B</b>. <span id="ankerJetzt"></span></p>
+
+  <div class="eyebrow" style="margin-top:22px">Noten</div>
+  <div class="zwei">
+    <label><span>System</span>
+      <select id="sNotenSystem">
+        <option value="note6">Noten 1–6</option>
+        <option value="punkte15">Punkte 0–15</option>
+      </select>
+    </label>
+    <label><span>mündlich %</span><input type="number" id="sAnteilM" min="0" max="100" step="5"></label>
+  </div>
+  <p class="hinweis" id="sAnteilHinweis"></p>
+
+  <div class="eyebrow" style="margin-top:22px">Lehrkräfte</div>
+  <p class="hinweis">Je Zeile ein Kürzel und der Name, getrennt durch ein Gleichheitszeichen.</p>
+  <textarea id="sLehrer" style="min-height:90px" placeholder="WZET = Frau Wietzet&#10;KOMT = Herr Komt"></textarea>
+
+  <div class="eyebrow" style="margin-top:22px">Fachnamen</div>
+  <p class="hinweis">Ebenso — damit die Fach-Info den ausgeschriebenen Namen zeigt.</p>
+  <textarea id="sFaecher" style="min-height:90px" placeholder="CH = Chemie&#10;MA = Mathematik"></textarea>
 
   <div class="eyebrow" style="margin-top:22px">Ferien und Feiertage</div>
   <p class="hinweis">Holt Schulferien und gesetzliche Feiertage deines Bundeslandes.
