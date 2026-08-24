@@ -190,10 +190,23 @@ textarea{min-height:120px;font-family:var(--mono);font-size:12px}
 
 /* Fußbereich: Knopf und Wischzone teilen sich eine Wischfläche,
    die den restlichen Platz der Seite ausfüllt. */
-body{display:flex;flex-direction:column;min-height:100dvh}
-#fuss{display:flex;flex-direction:column;flex:1 0 auto;touch-action:pan-y}
-.wischzone{margin-top:14px;padding:18px 0 6px;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:8px;flex:1 0 auto;min-height:84px;touch-action:pan-y}
+/* Der Fußbereich steht fest am unteren Rand. So bleibt der Eintragsknopf
+   immer an derselben Stelle, egal wie lang der Inhalt darüber ist. */
+body{padding-bottom:148px}
+#fuss{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--ink);
+  border-top:1px solid var(--line2);touch-action:pan-y;
+  padding:12px 16px calc(8px + env(safe-area-inset-bottom))}
+#fuss > *{max-width:608px;margin-left:auto;margin-right:auto}
+.gross{margin-top:0}
+.wischzone{margin-top:10px;padding:6px 0 2px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:7px;touch-action:pan-y}
+.profilzeile{display:flex;align-items:center;gap:11px;padding:12px 0;border-top:1px solid var(--line)}
+.profilzeile .name{flex:1;font-size:15px}
+.profilzeile .aktivmarke{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--red);border:1px solid var(--red);border-radius:99px;padding:2px 8px}
+.anteilzeile{display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;margin-top:7px}
+.anteilzeile span{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.anteilzeile input{margin-top:0;padding:9px;text-align:center;font-family:var(--mono);font-size:12.5px}
 .wischzone span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--dim)}
 .punkte{display:flex;gap:7px}
@@ -236,6 +249,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <button type="button" id="rZeu" aria-pressed="false">Zeugnis</button>
   </div>
   <button class="ikon" id="btnEdit" aria-pressed="false" aria-label="Plan bearbeiten">✎</button>
+  <button class="ikon" id="btnProfil" aria-label="Profil wechseln">–</button>
   <button class="ikon" id="btnEinst" aria-label="Einstellungen">⚙</button>
 </div>
 
@@ -318,8 +332,10 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <h1>Zeugnis <span id="zeuSchnitt"></span></h1>
   </header>
   <p class="hinweis" id="zeuHinweis"></p>
+  <p class="hinweis" style="color:var(--red)">Nur eine Schätzung. Die App gewichtet alle Noten einer
+     Art gleich; Lehrkräfte rechnen oft anders. Keine amtliche Auskunft.</p>
   <div id="zeuListe"></div>
-  <p class="nix" id="zeuNix" hidden>Noch keine Noten eingetragen.</p>
+  <p class="nix" id="zeuNix" hidden>Trag zuerst deinen Stundenplan ein — dann erscheinen hier die Fächer.</p>
 </div>
 
 <div id="fuss">
@@ -374,9 +390,16 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
         <option value="K">Klausur</option>
         <option value="N">Notiz</option>
         <option value="E">Ereignis</option>
+        <option value="G">Note</option>
       </select>
     </label>
     <label id="eFachWrap"><span>Fach</span><select id="eFach"></select></label>
+  </div>
+  <div class="zwei hidden" id="eNoteWrap">
+    <label><span id="eWertLabel">Note</span><input type="text" id="eWert" inputmode="decimal" placeholder="2,3"></label>
+    <label><span>Art</span>
+      <select id="eNArt"><option value="s">schriftlich</option><option value="m">mündlich</option></select>
+    </label>
   </div>
   <div class="zwei hidden" id="eEreignisWrap">
     <label><span>Wo</span><input type="text" id="eOrt" placeholder="Raum oder Ort"></label>
@@ -406,26 +429,15 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
 </dialog>
 
-<!-- ---------- Note ---------- -->
-<dialog id="dlgNote">
-  <h2 id="noteTitel">Note</h2>
-  <div class="zwei">
-    <label><span>Fach</span><select id="nFach"></select></label>
-    <label><span>Art</span>
-      <select id="nArt"><option value="s">schriftlich</option><option value="m">mündlich</option></select>
-    </label>
-  </div>
-  <div class="zwei">
-    <label><span id="nWertLabel">Note</span><input type="text" id="nWert" inputmode="decimal" placeholder="2,3"></label>
-    <label><span>Datum</span><input type="date" id="nDatum"></label>
-  </div>
-  <label><span>Wofür</span><input type="text" id="nTitel" placeholder="Präsentation, Klausur Nr. 1 …"></label>
-  <label><span>Notizen</span><textarea id="nNotiz" style="min-height:80px" placeholder="Details"></textarea></label>
-  <div class="reihe">
-    <button type="button" class="weg hidden" id="bNoteWeg">×</button>
-    <button type="button" id="bNoteAb">Zurück</button>
-    <button type="button" class="haupt" id="bNoteSpeichern">Speichern</button>
-  </div>
+<!-- ---------- Profile ---------- -->
+<dialog id="dlgProfil">
+  <h2>Profile</h2>
+  <p class="hinweis">Jedes Profil hat einen eigenen Plan, eigene Einträge und eigene Noten.
+     Nichts davon wird geteilt.</p>
+  <ul class="liste" id="profilListe"></ul>
+  <label><span>Neues Profil</span><input type="text" id="pNeu" placeholder="Name"></label>
+  <div class="chips"><button type="button" id="bProfilNeu">Anlegen</button></div>
+  <div class="reihe"><button type="button" id="bProfilAb">Zurück</button></div>
 </dialog>
 
 <!-- ---------- Verhältnis je Fach ---------- -->
@@ -514,6 +526,9 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <label><span>mündlich %</span><input type="number" id="sAnteilM" min="0" max="100" step="5"></label>
   </div>
   <p class="hinweis" id="sAnteilHinweis"></p>
+  <div class="eyebrow" style="margin-top:16px">Verhältnis je Fach</div>
+  <p class="hinweis">Leer lassen heißt: Standard von oben. Sonst der Prozentsatz für mündlich.</p>
+  <div id="sAnteilFaecher"></div>
 
   <div class="eyebrow" style="margin-top:22px">Lehrkräfte</div>
   <p class="hinweis">Je Zeile ein Kürzel und der Name, getrennt durch ein Gleichheitszeichen.</p>

@@ -25,17 +25,23 @@ Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume und Lehrkrä
 - **Gedrückt halten**: Fach-Info mit ausgeschriebenem Namen, Lehrkraft, Wochenstunden, nächsten Terminen, Notenschnitt und Offenem
 - Mit ✎ im Kopf: Fach, Raum und Lehrkraft dauerhaft ändern
 
+**Profile**
+- Mehrere Profile auf einem Gerät, wie bei Streamingdiensten
+- Jedes Profil hat eigenen Plan, eigene Einträge, eigene Noten und eigene Einstellungen — nichts wird geteilt
+- Umschalten über den Buchstaben oben rechts
+
 **Noten und Zeugnis**
 - Noten je Fach, getrennt nach mündlich und schriftlich, mit Feld für „wofür" und Notizen
 - Das Verhältnis mündlich zu schriftlich lässt sich **je Fach einzeln** einstellen, mit einem Standardwert für den Rest
 - Umschaltbar zwischen Noten 1–6 und Punkten 0–15
-- Eigener Zeugnis-Reiter mit dem Stand aller Fächer, gerundeter Zeugnisnote und Gesamtschnitt
+- Noten legst du über denselben Knopf an wie alles andere
+- Eigener Zeugnis-Reiter mit dem Stand aller Fächer, gerundeter Zeugnisnote und Gesamtschnitt — auch ohne eingetragene Noten sichtbar
 
 **Einträge**
 - Getrennt nach Hausaufgaben, Klausuren und Notizen
 - Jeder Eintrag mit Fach, Datum, Text und Notizfeld
 - Bei der Datumsauswahl bekommt jeder Tag einen roten Punkt, an dem das gewählte Fach im Plan steht
-- Archiv: Gelöschtes bleibt erst einmal erhalten und muss zum endgültigen Entfernen ein zweites Mal gelöscht werden
+- Archiv: Gelöschtes bleibt erst einmal erhalten — Einträge, Ereignisse und Noten gleichermaßen — und muss zum endgültigen Entfernen ein zweites Mal gelöscht werden
 - Abgehakte Hausaufgaben und Klausuren wandern nach sieben Tagen von selbst ins Archiv, Notizen bleiben stehen
 
 **Kalender**
@@ -48,6 +54,24 @@ Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume und Lehrkrä
 - Wischen im Bereich unter dem Eintragsknopf wechselt zwischen Tag, Kalender, Einträgen und Zeugnis
 - Die vier Punkte zeigen, wo du gerade bist, und lassen sich auch antippen
 - Steht eine Unterliste offen, führt der erste Wisch zurück ins Menü
+- Der Eintragsknopf steht fest am unteren Rand und wandert nicht mit dem Inhalt
+- In Einstellungen und Profilen wischt du zum Schließen; aus den Einstellungen geöffnete Dialoge kehren dorthin zurück
+
+## Was du brauchst
+
+Nichts außer einem Browser und einem GitHub-Konto. Kein Server, kein Geld, kein Programm auf dem Rechner. Im Einzelnen:
+
+| | |
+|---|---|
+| **Gerät** | Handy, Tablet oder Rechner. Android, iOS, Windows, Mac, Linux — die App läuft im Browser. |
+| **Browser** | Chrome, Edge, Firefox, Safari, jeweils aktuell. Für die Installation auf dem Startbildschirm: Chrome auf Android, Safari auf iOS. |
+| **GitHub-Konto** | Kostenlos, um die Dateien abzulegen und über GitHub Pages auszuliefern. Wer schon eine eigene Webadresse hat, kann die Dateien auch dort hinlegen. |
+| **Internet** | Beim Einrichten und für das Laden der Ferientermine. Danach läuft die App offline. |
+| **Deinen Stundenplan** | Auf Papier oder als kopierbare Tabelle aus dem Schulportal. Zwei Wochen reichen für ein ganzes Halbjahr. |
+
+Nicht nötig: Programmierkenntnisse, ein Editor, Node.js, ein Build-Vorgang, ein Konto bei der App, eine Datenbank.
+
+Das Einrichten dauert etwa zehn Minuten, das Eintragen des Plans noch einmal so lange.
 
 ## Einrichten
 
@@ -59,8 +83,10 @@ https://djkamma420.github.io/StundenplanNothing/ Öffnen und installieren:
 ## Erste Schritte
 
 1. **⚙ oben rechts** → Klasse eintragen und Stundenraster prüfen.
+   Der Buchstabe daneben führt zu den Profilen.
 2. Wer wechselnde Wochen hat: *A- und B-Woche getrennt führen* anhaken. Welche Woche welche ist, steht fest: **ungerade Kalenderwoche = A, gerade = B**.
 3. Bundesland wählen und **Ferien laden** — Schulferien und Feiertage kommen dann automatisch in den Plan.
+   Ebenfalls dort: das Verhältnis mündlich zu schriftlich, allgemein und je Fach.
 4. Plan füllen: **✎** antippen, dann jedes Feld ausfüllen. Oder in den Einstellungen **Plan einfügen** und eine kopierte Tabelle übernehmen.
 
 ## Namen statt Kürzel

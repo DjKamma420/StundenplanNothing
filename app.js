@@ -57,22 +57,64 @@ const ART  = {H:"Hausaufgabe", K:"Klausur", N:"Notiz"};
 ---------------------------------------------------------------- */
 const Speicher = {
   puffer:{},
+  pfad(k){ return "p" + profilId + "_" + k; },
   lies(k, standard){
-    try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : standard; }
+    try{ const v = localStorage.getItem(this.pfad(k)); return v ? JSON.parse(v) : standard; }
     catch(e){ return k in this.puffer ? this.puffer[k] : standard; }
   },
   schreib(k, v){
     this.puffer[k] = v;
-    try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){}
+    try{ localStorage.setItem(this.pfad(k), JSON.stringify(v)); }catch(e){}
   }
 };
 
-let cfg       = Object.assign({}, STANDARD, Speicher.lies("cfg", {}));
-let plan      = Speicher.lies("plan", {});
-let eintraege = Speicher.lies("eintraege", []);
-let ferien    = Speicher.lies("ferien", []);   // [{von,bis,name,typ}]
-let sonder    = Speicher.lies("sonder", []);   // [{id,datum,slot,titel,raum,notiz}]
-let noten     = Speicher.lies("noten", []);    // [{id,fach,art,wert,datum,titel}]
+/* ---------------------------------------------------------------
+   Profile — jeder Datensatz liegt unter einem eigenen Schlüssel.
+   Beim ersten Start werden vorhandene Daten in das erste Profil
+   übernommen, damit nichts verloren geht.
+---------------------------------------------------------------- */
+const DATEN = ["cfg","plan","eintraege","ferien","sonder","noten"];
+let profile = [], profilId = "1";
+
+function profileSichern(){
+  try{
+    localStorage.setItem("profile", JSON.stringify(profile));
+    localStorage.setItem("profilAktiv", profilId);
+  }catch(e){}
+}
+function profileLaden(){
+  try{
+    profile = JSON.parse(localStorage.getItem("profile") || "[]");
+    profilId = localStorage.getItem("profilAktiv") || "1";
+  }catch(e){ profile = []; }
+  if(!Array.isArray(profile) || !profile.length){
+    const altvorhanden = DATEN.some(k => { try{ return localStorage.getItem(k) !== null; }catch(e){ return false; } });
+    profile = [{id:"1", name: altvorhanden ? "Mein Plan" : "Profil 1"}];
+    profilId = "1";
+    if(altvorhanden) DATEN.forEach(k => {                 // Umzug der alten Daten
+      try{
+        const v = localStorage.getItem(k);
+        if(v !== null){ localStorage.setItem("p1_" + k, v); localStorage.removeItem(k); }
+      }catch(e){}
+    });
+    profileSichern();
+  }
+  if(!profile.some(x => x.id === profilId)) profilId = profile[0].id;
+}
+profileLaden();
+const profilName = () => (profile.find(x => x.id === profilId) || {}).name || "Profil";
+
+let cfg, plan, eintraege, ferien, sonder, noten;
+function zustandLaden(){
+  Speicher.puffer = {};
+  cfg       = Object.assign({}, STANDARD, Speicher.lies("cfg", {}));
+  plan      = Speicher.lies("plan", {});
+  eintraege = Speicher.lies("eintraege", []);
+  ferien    = Speicher.lies("ferien", []);   // [{von,bis,name,typ}]
+  sonder    = Speicher.lies("sonder", []);   // [{id,datum,slot,titel,raum,notiz,geloescht}]
+  noten     = Speicher.lies("noten", []);    // [{id,fach,art,wert,datum,titel,notiz,geloescht}]
+}
+zustandLaden();
 
 let ansicht    = "tag";
 let bearbeiten = false;
@@ -153,10 +195,12 @@ function sichern(){
   Speicher.schreib("eintraege", eintraege); Speicher.schreib("ferien", ferien);
   Speicher.schreib("sonder", sonder); Speicher.schreib("noten", noten);
 }
-const sonderAn = (d, slot) => sonder.find(x => x.datum === iso(d) && x.slot === slot) || null;
+const sonderAktiv = () => sonder.filter(o => !o.geloescht);
+const notenAktiv  = () => noten.filter(n => !n.geloescht);
+const sonderAn = (d, slot) => sonderAktiv().find(x => x.datum === iso(d) && x.slot === slot) || null;
 /** Ereignisse ohne feste Stunde — am Wochenende gibt es kein Raster. */
-const sonderFrei = d => sonder.filter(x => x.datum === iso(d) && x.slot === null);
-const sonderTag  = d => sonder.filter(x => x.datum === iso(d));
+const sonderFrei = d => sonderAktiv().filter(x => x.datum === iso(d) && x.slot === null);
+const sonderTag  = d => sonderAktiv().filter(x => x.datum === iso(d));
 function faecher(){
   const s = new Set();
   ["A","B"].forEach(w => TAGE.forEach(t => (plan[w][t]||[]).forEach(x => x && x.fach && s.add(x.fach))));
@@ -177,7 +221,7 @@ const hatEigenenAnteil = fach => cfg.anteile && cfg.anteile[fach] !== undefined 
 
 function notenSchnitt(fach){
   const teil = art => {
-    const l = noten.filter(n => n.fach === fach && n.art === art);
+    const l = notenAktiv().filter(n => n.fach === fach && n.art === art);
     return l.length ? l.reduce((sum,n) => sum + n.wert, 0) / l.length : null;
   };
   const m = teil("m"), sch = teil("s");
@@ -191,7 +235,7 @@ const notenText = w => w === null || w === undefined ? "—"
   : (cfg.notenSystem === "punkte15" ? w.toFixed(1) : w.toFixed(2).replace(".", ","));
 /** Ganze Zeugnisnote aus dem Schnitt. Bei Noten gilt: kleiner ist besser. */
 const zeugnisNote = w => w === null || w === undefined ? null : Math.round(w);
-const notenFaecher = () => [...new Set([...faecher(), ...noten.map(n => n.fach)])].filter(Boolean).sort();
+const notenFaecher = () => [...new Set([...faecher(), ...notenAktiv().map(n => n.fach)])].filter(Boolean).sort();
 
 const aktiv = () => eintraege.filter(e => !e.geloescht);
 const eintraegeAm = d => aktiv()
@@ -454,10 +498,25 @@ const offeneListe = t => {
   return aktiv().filter(e => e.typ === t && (!e.erledigt || e.datum >= heuteIso))
     .sort((a,b) => (a.erledigt - b.erledigt) || a.datum.localeCompare(b.datum));
 };
-const archivListe = () => eintraege.filter(e => e.geloescht)
-  .sort((a,b) => b.datum.localeCompare(a.datum));
+function archivListe(){
+  return [
+    ...eintraege.filter(e => e.geloescht).map(e => ({
+      art:"eintrag", id:e.id, marke:e.typ, datum:e.datum,
+      text: (e.fach ? e.fach + " — " : "") + (e.titel || ART[e.typ]) })),
+    ...sonder.filter(o => o.geloescht).map(o => ({
+      art:"ereignis", id:o.id, marke:"Ereignis", datum:o.datum, text:o.titel })),
+    ...noten.filter(n => n.geloescht).map(n => ({
+      art:"note", id:n.id, marke:"Note", datum:n.datum,
+      text: `${notenText(n.wert)} · ${fachName(n.fach)}${n.titel ? " — " + n.titel : ""}` }))
+  ].sort((a,b) => b.datum.localeCompare(a.datum));
+}
+function archivFinden(art, id){
+  return art === "eintrag" ? eintraege.find(x => x.id === id)
+       : art === "ereignis" ? sonder.find(x => x.id === id)
+       : noten.find(x => x.id === id);
+}
 
-const kommendeEreignisse = () => sonder
+const kommendeEreignisse = () => sonderAktiv()
   .filter(o => o.datum >= iso(plusTage(new Date(), -7)))
   .sort((a,b) => a.datum.localeCompare(b.datum) || (a.slot ?? -1) - (b.slot ?? -1));
 
@@ -472,7 +531,7 @@ function zeichneEintraege(){
     $("#zahlK").textContent = offen("K") ? `${offen("K")} anstehend` : "nichts anstehend";
     $("#zahlN").textContent = offen("N") ? `${offen("N")} vorhanden` : "keine";
     $("#zahlE").textContent = kommendeEreignisse().length ? `${kommendeEreignisse().length} geplant` : "keine";
-    $("#zahlNoten").textContent = noten.length ? `${noten.length} eingetragen` : "keine";
+    $("#zahlNoten").textContent = notenAktiv().length ? `${notenAktiv().length} eingetragen` : "keine";
     $("#zahlArchiv").textContent = archivListe().length ? `${archivListe().length} im Archiv` : "leer";
     return;
   }
@@ -503,18 +562,15 @@ function zeichneEintraege(){
 
   if(einSub === "archiv"){
     const liste = archivListe();
-    $("#einListe").innerHTML = liste.map(e => {
-      const d = new Date(e.datum + "T12:00");
-      return `<li>
+    $("#einListe").innerHTML = liste.map(e => `<li>
         <div class="wachs">
-          <div class="kopf"><span class="khn aus">${e.typ}</span>
-            <span class="titel" style="color:var(--muted)">${e.fach ? esc(e.fach) + " — " : ""}${esc(e.titel) || ART[e.typ]}</span></div>
-          <div class="wann">${d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
+          <div class="kopf"><span class="khn aus">${esc(e.marke)}</span>
+            <span class="titel" style="color:var(--muted)">${esc(e.text)}</span></div>
+          <div class="wann">${zeigDatum(e.datum)}</div>
         </div>
-        <button class="mini" data-zurueck="${e.id}">Zurück</button>
-        <button class="mini" data-endgueltig="${e.id}" style="border-color:var(--red);color:var(--red)">Löschen</button>
-      </li>`;
-    }).join("");
+        <button class="mini" data-zurueck="${e.art}:${e.id}">Zurück</button>
+        <button class="mini" data-endgueltig="${e.art}:${e.id}" style="border-color:var(--red);color:var(--red)">Löschen</button>
+      </li>`).join("");
     $("#einNix").textContent = "Archiv ist leer.";
     $("#einNix").hidden = liste.length > 0;
   } else {
@@ -530,11 +586,11 @@ function zeichneNoten(){
        auf den Wert in der Fachzeile tippen. Standard: ${Number(cfg.anteilM)||0} % mündlich.</p>
      <div class="notenchips"><button type="button" id="bNotePlus">+ Note</button></div>`;
 
-  const liste = notenFaecher().filter(f => noten.some(n => n.fach === f));
+  const liste = notenFaecher().filter(f => notenAktiv().some(n => n.fach === f));
   $("#einListe").innerHTML = liste.map(f => {
     const sch = notenSchnitt(f);
     const aM = anteilFuer(f);
-    const eigene = noten.filter(n => n.fach === f).sort((a,b) => b.datum.localeCompare(a.datum));
+    const eigene = notenAktiv().filter(n => n.fach === f).sort((a,b) => b.datum.localeCompare(a.datum));
     return `<li style="display:block;padding:0;border:0"><div class="notenkarte">
       <div class="kopfz">
         <div><div style="font-size:17px">${esc(fachName(f))}</div>
@@ -559,23 +615,25 @@ function zeichneNoten(){
 
 /* --- Zeugnis: alle Fächer auf dem aktuellen Stand --- */
 function zeichneZeugnis(){
-  const liste = notenFaecher().filter(f => noten.some(n => n.fach === f));
+  /* Bewusst alle Fächer des Plans, nicht nur die mit Noten — so siehst du
+     auch, wo noch nichts eingetragen ist. */
+  const liste = notenFaecher();
   const schnitte = liste.map(f => notenSchnitt(f).gesamt).filter(w => w !== null);
   const gesamt = schnitte.length ? schnitte.reduce((a,b) => a+b, 0) / schnitte.length : null;
 
   $("#zeuSchnitt").textContent = gesamt === null ? "" : notenText(gesamt);
-  $("#zeuHinweis").textContent = liste.length
-    ? `Aus ${noten.length} Noten in ${liste.length} Fächern. Eigene Rechnung, keine amtliche Auskunft — `
-      + `Lehrkräfte gewichten oft anders.`
-    : "";
+  $("#zeuHinweis").textContent = notenAktiv().length
+    ? `Aus ${notenAktiv().length} Noten in ${schnitte.length} von ${liste.length} Fächern.`
+    : "Noch keine Noten. Die Fächer stehen trotzdem hier — tippe eines an, um das Verhältnis zu setzen.";
 
   $("#zeuListe").innerHTML = liste.map(f => {
     const sch = notenSchnitt(f);
     const ganz = zeugnisNote(sch.gesamt);
-    const anzahl = noten.filter(n => n.fach === f).length;
+    const anzahl = notenAktiv().filter(n => n.fach === f).length;
     return `<button type="button" class="zeuZeile" data-zeufach="${esc(f)}">
       <div class="fach">${esc(fachName(f))}
-        <small>${anzahl} ${anzahl === 1 ? "Note" : "Noten"} · ${anteilFuer(f)} % mündlich</small></div>
+        <small>${anzahl ? `${anzahl} ${anzahl === 1 ? "Note" : "Noten"}` : "keine Noten"}
+          · ${anteilFuer(f)} % mündlich</small></div>
       <div class="roh">${notenText(sch.gesamt)}</div>
       <div class="note">${ganz === null ? "—" : ganz}</div>
     </button>`;
@@ -621,38 +679,21 @@ $("#einListe").addEventListener("click", e => {
   if(b) noteOeffnen(noten.find(n => n.id === b.dataset.note));
 });
 
-/* --- Note anlegen und ändern --- */
-let noteId = null;
+/* --- Noten laufen über den Eintragsdialog --- */
 function noteOeffnen(n){
-  noteId = n ? n.id : null;
-  const liste = notenFaecher();
-  nFach.innerHTML = liste.map(f =>
-    `<option value="${esc(f)}" ${n && n.fach === f ? "selected" : ""}>${esc(fachName(f))}</option>`).join("");
-  $("#noteTitel").textContent = n ? "Note ändern" : "Neue Note";
-  $("#nWertLabel").textContent = cfg.notenSystem === "punkte15" ? "Punkte 0–15" : "Note 1–6";
-  nArt.value = n ? n.art : "s";
-  nWert.value = n ? String(n.wert).replace(".", ",") : "";
-  nDatum.value = n ? n.datum : iso(new Date());
-  nTitel.value = n ? (n.titel || "") : "";
-  nNotiz.value = n ? (n.notiz || "") : "";
-  $("#bNoteWeg").classList.toggle("hidden", !n);
-  dlgNote.showModal();
+  if(!n) return eintragOeffnen(null, new Date(), "G", vorschlagFach());
+  bearbeiteId = null; ereignisId = null; noteId = n.id;
+  $("#dlgEintragTitel").textContent = "Note ändern";
+  eTyp.value = "G";
+  eDatum.value = n.datum;
+  eText.value = n.titel || ""; eNotiz.value = n.notiz || "";
+  eWert.value = String(n.wert).replace(".", ",");
+  eNArt.value = n.art;
+  fachAuswahlFuellen(n.fach);
+  datumFeldText(); datumWahlOeffnen(false); artUmschalten();
+  $("#bEintragWeg").classList.remove("hidden");
+  dlgEintrag.showModal();
 }
-$("#bNoteAb").onclick = () => dlgNote.close();
-$("#bNoteWeg").onclick = () => { noten = noten.filter(x => x.id !== noteId); sichern(); dlgNote.close(); zeichne(); };
-$("#bNoteSpeichern").onclick = () => {
-  const wert = parseFloat(String(nWert.value).replace(",", "."));
-  const grenze = cfg.notenSystem === "punkte15" ? [0,15] : [1,6];
-  if(isNaN(wert) || wert < grenze[0] || wert > grenze[1]){
-    alert(`Bitte einen Wert zwischen ${grenze[0]} und ${grenze[1]} eingeben.`); return;
-  }
-  const daten = {fach:nFach.value, art:nArt.value, wert,
-                 datum:nDatum.value || iso(new Date()),
-                 titel:nTitel.value.trim(), notiz:nNotiz.value.trim()};
-  if(noteId) Object.assign(noten.find(x => x.id === noteId), daten);
-  else noten.push(Object.assign({id:String(Date.now())}, daten));
-  sichern(); dlgNote.close(); zeichne();
-};
 
 $("#einMenu").onclick = e => {
   const b = e.target.closest("[data-sub]"); if(!b) return;
@@ -704,6 +745,8 @@ function wischen(el, beiWisch){
   }, {passive:true});
 }
 wischen($("#ansichtTag"), r => { gewaehlt = plusTage(gewaehlt, r); zeichne(); });
+wischen($("#dlgEinst"), () => $("#bEinstSpeichern").click());
+wischen($("#dlgProfil"), () => dlgProfil.close());
 wischen($("#ansichtKal"), r => {
   kalMonat = new Date(kalMonat.getFullYear(), kalMonat.getMonth() + r, 1); zeichne();
 });
@@ -963,16 +1006,21 @@ function stundenAuswahlFuellen(slot){
   if(slot === null || slot === undefined) eStunde.value = "";
 }
 function artUmschalten(){
-  const ev = eTyp.value === "E";
+  const ev = eTyp.value === "E", note = eTyp.value === "G";
   $("#eFachWrap").classList.toggle("hidden", ev);
   $("#eEreignisWrap").classList.toggle("hidden", !ev);
+  $("#eNoteWrap").classList.toggle("hidden", !note);
+  $("#eWertLabel").textContent = cfg.notenSystem === "punkte15" ? "Punkte 0–15" : "Note 1–6";
   if(ev) $("#eFachFreiWrap").classList.add("hidden"); else freiUmschalten();
 }
 eTyp.onchange = artUmschalten;
 
+let noteId = null;
+
 function eintragOeffnen(e, datum, typ, fach, slot){
   bearbeiteId = e ? e.id : null;
-  ereignisId = null;
+  ereignisId = null; noteId = null;
+  eWert.value = ""; eNArt.value = "s";
   const d = datum || gewaehlt;
   const vorhanden = (typ === "E" && slot !== undefined)
     ? (slot === null ? null : sonderAn(d, slot)) : null;
@@ -995,7 +1043,7 @@ function eintragOeffnen(e, datum, typ, fach, slot){
 /** Vorhandenes Ereignis zum Bearbeiten öffnen */
 function ereignisOeffnen(id){
   const o = sonder.find(x => x.id === id); if(!o) return;
-  bearbeiteId = null; ereignisId = id;
+  bearbeiteId = null; ereignisId = id; noteId = null;
   $("#dlgEintragTitel").textContent = "Ereignis ändern";
   eTyp.value = "E";
   eDatum.value = o.datum;
@@ -1028,18 +1076,31 @@ $("#bEintragSpeichern").onclick = () => {
   }
 
   const fach = (eFach.value === "__frei" ? eFachFrei.value : eFach.value).trim().toUpperCase();
+
+  if(eTyp.value === "G"){                       // Note
+    const wert = parseFloat(String(eWert.value).replace(",", "."));
+    const grenze = cfg.notenSystem === "punkte15" ? [0,15] : [1,6];
+    if(isNaN(wert) || wert < grenze[0] || wert > grenze[1]){
+      alert(`Bitte einen Wert zwischen ${grenze[0]} und ${grenze[1]} eingeben.`); return;
+    }
+    if(!fach){ alert("Bitte ein Fach wählen."); return; }
+    const nd = {fach, art:eNArt.value, wert, datum,
+                titel:eText.value.trim(), notiz:eNotiz.value.trim()};
+    if(noteId) Object.assign(noten.find(x => x.id === noteId), nd);
+    else noten.push(Object.assign({id:String(Date.now()), geloescht:false}, nd));
+    sichern(); dlgEintrag.close(); zeichne(); return;
+  }
+
   const daten = {typ:eTyp.value, fach, datum, titel:eText.value.trim(), notiz:eNotiz.value.trim()};
   if(bearbeiteId) Object.assign(eintraege.find(x => x.id === bearbeiteId), daten);
   else eintraege.push(Object.assign({id:String(Date.now()), erledigt:false, geloescht:false}, daten));
   sichern(); dlgEintrag.close(); zeichne();
 };
-$("#bEintragWeg").onclick = () => {
-  if(ereignisId){                                  // Ereignisse gibt es nur einmal, kein Archiv
-    sonder = sonder.filter(x => x.id !== ereignisId);
-  } else {                                         // Einträge wandern ins Archiv
-    const e = eintraege.find(x => x.id === bearbeiteId);
-    if(e) e.geloescht = true;
-  }
+$("#bEintragWeg").onclick = () => {          // alles wandert ins Archiv, nichts sofort weg
+  const ziel = ereignisId ? sonder.find(x => x.id === ereignisId)
+             : noteId     ? noten.find(x => x.id === noteId)
+             :              eintraege.find(x => x.id === bearbeiteId);
+  if(ziel) ziel.geloescht = true;
   sichern(); dlgEintrag.close(); zeichne();
 };
 
@@ -1062,13 +1123,17 @@ function listenKlick(e){
 $("#einListe").addEventListener("click", e => {
   const zurueck = e.target.closest("[data-zurueck]");
   if(zurueck){
-    const it = eintraege.find(x => x.id === zurueck.dataset.zurueck);
-    if(it){ it.geloescht = false; it.erledigt = false; it.erledigtAm = null; }
+    const [art, id] = zurueck.dataset.zurueck.split(":");
+    const it = archivFinden(art, id);
+    if(it){ it.geloescht = false; if(art === "eintrag"){ it.erledigt = false; it.erledigtAm = null; } }
     sichern(); zeichne(); return;
   }
   const weg = e.target.closest("[data-endgueltig]");
   if(weg && confirm("Endgültig löschen? Das lässt sich nicht rückgängig machen.")){
-    eintraege = eintraege.filter(x => x.id !== weg.dataset.endgueltig);
+    const [art, id] = weg.dataset.endgueltig.split(":");
+    if(art === "eintrag") eintraege = eintraege.filter(x => x.id !== id);
+    else if(art === "ereignis") sonder = sonder.filter(x => x.id !== id);
+    else noten = noten.filter(x => x.id !== id);
     sichern(); zeichne();
   }
 });
@@ -1147,7 +1212,7 @@ $("#bImportText").onclick = () => {
   if(treffer){ importTabelle(werte); $("#iErgebnis").textContent = `${treffer} Zeilen übernommen. Prüfen und speichern.`; }
   else $("#iErgebnis").textContent = "Nichts erkannt. Die Stundennummern müssen mitkopiert sein.";
 };
-$("#bImportAb").onclick = () => dlgImport.close();
+$("#bImportAb").onclick = () => { dlgImport.close(); if(zurueckZuEinst){ zurueckZuEinst = false; $("#btnEinst").onclick(); } };
 $("#bImportSpeichern").onclick = () => {
   const woche = cfg.zweiWochen ? iWoche.value : "A";
   const tag = TAGE[+iTag.value];
@@ -1155,6 +1220,7 @@ $("#bImportSpeichern").onclick = () => {
     plan[woche][tag][i] = w.fach ? {fach:w.fach, raum:w.raum, lk:w.lk} : null;
   });
   sichern(); dlgImport.close();
+  if(zurueckZuEinst){ zurueckZuEinst = false; zeichne(); $("#btnEinst").onclick(); return; }
   ansicht = "tag"; gewaehlt = plusTage(montagVon(gewaehlt), +iTag.value); zeichne();
 };
 
@@ -1217,6 +1283,60 @@ function slotsAuslesen(){
     bis: z.querySelector('[data-feld=bis]').value
   })).filter(s => s.std && s.von && s.bis);
 }
+/* ---------------------------------------------------------------
+   Profile bedienen
+---------------------------------------------------------------- */
+function profilKnopf(){
+  $("#btnProfil").textContent = (profilName().trim()[0] || "P").toUpperCase();
+  $("#btnProfil").setAttribute("aria-label", "Profil: " + profilName());
+}
+function zeichneProfile(){
+  $("#profilListe").innerHTML = profile.map(x => `<li style="display:block;padding:0;border:0">
+    <div class="profilzeile">
+      <span class="name" data-wechsel="${x.id}">${esc(x.name)}</span>
+      ${x.id === profilId ? '<span class="aktivmarke">aktiv</span>' : ""}
+      <button class="mini" data-umbenennen="${x.id}">Name</button>
+      ${profile.length > 1 ? `<button class="mini" data-profilweg="${x.id}"
+         style="border-color:var(--red);color:var(--red)">×</button>` : ""}
+    </div></li>`).join("");
+}
+$("#btnProfil").onclick = () => { pNeu.value = ""; zeichneProfile(); dlgProfil.showModal(); };
+$("#bProfilAb").onclick = () => dlgProfil.close();
+$("#bProfilNeu").onclick = () => {
+  const name = pNeu.value.trim(); if(!name) return;
+  const id = String(Date.now());
+  profile.push({id, name}); profilId = id; profileSichern();
+  zustandLaden(); normalisiere(); sichern();
+  dlgProfil.close(); profilKnopf(); ansicht = "tag"; zeichne();
+};
+$("#profilListe").onclick = e => {
+  const w = e.target.closest("[data-wechsel]");
+  if(w){
+    profilId = w.dataset.wechsel; profileSichern(); zustandLaden(); normalisiere();
+    dlgProfil.close(); profilKnopf(); ansicht = "tag"; zeichne(); return;
+  }
+  const u = e.target.closest("[data-umbenennen]");
+  if(u){
+    const x = profile.find(y => y.id === u.dataset.umbenennen);
+    const name = prompt("Neuer Name", x.name);
+    if(name && name.trim()){ x.name = name.trim(); profileSichern(); zeichneProfile(); profilKnopf(); }
+    return;
+  }
+  const d = e.target.closest("[data-profilweg]");
+  if(d){
+    const x = profile.find(y => y.id === d.dataset.profilweg);
+    if(!confirm(`Profil „${x.name}" mit allen Daten löschen? Das lässt sich nicht rückgängig machen.`)) return;
+    DATEN.forEach(k => { try{ localStorage.removeItem("p" + x.id + "_" + k); }catch(e){} });
+    profile = profile.filter(y => y.id !== x.id);
+    if(profilId === x.id) profilId = profile[0].id;
+    profileSichern(); zustandLaden(); normalisiere();
+    zeichneProfile(); profilKnopf(); zeichne();
+  }
+};
+
+/* Aus den Einstellungen geöffnete Dialoge kehren dorthin zurück */
+let zurueckZuEinst = false;
+
 $("#btnEinst").onclick = () => {
   sKlasse.value = cfg.klasse;
   sZweiWochen.checked = cfg.zweiWochen;
@@ -1224,6 +1344,7 @@ $("#btnEinst").onclick = () => {
   sNotenSystem.value = cfg.notenSystem || "note6";
   sAnteilM.value = Number(cfg.anteilM) || 0;
   anteilHinweis();
+  anteilFaecherZeichnen();
   sLehrer.value  = paareText(cfg.lehrer);
   sFaecher.value = paareText(cfg.fachnamen);
   sLand.innerHTML = `<option value="">— wählen —</option>` +
@@ -1251,16 +1372,34 @@ function textPaare(t){
   });
   return o;
 }
+function anteilFaecherZeichnen(){
+  const liste = notenFaecher();
+  $("#sAnteilFaecher").innerHTML = liste.length
+    ? liste.map(f => `<div class="anteilzeile">
+        <span>${esc(fachName(f))}</span>
+        <input type="number" min="0" max="100" step="5" data-anteilfach="${esc(f)}"
+               placeholder="${Number(cfg.anteilM)||0}"
+               value="${hatEigenenAnteil(f) ? cfg.anteile[f] : ""}">
+      </div>`).join("")
+    : `<p class="hinweis">Sobald Fächer im Plan stehen, erscheinen sie hier.</p>`;
+}
+function anteilFaecherLesen(){
+  const o = {};
+  document.querySelectorAll("[data-anteilfach]").forEach(el => {
+    const v = el.value.trim();
+    if(v !== "") o[el.dataset.anteilfach] = Math.max(0, Math.min(100, Number(v) || 0));
+  });
+  return o;
+}
 function anteilHinweis(){
   const m = Math.max(0, Math.min(100, Number(sAnteilM.value) || 0));
   $("#sAnteilHinweis").textContent = `${m} % mündlich, ${100 - m} % schriftlich.`;
 }
 sAnteilM.oninput = anteilHinweis;
 sNotenSystem.onchange = () => {
-  $("#nWertLabel") && ($("#nWertLabel").textContent =
-    sNotenSystem.value === "punkte15" ? "Punkte 0–15" : "Note 1–6");
+  $("#eWertLabel").textContent = sNotenSystem.value === "punkte15" ? "Punkte 0–15" : "Note 1–6";
 };
-$("#sImport").onclick = () => { dlgEinst.close(); importOeffnen(); };
+$("#sImport").onclick = () => { zurueckZuEinst = true; dlgEinst.close(); importOeffnen(); };
 $("#slotEditor").onclick = e => {
   const b = e.target.closest("[data-slotweg]"); if(!b) return;
   const s = slotsAuslesen(); s.splice(+b.dataset.slotweg, 1); slotEditorZeichnen(s);
@@ -1316,6 +1455,7 @@ $("#bEinstSpeichern").onclick = () => {
   cfg.land = sLand.value;
   cfg.notenSystem = sNotenSystem.value;
   cfg.anteilM = Math.max(0, Math.min(100, Number(sAnteilM.value) || 0));
+  cfg.anteile = anteilFaecherLesen();
   cfg.lehrer = textPaare(sLehrer.value);
   cfg.fachnamen = textPaare(sFaecher.value);
   normalisiere(); sichern(); dlgEinst.close(); zeichne();
@@ -1384,6 +1524,7 @@ async function aktualisieren(){
 }
 
 normalisiere();
+profilKnopf();
 zeichne();
 versionPruefen();
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
