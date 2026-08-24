@@ -5,6 +5,10 @@
    und Bundesland stehen in den Einstellungen.
    ===================================================================== */
 
+/* Sichtbare Kennung der laufenden Fassung. Steht unten in der Wischzone.
+   Stimmt sie nicht mit sw.js überein, zeigt der Browser noch alte Dateien. */
+const BUILD = "v11";
+
 const STANDARD = {
   klasse: "",
   /* std = welche Stundennummern dieses Feld abdeckt.
@@ -138,6 +142,9 @@ function sichern(){
   Speicher.schreib("sonder", sonder);
 }
 const sonderAn = (d, slot) => sonder.find(x => x.datum === iso(d) && x.slot === slot) || null;
+/** Ereignisse ohne feste Stunde — am Wochenende gibt es kein Raster. */
+const sonderFrei = d => sonder.filter(x => x.datum === iso(d) && x.slot === null);
+const sonderTag  = d => sonder.filter(x => x.datum === iso(d));
 function faecher(){
   const s = new Set();
   ["A","B"].forEach(w => TAGE.forEach(t => (plan[w][t]||[]).forEach(x => x && x.fach && s.add(x.fach))));
@@ -185,8 +192,9 @@ function zeichne(){
   $("#rKal").setAttribute("aria-pressed", ansicht === "kalender");
   $("#rEin").setAttribute("aria-pressed", ansicht === "eintraege");
   $("#btnEdit").classList.toggle("hidden", ansicht !== "tag");
-  [...$("#wischPunkte").children].forEach((p,i) =>
-    p.classList.toggle("an", ANSICHTEN[i] === ansicht));
+  const punkte = $("#wischPunkte");
+  if(punkte) [...punkte.children].forEach((p,i) =>
+    p.classList.toggle("an", typeof ANSICHTEN !== "undefined" && ANSICHTEN[i] === ansicht));
   if(ansicht === "tag") zeichneTag();
   else if(ansicht === "kalender") zeichneKalender();
   else zeichneEintraege();
@@ -228,10 +236,20 @@ function zeichneTag(){
   if(idx === 5){
     $("#plan").innerHTML = [["Samstag",plusTage(mo,5)],["Sonntag",plusTage(mo,6)]].map(([n,d]) => {
       const es = eintraegeAm(d);
-      return `<div class="we-teil"><div class="eyebrow">${n} ${zwei(d.getDate())}.${zwei(d.getMonth()+1)}.</div>
-        ${es.length ? es.map(e => `<div style="margin-top:8px"><span class="khn">${e.typ}</span>
-          <span style="margin-left:7px">${e.fach ? esc(e.fach) + " — " : ""}${esc(e.titel) || ART[e.typ]}</span></div>`).join("")
-        : `<div class="detail" style="margin-top:6px">frei</div>`}</div>`;
+      const ev = sonderFrei(d);
+      const inhalt =
+        ev.map(o => `<div style="margin-top:9px" data-wesonder="${o.id}">
+             <span class="einmalig">Ereignis</span>
+             <span style="margin-left:7px">${esc(o.titel)}</span>
+             ${o.raum ? `<span class="detail" style="margin-top:2px">${esc(o.raum)}</span>` : ""}
+           </div>`).join("") +
+        es.map(e => `<div style="margin-top:9px"><span class="khn">${e.typ}</span>
+             <span style="margin-left:7px">${e.fach ? esc(e.fach) + " — " : ""}${esc(e.titel) || ART[e.typ]}</span></div>`).join("");
+      return `<div class="we-teil">
+        <div class="eyebrow">${n} ${zwei(d.getDate())}.${zwei(d.getMonth()+1)}.</div>
+        ${inhalt || `<div class="detail" style="margin-top:6px">frei</div>`}
+        <button class="mini" data-weplus="${iso(d)}" style="margin-top:11px">+ Ereignis</button>
+      </div>`;
     }).join("");
   } else {
     const tag = TAGE[idx];
@@ -320,7 +338,8 @@ function zeichneKalender(){
   for(let i = 0; i < 42; i++){
     const d = plusTage(start, i);
     const es = eintraegeAm(d).filter(e => !e.erledigt);
-    const zeichen = [...new Set(es.map(e => e.typ))].map(t => `<i>${t}</i>`).join("");
+    const zeichen = [...new Set(es.map(e => e.typ))].map(t => `<i>${t}</i>`).join("")
+      + (sonderTag(d).length ? '<span class="punktfach"></span>' : "");   // Projektarbeit u. Ä.
     html += `<button type="button" class="tagfeld ${d.getMonth() !== kalMonat.getMonth() ? "fremd" : ""}
        ${gleich(d, new Date()) ? "heute" : ""} ${freiAm(d) ? "ferien" : ""}"
        aria-pressed="${gleich(d, kalTag)}" data-kal="${iso(d)}">
@@ -333,33 +352,71 @@ function zeichneKalender(){
   $("#kalFerien").classList.toggle("hidden", !frei);
   if(frei) $("#kalFerien").textContent = frei.name + (frei.typ === "feiertag" ? " · Feiertag" : " · Ferien");
   zeichneListe("#kalListe", "#kalNix", eintraegeAm(kalTag));
+  const ev = sonderTag(kalTag);
+  if(ev.length){
+    $("#kalListe").insertAdjacentHTML("afterbegin", ev.map(o => `<li>
+      <div class="wachs"><div class="kopf"><span class="einmalig">Ereignis</span>
+        <span class="titel">${esc(o.titel)}</span></div>
+        ${o.raum ? `<div class="wann">${esc(o.raum)}</div>` : ""}</div></li>`).join(""));
+    $("#kalNix").hidden = true;
+  }
 }
+
+let einSub = null;             // null = Menü, sonst "H" | "K" | "N" | "archiv"
+
+const offeneListe = t => {
+  const heuteIso = iso(new Date());
+  return aktiv().filter(e => e.typ === t && (!e.erledigt || e.datum >= heuteIso))
+    .sort((a,b) => (a.erledigt - b.erledigt) || a.datum.localeCompare(b.datum));
+};
+const archivListe = () => eintraege.filter(e => e.geloescht)
+  .sort((a,b) => b.datum.localeCompare(a.datum));
 
 function zeichneEintraege(){
-  const heuteIso = iso(new Date());
-  const sortiert = t => aktiv()
-    .filter(e => e.typ === t && (!e.erledigt || e.datum >= heuteIso))
-    .sort((a,b) => (a.erledigt - b.erledigt) || a.datum.localeCompare(b.datum));
-  zeichneListe("#listeH", "#nixH", sortiert("H"));
-  zeichneListe("#listeK", "#nixK", sortiert("K"));
-  zeichneListe("#listeN", "#nixN", sortiert("N"));
+  $("#einMenu").classList.toggle("hidden", einSub !== null);
+  $("#einDetail").classList.toggle("hidden", einSub === null);
 
-  const archiv = eintraege.filter(e => e.geloescht)
-    .sort((a,b) => b.datum.localeCompare(a.datum));
-  $("#listeArchiv").innerHTML = archiv.map(e => {
-    const d = new Date(e.datum + "T12:00");
-    return `<li>
-      <div class="wachs">
-        <div class="kopf"><span class="khn aus">${e.typ}</span>
-          <span class="titel" style="color:var(--muted)">${e.fach ? esc(e.fach) + " — " : ""}${esc(e.titel) || ART[e.typ]}</span></div>
-        <div class="wann">${d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
-      </div>
-      <button class="mini" data-zurueck="${e.id}">Zurück</button>
-      <button class="mini" data-endgueltig="${e.id}" style="border-color:var(--red);color:var(--red)">Löschen</button>
-    </li>`;
-  }).join("");
-  $("#nixArchiv").hidden = archiv.length > 0;
+  if(einSub === null){
+    const offen = t => offeneListe(t).filter(e => !e.erledigt).length;
+    $("#zahlH").textContent = offen("H") ? `${offen("H")} offen` : "nichts offen";
+    $("#zahlK").textContent = offen("K") ? `${offen("K")} anstehend` : "nichts anstehend";
+    $("#zahlN").textContent = offen("N") ? `${offen("N")} vorhanden` : "keine";
+    $("#zahlArchiv").textContent = archivListe().length ? `${archivListe().length} im Archiv` : "leer";
+    return;
+  }
+
+  const titel = {H:"Hausaufgaben", K:"Klausuren", N:"Notizen", archiv:"Archiv"}[einSub];
+  $("#einTitel").textContent = titel;
+  $("#archivHinweis").classList.toggle("hidden", einSub !== "archiv");
+
+  if(einSub === "archiv"){
+    const liste = archivListe();
+    $("#einListe").innerHTML = liste.map(e => {
+      const d = new Date(e.datum + "T12:00");
+      return `<li>
+        <div class="wachs">
+          <div class="kopf"><span class="khn aus">${e.typ}</span>
+            <span class="titel" style="color:var(--muted)">${e.fach ? esc(e.fach) + " — " : ""}${esc(e.titel) || ART[e.typ]}</span></div>
+          <div class="wann">${d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})}</div>
+        </div>
+        <button class="mini" data-zurueck="${e.id}">Zurück</button>
+        <button class="mini" data-endgueltig="${e.id}" style="border-color:var(--red);color:var(--red)">Löschen</button>
+      </li>`;
+    }).join("");
+    $("#einNix").textContent = "Archiv ist leer.";
+    $("#einNix").hidden = liste.length > 0;
+  } else {
+    const liste = offeneListe(einSub);
+    zeichneListe("#einListe", "#einNix", liste);
+    $("#einNix").textContent = {H:"Keine offenen Hausaufgaben.", K:"Keine Klausuren eingetragen.",
+                                N:"Keine Notizen."}[einSub];
+  }
 }
+$("#einMenu").onclick = e => {
+  const b = e.target.closest("[data-sub]"); if(!b) return;
+  einSub = b.dataset.sub; zeichne();
+};
+$("#einZurueck").onclick = () => { einSub = null; zeichne(); };
 
 /* ---------------------------------------------------------------
    Navigation
@@ -388,6 +445,7 @@ $("#gitter").onclick = e => {
    Eine Geste, drei Orte: Tagesansicht blättert Tage, Kalender blättert
    Monate, die Zone unter dem Knopf wechselt die Ansicht. */
 function wischen(el, beiWisch){
+  if(!el) return;                      // Element nicht vorhanden: still überspringen
   let x0 = null, y0 = null;
   el.addEventListener("touchstart", e => {
     if(e.touches.length !== 1){ x0 = null; return; }
@@ -398,7 +456,7 @@ function wischen(el, beiWisch){
     const dx = e.changedTouches[0].clientX - x0;
     const dy = e.changedTouches[0].clientY - y0;
     x0 = null;
-    if(Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;   // eher gescrollt
+    if(Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.2) return;   // eher gescrollt
     beiWisch(dx < 0 ? 1 : -1);
   }, {passive:true});
 }
@@ -407,7 +465,34 @@ wischen($("#ansichtKal"), r => {
   kalMonat = new Date(kalMonat.getFullYear(), kalMonat.getMonth() + r, 1); zeichne();
 });
 const ANSICHTEN = ["tag", "kalender", "eintraege"];
-wischen($("#wischzone"), r => {
+
+/* Fehlt die Wischzone im HTML — etwa weil der Browser noch eine ältere
+   index.html im Speicher hat — wird sie hier angelegt. So bleibt die App
+   auch bei ungleichen Dateiständen bedienbar. */
+function wischzoneSichern(){
+  if(!document.querySelector("style#nachtrag")){   // Stil für nachgerüstete Zone
+    const st = document.createElement("style"); st.id = "nachtrag";
+    st.textContent = ".wischzone{margin-top:18px;padding:16px 0 4px;display:flex;flex-direction:column;"
+      + "align-items:center;gap:8px;touch-action:pan-y}"
+      + ".wischzone span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;"
+      + "text-transform:uppercase;color:var(--dim)}"
+      + ".punkte{display:flex;gap:7px}.punkte i{width:6px;height:6px;border-radius:99px;background:var(--line)}"
+      + ".punkte i.an{background:var(--red)}";
+    document.head.appendChild(st);
+  }
+  let z = $("#wischzone");
+  if(!z){
+    z = document.createElement("div");
+    z.id = "wischzone"; z.className = "wischzone";
+    z.innerHTML = '<div class="punkte" id="wischPunkte"><i></i><i></i><i></i></div><span></span>';
+    (document.getElementById("btnEintrag") || document.body).after(z);
+  }
+  z.querySelector("span").textContent = "Wischen wechselt die Ansicht · " + BUILD;
+  return z;
+}
+wischzoneSichern();
+const wischzone = $("#fuss") || $("#wischzone");
+wischen(wischzone, r => {
   const i = ANSICHTEN.indexOf(ansicht);
   ansicht = ANSICHTEN[(i + r + ANSICHTEN.length) % ANSICHTEN.length];
   if(ansicht === "kalender"){ kalMonat = new Date(gewaehlt); kalTag = new Date(gewaehlt); }
@@ -424,6 +509,14 @@ $("#wischPunkte").onclick = () => {
 let offenerBlock = 0;
 
 $("#plan").onclick = e => {
+  const plus = e.target.closest("[data-weplus]");
+  if(plus){ sonderDialog(new Date(plus.dataset.weplus + "T12:00"), null); return; }
+  const wes = e.target.closest("[data-wesonder]");
+  if(wes){
+    const o = sonder.find(x => x.id === wes.dataset.wesonder);
+    if(o) sonderDialog(new Date(o.datum + "T12:00"), null, o.id);
+    return;
+  }
   const b = e.target.closest("[data-block]"); if(!b) return;
   offenerBlock = +b.dataset.block;
   bearbeiten ? blockDialog() : schnellDialog();
@@ -458,7 +551,7 @@ function schnellFach(){
 }
 function schnellDialog(){
   const fach = schnellFach();
-  if(!fach){ sonderDialog(); return; }   // freie Stunde: einmaliges Ereignis
+  if(!fach){ sonderDialog(gewaehlt, offenerBlock); return; }   // freie Stunde
   const s = cfg.slots[offenerBlock];
   $("#schnellTitel").textContent = fach;
   $("#schnellZeit").textContent = `${s.von} – ${s.bis}`;
@@ -486,12 +579,20 @@ $("#bSchnellKlausur").onclick = () => {
 /* ---------------------------------------------------------------
    Einmaliges Ereignis in einer freien Stunde
 ---------------------------------------------------------------- */
-function sonderDialog(){
-  const s = cfg.slots[offenerBlock];
-  const o = sonderAn(gewaehlt, offenerBlock);
+let sonderKontext = null;      // {datum, slot, id}
+
+function sonderDialog(datum, slot, id){
+  const d = datum || gewaehlt;
+  sonderKontext = {datum: iso(d), slot: slot === undefined ? offenerBlock : slot, id: id || null};
+  const o = id ? sonder.find(x => x.id === id)
+              : (sonderKontext.slot === null ? null : sonderAn(d, sonderKontext.slot));
+  if(o) sonderKontext.id = o.id;
+  const rahmen = sonderKontext.slot === null
+    ? d.toLocaleDateString("de-DE",{weekday:"long", day:"2-digit", month:"2-digit"})
+    : `${d.toLocaleDateString("de-DE",{weekday:"long", day:"2-digit", month:"2-digit"})} · ` +
+      `${cfg.slots[sonderKontext.slot].von} – ${cfg.slots[sonderKontext.slot].bis}`;
   $("#sonderTitel").textContent = o ? "Ereignis ändern" : "Einmaliges Ereignis";
-  $("#sonderZeit").textContent =
-    `${gewaehlt.toLocaleDateString("de-DE",{weekday:"long", day:"2-digit", month:"2-digit"})} · ${s.von} – ${s.bis}`;
+  $("#sonderZeit").textContent = rahmen;
   oTitel.value = o ? o.titel : "";
   oRaum.value  = o ? (o.raum || "") : "";
   oNotiz.value = o ? (o.notiz || "") : "";
@@ -500,14 +601,17 @@ function sonderDialog(){
 }
 $("#bSonderAb").onclick = () => dlgSonder.close();
 $("#bSonderSpeichern").onclick = () => {
-  const titel = oTitel.value.trim();
-  sonder = sonder.filter(x => !(x.datum === iso(gewaehlt) && x.slot === offenerBlock));
-  if(titel) sonder.push({id:String(Date.now()), datum:iso(gewaehlt), slot:offenerBlock,
+  const k = sonderKontext, titel = oTitel.value.trim();
+  if(k.id) sonder = sonder.filter(x => x.id !== k.id);
+  else if(k.slot !== null) sonder = sonder.filter(x => !(x.datum === k.datum && x.slot === k.slot));
+  if(titel) sonder.push({id:String(Date.now()), datum:k.datum, slot:k.slot,
                          titel, raum:oRaum.value.trim(), notiz:oNotiz.value.trim()});
   sichern(); dlgSonder.close(); zeichne();
 };
 $("#bSonderWeg").onclick = () => {
-  sonder = sonder.filter(x => !(x.datum === iso(gewaehlt) && x.slot === offenerBlock));
+  const k = sonderKontext;
+  sonder = k.id ? sonder.filter(x => x.id !== k.id)
+                : sonder.filter(x => !(x.datum === k.datum && x.slot === k.slot));
   sichern(); dlgSonder.close(); zeichne();
 };
 
@@ -618,19 +722,14 @@ function listenKlick(e){
   const bea = e.target.closest("[data-bearbeite]");
   if(bea) eintragOeffnen(eintraege.find(x => x.id === bea.dataset.bearbeite));
 }
-["#tagListe","#kalListe","#listeH","#listeK","#listeN"].forEach(s => $(s).onclick = listenKlick);
+["#tagListe","#kalListe","#einListe"].forEach(s => $(s).onclick = listenKlick);
 
-/* Archiv */
-$("#btnArchiv").onclick = () => {
-  const box = $("#archivBox"), auf = box.classList.contains("hidden");
-  box.classList.toggle("hidden", !auf);
-  $("#btnArchiv").textContent = auf ? "Verbergen" : "Anzeigen";
-};
-$("#listeArchiv").onclick = e => {
+/* Archiv: zurückholen oder endgültig entfernen */
+$("#einListe").addEventListener("click", e => {
   const zurueck = e.target.closest("[data-zurueck]");
   if(zurueck){
     const it = eintraege.find(x => x.id === zurueck.dataset.zurueck);
-    if(it) it.geloescht = false;
+    if(it){ it.geloescht = false; it.erledigt = false; it.erledigtAm = null; }
     sichern(); zeichne(); return;
   }
   const weg = e.target.closest("[data-endgueltig]");
@@ -638,7 +737,7 @@ $("#listeArchiv").onclick = e => {
     eintraege = eintraege.filter(x => x.id !== weg.dataset.endgueltig);
     sichern(); zeichne();
   }
-};
+});
 
 /* ---------------------------------------------------------------
    Plan einfügen
@@ -849,4 +948,5 @@ document.addEventListener("visibilitychange", () => { if(!document.hidden) zeich
 
 normalisiere();
 zeichne();
+console.log("Stundenplan " + BUILD + " geladen");
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});

@@ -110,9 +110,9 @@ section{margin-top:30px}
 .tagfeld.heute{border-color:var(--red)}
 .tagfeld.ferien{background:var(--line2)}
 .tagfeld[aria-pressed=true]{background:var(--text);color:var(--ink)}
-.tagfeld .zeichen{display:flex;gap:2px;font-size:9px;font-weight:700;color:var(--red);line-height:1}
+.tagfeld .zeichen{display:flex;gap:3px;align-items:center;font-size:9px;font-weight:700;color:var(--red);line-height:1}
 .tagfeld[aria-pressed=true] .zeichen{color:var(--ink)}
-.punktfach{width:5px;height:5px;border-radius:99px;background:var(--red)}
+.punktfach{width:5px;height:5px;border-radius:99px;background:var(--red);flex:none}
 .tagfeld[aria-pressed=true] .punktfach{background:var(--ink)}
 
 /* ---------- Großer Knopf ---------- */
@@ -147,9 +147,12 @@ textarea{min-height:120px;font-family:var(--mono);font-size:12px}
 .datumfeld[aria-expanded=true]{border-color:var(--text)}
 .datumwahl{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:12px}
 
-/* Wischzone unter dem Knopf */
-.wischzone{margin-top:18px;padding:16px 0 4px;display:flex;flex-direction:column;
-  align-items:center;gap:8px;touch-action:pan-y}
+/* Fußbereich: Knopf und Wischzone teilen sich eine Wischfläche,
+   die den restlichen Platz der Seite ausfüllt. */
+body{display:flex;flex-direction:column;min-height:100dvh}
+#fuss{display:flex;flex-direction:column;flex:1 0 auto;touch-action:pan-y}
+.wischzone{margin-top:14px;padding:18px 0 6px;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:8px;flex:1 0 auto;min-height:84px;touch-action:pan-y}
 .wischzone span{font-family:var(--mono);font-size:10px;letter-spacing:.14em;
   text-transform:uppercase;color:var(--dim)}
 .punkte{display:flex;gap:7px}
@@ -243,39 +246,32 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 
 <!-- ============ EINTRÄGE ============ -->
 <div id="ansichtEin" class="hidden">
-  <section style="margin-top:4px">
-    <div class="eyebrow">Hausaufgaben</div>
-    <ul class="liste" id="listeH"></ul>
-    <p class="nix" id="nixH" hidden>Keine offenen Hausaufgaben.</p>
-  </section>
-  <section>
-    <div class="eyebrow">Klausuren</div>
-    <ul class="liste" id="listeK"></ul>
-    <p class="nix" id="nixK" hidden>Keine Klausuren eingetragen.</p>
-  </section>
-  <section>
-    <div class="eyebrow">Notizen</div>
-    <ul class="liste" id="listeN"></ul>
-    <p class="nix" id="nixN" hidden>Keine Notizen.</p>
-  </section>
-  <section>
-    <div style="display:flex;align-items:center;gap:10px">
-      <div class="eyebrow">Archiv</div>
-      <button class="mini" id="btnArchiv" style="margin-left:auto">Anzeigen</button>
+  <div id="einMenu">
+    <div class="stapel" style="margin-top:4px">
+      <button type="button" data-sub="H">Hausaufgaben<small id="zahlH"></small></button>
+      <button type="button" data-sub="K">Klausuren<small id="zahlK"></small></button>
+      <button type="button" data-sub="N">Notizen<small id="zahlN"></small></button>
+      <button type="button" data-sub="archiv">Archiv<small id="zahlArchiv"></small></button>
     </div>
-    <div id="archivBox" class="hidden">
-      <p class="hinweis">Gelöschtes landet hier. Zum endgültigen Entfernen ein zweites Mal löschen.</p>
-      <ul class="liste" id="listeArchiv"></ul>
-      <p class="nix" id="nixArchiv" hidden>Archiv ist leer.</p>
+  </div>
+  <div id="einDetail" class="hidden">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="mini" id="einZurueck">‹ Zurück</button>
+      <div class="eyebrow" id="einTitel"></div>
     </div>
-  </section>
+    <p class="hinweis hidden" id="archivHinweis">Gelöschtes landet hier.
+       Zum endgültigen Entfernen ein zweites Mal löschen.</p>
+    <ul class="liste" id="einListe"></ul>
+    <p class="nix" id="einNix" hidden></p>
+  </div>
 </div>
 
-<button class="gross" id="btnEintrag">+ Eintrag</button>
-
-<div class="wischzone" id="wischzone">
-  <div class="punkte" id="wischPunkte"><i></i><i></i><i></i></div>
-  <span>Wischen wechselt die Ansicht</span>
+<div id="fuss">
+  <button class="gross" id="btnEintrag">+ Eintrag</button>
+  <div class="wischzone" id="wischzone">
+    <div class="punkte" id="wischPunkte"><i></i><i></i><i></i></div>
+    <span>Wischen wechselt die Ansicht</span>
+  </div>
 </div>
 
 <!-- ---------- Block bearbeiten ---------- -->
