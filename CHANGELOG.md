@@ -2,6 +2,24 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v39
+
+**Neu**
+- **Aufbewahrungsfrist fürs Archiv:** ⚙ → *Archiv* → für immer, 30 Tage,
+  3, 6 oder 12 Monate. Voreingestellt bleibt **für immer** — eine
+  Aktualisierung nimmt niemandem Daten weg
+- Oben im Archiv steht, wann Gelöschtes endgültig entfernt wird, und wie viele
+  Einträge in der kommenden Woche verloren gehen
+- Jede Zeile zeigt Löschdatum und Restzeit; die letzte Woche farbig
+- Die Liste ist nach Restzeit sortiert — was zuerst geht, steht oben
+- Die Auswahl in den Einstellungen sagt vorher, wie viele Einträge beim
+  Speichern sofort verschwänden
+
+**Geändert**
+- Archivierte Einträge halten jetzt fest, **wann** sie gelöscht wurden. Für
+  alles, was schon vorher im Archiv lag, beginnt die Frist beim ersten Öffnen —
+  nicht rückwirkend
+
 ## v38
 
 **Neu**

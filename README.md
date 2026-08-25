@@ -192,6 +192,8 @@ Beim Öffnen steht die Auswahl am Anfang, auch bei nur einem Profil: So siehst d
 
 Gelöschtes verschwindet nicht sofort, sondern landet im Archiv — Einträge, Ereignisse und Noten gleichermaßen. Von dort zurückholen oder endgültig entfernen. Abgehakte Hausaufgaben und Klausuren wandern nach sieben Tagen automatisch dorthin.
 
+Wie lange das Archiv aufbewahrt, stellst du unter ⚙ → **Archiv** ein: für immer (Voreinstellung), 30 Tage, 3, 6 oder 12 Monate. Ist eine Frist gesetzt, nennt der Hinweis oben im Archiv sie, und jede Zeile zeigt ihre Restzeit.
+
 ---
 
 ## An eine andere Schule anpassen

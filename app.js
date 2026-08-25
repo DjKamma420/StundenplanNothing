@@ -85,6 +85,7 @@ const STANDARD = {
   sicherTage: 28,               // Abstand der Erinnerung in Tagen, 0 = nie erinnern
   sicherAuto: false,            // beim Öffnen von selbst in den Ordner schreiben
   sicherHalten: 3,              // Monate, die im Ordner bleiben; 0 = alles behalten
+  archivTage: 0,                // Tage, die Gelöschtes im Archiv bleibt; 0 = für immer
   startProfil: "immer",         // Profilauswahl beim Öffnen: immer | mehrere | nie
   stdProTag: 8,                 // Stunden je Schultag, für die Umrechnung in Fehltage
   reiheEin: null,               // Reihenfolge im Einträge-Menü
@@ -269,6 +270,19 @@ function normalisiere(){
     if(e.erledigt && !e.erledigtAm) e.erledigtAm = iso(new Date());
   });
   noten.forEach(n => { if(n.geloescht === undefined) n.geloescht = false; });
+  /* Fassungen vor v39 hielten nicht fest, wann etwas ins Archiv kam. Für die
+     beginnt die Frist heute, nicht rückwirkend — sonst verschwände beim ersten
+     Öffnen ohne Vorwarnung ein ganzes Archiv. */
+  let gestempelt = false;
+  const stempeln = x => {
+    if(x.geloescht && !x.geloeschtAm){ x.geloeschtAm = iso(new Date()); gestempelt = true; }
+  };
+  eintraege.forEach(stempeln); sonder.forEach(stempeln); noten.forEach(stempeln);
+  if(gestempelt){
+    Speicher.schreib("eintraege", eintraege);
+    Speicher.schreib("sonder", sonder);
+    Speicher.schreib("noten", noten);
+  }
   sonder.forEach(o => {
     if(o.geloescht === undefined) o.geloescht = false;
     if(!EREIGNISARTEN.includes(o.art)) o.art = "ereignis";
@@ -283,15 +297,48 @@ function aufraeumen(){
   let bewegt = false;
   eintraege.forEach(e => {
     if(!e.geloescht && e.erledigt && (e.typ === "H" || e.typ === "K")
-       && e.erledigtAm && e.erledigtAm <= grenze){ e.geloescht = true; bewegt = true; }
+       && e.erledigtAm && e.erledigtAm <= grenze){ insArchiv(e); bewegt = true; }
   });
   if(bewegt) Speicher.schreib("eintraege", eintraege);
+  archivAufraeumen();
+}
+
+/* Wann etwas im Archiv gelandet ist. Ältere Fassungen haben das nicht
+   festgehalten — für die beginnt die Frist heute, nicht rückwirkend.
+   Sonst verschwände beim ersten Öffnen ohne Vorwarnung ein ganzes Archiv. */
+const archiviertAm = x => x.geloeschtAm || iso(new Date());
+const archivFrist = () => Math.max(0, Number(cfg.archivTage) || 0);
+/** Tage bis zur endgültigen Entfernung, oder null bei „für immer". */
+function archivRest(x){
+  const tage = archivFrist();
+  if(!tage) return null;
+  const alter = Math.round((new Date() - new Date(archiviertAm(x)+"T12:00"))/864e5);
+  return tage - alter;
+}
+/* Entfernt endgültig, was die Frist überschritten hat. Bei 0 passiert nichts. */
+function archivAufraeumen(){
+  if(!archivFrist()) return;
+  const behalten = x => !x.geloescht || archivRest(x) > 0;
+  const vorher = eintraege.length + sonder.length + noten.length;
+  eintraege = eintraege.filter(behalten);
+  sonder    = sonder.filter(behalten);
+  noten     = noten.filter(behalten);
+  if(eintraege.length + sonder.length + noten.length !== vorher){
+    Speicher.schreib("eintraege", eintraege);
+    Speicher.schreib("sonder", sonder);
+    Speicher.schreib("noten", noten);
+  }
 }
 function sichern(){
   Speicher.schreib("cfg", cfg); Speicher.schreib("plan", plan);
   Speicher.schreib("eintraege", eintraege); Speicher.schreib("ferien", ferien);
   Speicher.schreib("sonder", sonder); Speicher.schreib("noten", noten);
 }
+/* Archivieren und Zurückholen an einer Stelle: ohne geloeschtAm wüsste
+   niemand, wann die Aufbewahrungsfrist abläuft. */
+function insArchiv(x){ x.geloescht = true; x.geloeschtAm = iso(new Date()); }
+function ausArchiv(x){ x.geloescht = false; x.geloeschtAm = null; }
+
 const aktiv        = () => eintraege.filter(e => !e.geloescht);
 const sonderAktiv  = () => sonder.filter(o => !o.geloescht);
 const notenAktiv   = () => noten.filter(n => !n.geloescht);
@@ -684,11 +731,25 @@ const kommendeEreignisse = () => sonderAktiv()
 function archivListe(){
   return [
     ...eintraege.filter(e => e.geloescht).map(e => ({art:"eintrag", id:e.id, marke:e.typ, datum:e.datum,
+      seit:archiviertAm(e), rest:archivRest(e),
       text:(e.fach ? e.fach+" — " : "") + (e.titel || ART[e.typ] || "")})),
-    ...sonder.filter(o => o.geloescht).map(o => ({art:"ereignis", id:o.id, marke:"E", datum:o.datum, text:o.titel})),
+    ...sonder.filter(o => o.geloescht).map(o => ({art:"ereignis", id:o.id, marke:"E", datum:o.datum,
+      seit:archiviertAm(o), rest:archivRest(o), text:o.titel})),
     ...noten.filter(n => n.geloescht).map(n => ({art:"note", id:n.id, marke:"G", datum:n.datum,
+      seit:archiviertAm(n), rest:archivRest(n),
       text:`${notenText(n.wert)} · ${fachName(n.fach)}${n.titel ? " — "+n.titel : ""}`}))
-  ].sort((a,b) => b.datum.localeCompare(a.datum));
+  ].sort((a,b) => (a.rest === null ? 1e9 : a.rest) - (b.rest === null ? 1e9 : b.rest)
+               || b.datum.localeCompare(a.datum));
+}
+/* Was der Hinweis oben im Archiv sagt. */
+function archivHinweis(liste){
+  const tage = archivFrist();
+  if(!tage) return "Gelöschtes bleibt hier, bis du es selbst entfernst. "
+    + "Eine Frist stellst du unter ⚙ → Archiv ein.";
+  const bald = liste.filter(a => a.rest !== null && a.rest <= 7).length;
+  return `Gelöschtes wird ${zahl(tage,"Tag","Tage")} nach dem Löschen endgültig entfernt.`
+    + (bald ? ` ${zahl(bald,"Eintrag geht","Einträge gehen")} in der kommenden Woche verloren.` : "")
+    + " Zum sofortigen Entfernen ein zweites Mal löschen.";
 }
 const archivFinden = (art,id) => art === "eintrag" ? eintraege.find(x => x.id === id)
   : art === "ereignis" ? sonder.find(x => x.id === id) : noten.find(x => x.id === id);
@@ -697,6 +758,7 @@ function zeichneEintraege(){
   $("#einMenu").classList.toggle("hidden", einSub !== null);
   $("#einDetail").classList.toggle("hidden", einSub === null);
   $("#einSubHinweis").textContent = "";
+  $("#einSubHinweis").style.color = "";
 
   if(einSub === null){
     kachelnZeichnen();
@@ -721,15 +783,22 @@ function zeichneEintraege(){
 
   if(einSub === "archiv"){
     const liste = archivListe();
-    $("#einSubHinweis").textContent = "Gelöschtes landet hier. Zum endgültigen Entfernen ein zweites Mal löschen.";
-    $("#einListe").innerHTML = liste.map(e => `<li>
+    const el = $("#einSubHinweis");
+    el.textContent = archivHinweis(liste);
+    el.style.color = archivFrist() ? "var(--akzent)" : "";
+    $("#einListe").innerHTML = liste.map(e => {
+      const rest = e.rest === null ? ""
+        : e.rest <= 0 ? " · wird beim nächsten Öffnen entfernt"
+        : e.rest === 1 ? " · noch heute" : ` · noch ${zahl(e.rest,"Tag","Tage")}`;
+      return `<li>
       <div class="wachs">
         <div class="kopf"><span class="khn aus">${esc(e.marke)}</span>
           <span class="titel" style="color:var(--muted)">${esc(e.text)}</span></div>
-        <div class="wann">${zeigDatum(e.datum)}</div></div>
+        <div class="wann">${zeigDatum(e.datum)} · gelöscht ${zeigDatum(e.seit)}<span
+          style="${e.rest !== null && e.rest <= 7 ? "color:var(--akzent)" : ""}">${rest}</span></div></div>
       <button class="mini" data-zurueck="${e.art}:${e.id}">Zurück</button>
       <button class="mini" data-endgueltig="${e.art}:${e.id}" style="border-color:var(--akzent);color:var(--akzent)">Löschen</button>
-    </li>`).join("");
+    </li>`; }).join("");
     $("#einNix").textContent = "Archiv ist leer.";
     $("#einNix").hidden = liste.length > 0;
     return;
@@ -1402,7 +1471,7 @@ $("#bEintragWeg").onclick = () => {
   const ziel = ereignisId ? sonder.find(x => x.id === ereignisId)
              : noteId     ? noten.find(x => x.id === noteId)
              :              eintraege.find(x => x.id === bearbeiteId);
-  if(ziel) ziel.geloescht = true;
+  if(ziel) insArchiv(ziel);
   sichern(); dlgEintrag.close(); zeichne();
 };
 
@@ -1448,7 +1517,7 @@ $("#einListe").addEventListener("click", e => {
   if(zurueck){
     const [art,id] = zurueck.dataset.zurueck.split(":");
     const it = archivFinden(art,id);
-    if(it){ it.geloescht = false; if(art === "eintrag"){ it.erledigt = false; it.erledigtAm = null; } }
+    if(it){ ausArchiv(it); if(art === "eintrag"){ it.erledigt = false; it.erledigtAm = null; } }
     sichern(); zeichne(); return;
   }
   const weg = e.target.closest("[data-endgueltig]");
@@ -1922,6 +1991,7 @@ function cfgSaeubern(roh){
   c.sicherTage  = alsZahl(c.sicherTage, 0, 365, 28);
   c.sicherAuto  = !!c.sicherAuto;
   c.sicherHalten = alsZahl(c.sicherHalten, 0, 60, 3);
+  c.archivTage = alsZahl(c.archivTage, 0, 3650, 0);
   c.startProfil = ["immer","mehrere","nie"].includes(c.startProfil) ? c.startProfil : "immer";
   c.fassung = alsZahl(c.fassung, 0, 999, 0);
   c.stdProTag  = alsZahl(c.stdProTag, 1, 16, 8);
@@ -1955,7 +2025,8 @@ function eintragSaeubern(e){
     notiz:  alsText(e.notiz, 20000),
     erledigt:   !!e.erledigt,
     erledigtAm: alsDatum(e.erledigtAm) || null,
-    geloescht:  !!e.geloescht
+    geloescht:  !!e.geloescht,
+    geloeschtAm: alsDatum(e.geloeschtAm) || null
   };
   if(e.typ === "M"){
     raus.bilder = (Array.isArray(e.bilder) ? e.bilder : []).map(alsBild).filter(Boolean).slice(0, 30);
@@ -1982,7 +2053,7 @@ function sonderSaeubern(o){
           art:  EREIGNISARTEN.includes(o.art) ? o.art : "ereignis",
           titel:alsText(o.titel, 200) || "Ereignis",
           raum: alsText(o.raum, 40), notiz: alsText(o.notiz, 4000),
-          geloescht: !!o.geloescht};
+          geloescht: !!o.geloescht, geloeschtAm: alsDatum(o.geloeschtAm) || null};
 }
 function noteSaeubern(g){
   if(!g || typeof g !== "object") return null;
@@ -1992,7 +2063,7 @@ function noteSaeubern(g){
           wert: Math.max(0, Math.min(15, wert)),
           datum: alsDatum(g.datum) || iso(new Date()),
           titel: alsText(g.titel, 200), notiz: alsText(g.notiz, 4000),
-          geloescht: !!g.geloescht};
+          geloescht: !!g.geloescht, geloeschtAm: alsDatum(g.geloeschtAm) || null};
 }
 /* Aus beliebigem JSON wird ein Datensatz — oder ein leeres Ergebnis. */
 function paketSaeubern(d){
@@ -2317,7 +2388,15 @@ MA = Mathematik</pre>
    nachgefragt.</p>
   <p>Abgehakte Hausaufgaben und Klausuren wandern nach <b>sieben Tagen</b>
    automatisch ins Archiv. Notizen, Merkblätter und Fehlzeiten bleiben stehen —
-   die will man behalten.</p>`},
+   die will man behalten.</p>
+  <p><b>Wie lange das Archiv aufbewahrt</b>, stellst du unter ⚙ → <b>Archiv</b> ein:
+   für immer (Voreinstellung), 30 Tage, 3, 6 oder 12 Monate. Ist eine Frist gesetzt,
+   nennt der Hinweis oben im Archiv sie, und jede Zeile zeigt, wie lange sie noch
+   bleibt. Die letzte Woche wird farbig hervorgehoben.</p>
+  <p class="hWarn">Eine Frist entfernt Einträge <b>endgültig</b> — danach hilft nur
+   noch eine Sicherung. Die Uhr läuft ab dem Tag des Löschens; für alles, was schon
+   vor dieser Fassung im Archiv lag, beginnt sie beim ersten Öffnen, nicht
+   rückwirkend.</p>`},
 
 {id:"noten", teil:"Noten und Zeugnis", titel:"Noten eintragen", worte:"note punkte system 1-6 0-15",
  text:`<p>Unter ⚙ → <b>Noten</b> wählst du zwischen <b>Noten 1–6</b> und
@@ -2783,6 +2862,28 @@ function sicherungStand(){
     ? `Letzte Sicherung vor ${zahl(alter,"Tag","Tagen")} — Zeit für eine neue.`
     : `Letzte Sicherung: ${zeigDatum(l)}${alter ? ` (vor ${zahl(alter,"Tag","Tagen")})` : " (heute)"}.`;
 }
+function archivHinweisEinstellung(){
+  const tage = Math.max(0, Number(sArchivTage.value) || 0);
+  const el = $("#sArchivHinweis");
+  if(!tage){
+    el.textContent = "Nichts wird von selbst entfernt. Das Archiv wächst, bis du "
+      + "einzelne Einträge endgültig löschst.";
+    el.style.color = "";
+    return;
+  }
+  /* Vor dem Speichern zeigen, was diese Wahl sofort kosten würde. */
+  const jetzt = archivListe();
+  const weg = jetzt.filter(a => {
+    const alter = Math.round((new Date() - new Date(a.seit+"T12:00"))/864e5);
+    return alter >= tage;
+  }).length;
+  el.textContent = `Gelöschtes wird ${zahl(tage,"Tag","Tage")} nach dem Löschen `
+    + "endgültig entfernt — das lässt sich nicht rückgängig machen."
+    + (weg ? ` Beim Speichern verschwinden dadurch sofort ${zahl(weg,"Eintrag","Einträge")}.` : "");
+  el.style.color = weg ? "var(--akzent)" : "";
+}
+sArchivTage.onchange = archivHinweisEinstellung;
+
 function rhythmusHinweis(){
   const tage = Math.max(0, Number(sRhythmus.value) || 0);
   const monate = Math.max(0, Number(sHalten.value) || 0);
@@ -2847,6 +2948,9 @@ function einstellungenOeffnen(){
   sNotenSystem.value = cfg.notenSystem; sAnteilM.value = Number(cfg.anteilM)||0;
   anteilHinweis(); anteilFaecherZeichnen();
   sStdProTag.value = Math.max(1, Number(cfg.stdProTag) || 8);
+  sArchivTage.value = String(archivFrist());
+  if(sArchivTage.selectedIndex < 0) sArchivTage.value = "0";
+  archivHinweisEinstellung();
   reiheEinListe = reiheEin().slice();
   reiheFachListe = fachReihenfolge().slice();
   reihenZeichnen();
@@ -3069,6 +3173,7 @@ $("#bEinstSpeichern").onclick = () => {
   cfg.startProfil = sStartProfil.value;
   cfg.melden = sMelden.checked;
   cfg.stdProTag = Math.max(1, Math.min(16, Number(sStdProTag.value) || 8));
+  cfg.archivTage = Math.max(0, Math.min(3650, Number(sArchivTage.value) || 0));
   cfg.sicherTage = Math.max(0, Math.min(365, Number(sRhythmus.value) || 0));
   cfg.sicherHalten = Math.max(0, Math.min(60, Number(sHalten.value) || 0));
   cfg.sicherAuto = sAuto.checked;
