@@ -6,6 +6,7 @@ name: Prüfen
 on:
   push:
   pull_request:
+  workflow_call:        # damit deploy.yml diese Prüfungen davorschalten kann
 
 jobs:
   pruefen:

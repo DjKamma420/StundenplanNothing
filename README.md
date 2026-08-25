@@ -19,6 +19,7 @@ Das heißt konkret:
 - Löschst du in Chrome die **„Cookies und Websitedaten"**, ist dein kompletter Plan weg. Samt Noten, Hausaufgaben und Merkblättern. Unwiederbringlich.
 - Deinstallierst du die App oder wechselst das Handy, ist alles weg.
 - Der private oder Inkognito-Modus vergisst alles beim Schließen.
+- **Auf dem iPhone:** Öffnest du die App nur als Lesezeichen in Safari, löscht Safari die Daten nach sieben Tagen ohne Benutzung von selbst. Leg sie über *Teilen → Zum Home-Bildschirm* auf den Startbildschirm — dann bleibt alles.
 - Niemand kann dir die Daten wiederherstellen — auch ich nicht, denn sie waren nie irgendwo anders.
 
 **Deshalb: Mach regelmäßig eine Sicherung.** ⚙ → Sicherung → *Als Datei sichern*. Die Datei landet in deinen Downloads; schick sie dir selbst per Mail oder leg sie in eine Cloud. Nach vier Wochen erinnert dich die App oben in der Tagesansicht daran.
@@ -143,9 +144,20 @@ Werden in **Unterrichtsstunden** gezählt, nicht je Fach — so steht es auch au
 
 Tippst du eine Stunde im Plan an und wählst *Fehlzeit*, ist die Stundenzahl des Blocks schon eingetragen.
 
-### Eigene freie Tage
+### Im Kalender eintragen
 
-Im Kalender ein Feld **gedrückt halten** öffnet „Tag markieren". Damit trägst du schuleigene freie Tage, Praktika oder Ausflüge ein, auch über mehrere Tage. Sie werden grau dargestellt wie Ferien und überleben ein erneutes Laden der offiziellen Ferientermine.
+Ein Feld **doppelt antippen** oder **gedrückt halten** öffnet das Tagesmenü. Von dort legst du an, was an diesem Tag ansteht:
+
+| | |
+|---|---|
+| **Termin** | ganzer Tag oder eine bestimmte Stunde |
+| **Hausaufgabe** | mit Fälligkeit an diesem Tag |
+| **Klausur** | Termin |
+| **Notiz** | freier Text |
+| **Fehlzeit** | versäumte Stunden |
+| **Freier Tag** | schuleigene freie Tage, Praktika, Ausflüge — auch über mehrere Tage |
+
+Das Menü zeigt oben, was an dem Tag schon steht. Freie Tage werden grau dargestellt wie Ferien und überleben ein erneutes Laden der offiziellen Ferientermine.
 
 ### Reihenfolge anpassen
 
@@ -168,7 +180,9 @@ Eine Web-App kann sich **nicht selbst wecken**. Deshalb zwei Wege:
 
 ### Profile
 
-Mehrere Profile auf einem Gerät. Jedes hat eigenen Plan, eigene Einträge, Noten, Merkblätter und Einstellungen — nichts wird geteilt. Bei mehr als einem Profil erscheint beim Öffnen eine Auswahl. Jederzeit über den Buchstaben oben rechts erreichbar.
+Mehrere Profile auf einem Gerät. Jedes hat eigenen Plan, eigene Einträge, Noten, Merkblätter und Einstellungen — nichts wird geteilt.
+
+Beim Öffnen steht die Auswahl am Anfang, auch bei nur einem Profil: So siehst du immer, in welchen Datensatz du gleich schreibst. Unter ⚙ → *Beim Öffnen* lässt sich das auf *nur bei mehreren Profilen* oder *gleich in den Plan* stellen. Jederzeit über den Buchstaben oben rechts erreichbar.
 
 ### Archiv
 

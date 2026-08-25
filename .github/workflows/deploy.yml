@@ -1,0 +1,85 @@
+# Veröffentlichen auf GitHub Pages — aber erst, wenn die Prüfungen bestanden
+# sind. Hängt Pages direkt am Branch oder an einem ungeprüften Workflow, geht
+# jeder Push live, auch ein kaputter: genau so kam in v32 ein Absturz auf die
+# Geräte.
+#
+# Kein Jekyll. Es gibt nichts zu bauen — die App besteht aus fertigen
+# Dateien. Jekyll würde nur die Markdown-Dateien des Repositories zu
+# Webseiten rendern und den Vorgang verlangsamen.
+#
+# Pages muss unter Settings -> Pages -> Source auf "GitHub Actions" stehen.
+name: Veröffentlichen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Nie zwei Veröffentlichungen gleichzeitig; die laufende darf zu Ende gehen.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  pruefen:
+    uses: ./.github/workflows/pruefen.yml
+
+  veroeffentlichen:
+    needs: pruefen
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Versionsnummer muss sich geändert haben
+        run: |
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            ALT=$(git show HEAD~1:sw.js 2>/dev/null | grep -oP 'VERSION = "\K[^"]+' || echo "")
+            NEU=$(grep -oP 'VERSION = "\K[^"]+' sw.js)
+            if [ -n "$ALT" ] && [ "$ALT" = "$NEU" ]; then
+              if ! git diff --quiet HEAD~1 HEAD -- index.html app.js; then
+                echo "index.html oder app.js geändert, aber VERSION steht weiter auf $NEU."
+                echo "Ohne neue Nummer holen die Geräte die Änderung nicht."
+                exit 1
+              fi
+            fi
+          fi
+          echo "Version in Ordnung."
+
+      # Die Liste stammt aus sw.js selbst. Damit kann sie nicht auseinander-
+      # laufen: fehlt eine dort genannte Datei, scheitert die Veröffentlichung,
+      # statt dass der Service Worker später beim Nutzer nicht installiert.
+      - name: Seite aus der Dateiliste des Service Workers zusammenstellen
+        run: |
+          node -e '
+            const fs = require("fs");
+            const treffer = fs.readFileSync("sw.js", "utf8").match(/const DATEIEN = \[([^\]]+)\]/);
+            if (!treffer) { console.error("DATEIEN in sw.js nicht gefunden."); process.exit(1); }
+            const dateien = (treffer[1].match(/"([^"]+)"/g) || [])
+              .map(s => s.slice(1, -1).replace(/^\.\//, ""))
+              .filter(Boolean);
+            if (!dateien.length) { console.error("DATEIEN ist leer."); process.exit(1); }
+            fs.mkdirSync("_site", { recursive: true });
+            for (const d of dateien.concat("sw.js")) {
+              if (!fs.existsSync(d)) { console.error("In sw.js genannt, aber nicht vorhanden: " + d); process.exit(1); }
+              fs.copyFileSync(d, "_site/" + d);
+            }
+            fs.writeFileSync("_site/.nojekyll", "");
+            console.log("Veröffentlicht wird: " + dateien.concat("sw.js").join(", "));
+          '
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: pages
+        uses: actions/deploy-pages@v5

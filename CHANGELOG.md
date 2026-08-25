@@ -2,6 +2,72 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v37
+
+**Behoben**
+- Der Abruf der Ferientermine konnte ewig auf einen hängenden Dienst warten;
+  „Wird geladen …" blieb dann für immer stehen. Jetzt bricht er nach 15
+  Sekunden ab und sagt, was los ist
+- Eine unvollständige Antwort des Ferien-Dienstes konnte die Einstellungen
+  abstürzen lassen. Fehlende Felder werden übersprungen
+- Auch die Versionsabfrage hat jetzt eine Zeitgrenze
+- Zwei Zugriffe auf den Plan waren nicht abgesichert, wenn sie vor dem
+  ersten Zeichnen liefen
+
+**Neu**
+- Der Datenstand steht jetzt in den gespeicherten Daten. Trifft eine ältere
+  App auf neuere Daten, sagt sie das, statt sie stillschweigend zu beschneiden
+- Einlesen einer Sicherung fragt nach, bevor es einen vorhandenen Plan
+  ersetzt — und nennt dabei, wann zuletzt gesichert wurde
+- Der rote Fehlerkasten nennt Version, Sprache, Bildschirmgröße und Browser.
+  Ohne Server gibt es kein Protokoll; eine Meldung ist die einzige Quelle
+- Beim Abruf der Ferientermine erfährt der Dienst nicht mehr, von welcher
+  Seite die Anfrage kommt
+
+**Betrieb**
+- `.gitignore`: Sicherungsdateien der App gehören nie ins Repository — sie
+  enthalten Noten, Fehlzeiten und Fotos
+- Veröffentlichen läuft über GitHub Actions und erst nach bestandener
+  Prüfung. Bisher ging jeder Push live, auch ein kaputter
+- Die Prüfung schlägt fehl, wenn `index.html` oder `app.js` geändert wurden,
+  ohne die Versionsnummer in `sw.js` hochzuzählen
+- `DEPLOYMENT.md` beschreibt Veröffentlichen, Zurückrollen und Selbsthosten
+- Kein Jekyll: veröffentlicht werden nur die sechs Dateien der App, und die
+  Liste stammt aus `sw.js` selbst — Auslieferung und Zwischenspeicher können
+  so nicht auseinanderlaufen
+
+## v36
+
+**Behoben (Darstellung am Rechner)**
+- Der Eintragsknopf stand links statt mittig. Er ist ein `<button>` und damit
+  von Haus aus inline — `margin:auto` zentriert daran nichts. Auf dem Handy
+  fiel es nicht auf, weil die Spalte dort die volle Breite hat
+- Die Reiterleiste sprang bei jedem Ansichtswechsel um 44 px, weil der Stift
+  nur in der Tagesansicht steht. Sein Platz bleibt jetzt reserviert
+- Der Monatstitel im Kalender stand 87 px neben der Mitte
+
+**Behoben (iPhone und iPad)**
+- Eingabefelder unter 16 px ließen Safari beim Antippen in die Seite zoomen,
+  ohne wieder herauszukommen. Stundenraster, Importtabelle, Merkblatt-Text
+  und Verhältnisfelder sind jetzt bei 16 px
+- Langes Drücken legte unter iOS das eigene Auswahlmenü über die Geste
+- Ankreuzfelder brauchen vor Safari 15.4 die Herstellerschreibweise
+- Safari vergrößerte die Schrift im Querformat eigenmächtig
+- Auf schmalen Geräten (360–375 px) liefen die Zeilen des Stundenrasters aus
+  dem Dialog heraus, weil `1fr` nicht unter die Inhaltsbreite schrumpft
+- Ein zu alter Browser zeigt jetzt einen klaren Satz statt stummer Knöpfe
+
+## v35
+
+**Neu**
+- Beim Öffnen steht die **Profilauswahl** am Anfang, auch bei nur einem Profil —
+  wer sie sieht, weiß, in welchen Datensatz er gleich schreibt. Unter ⚙ → Darstellung
+  umstellbar auf „nur bei mehreren Profilen" oder „gleich in den Plan"
+- Im Kalender öffnet **Doppeltippen oder gedrückt halten** ein Tagesmenü: Termin,
+  Hausaufgabe, Klausur, Notiz, Fehlzeit oder freier Tag. Bisher gab es dort nur
+  den freien Tag
+- Das Menü zeigt, was an dem Tag schon steht, und ob er als frei markiert ist
+
 ## v34
 
 **Neu**

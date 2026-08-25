@@ -14,6 +14,8 @@ Dazu `.github/workflows/pruefen.yml`: prüft bei jedem Push die JavaScript-Synta
 das Manifest und ob jede in `app.js` angesprochene Kennung in `index.html` steht.
 Das ist kein Build-Vorgang — es entsteht nichts, es wird nur nachgesehen.
 
+Betrieb, Veröffentlichung und Rückzug stehen in [DEPLOYMENT.md](DEPLOYMENT.md).
+
 Zum Ausprobieren reicht es, `index.html` im Browser zu öffnen. Für Service Worker und Installation braucht es HTTPS, also GitHub Pages oder einen lokalen Server.
 
 ## Regeln

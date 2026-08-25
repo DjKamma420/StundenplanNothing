@@ -18,7 +18,14 @@ function zeigeFehler(text, quelle){
         + "white-space:pre-wrap;max-height:52vh;overflow:auto";
       (document.body || document.documentElement).appendChild(k);
     }
-    k.textContent = "Fehler\n" + text + (quelle ? "\n" + quelle : "")
+    let umgebung = "";
+    try{
+      umgebung = "\n" + (typeof BUILD === "string" ? BUILD : "?")
+        + " · " + (navigator.language || "?")
+        + " · " + (screen.width + "×" + screen.height)
+        + " · " + navigator.userAgent.slice(0, 120);
+    }catch(e){}
+    k.textContent = "Fehler\n" + text + (quelle ? "\n" + quelle : "") + umgebung
       + "\n\nBitte diesen Text weitergeben. Deine Daten sind nicht betroffen.";
     /* Wer hier steht, kommt sonst nicht weiter. Die häufigste Ursache ist eine
        halb erneuerte Fassung — neues index.html, altes app.js. Ein Neuladen
@@ -48,8 +55,14 @@ window.addEventListener("error", e => {
 window.addEventListener("unhandledrejection", e =>
   zeigeFehler("Unerledigt: " + ((e.reason && e.reason.message) || e.reason)));
 
+/* Fassung der Daten im Speicher — nicht die der App. Sie steigt nur, wenn
+   sich die Form der gespeicherten Daten ändert, und gibt späteren
+   Umstellungen einen Anker. Ohne sie weiß niemand, was da liegt. */
+const SCHEMA = 3;
+
 /* --- Voreinstellungen. Nichts davon ist auf eine Schule zugeschnitten. --- */
 const STANDARD = {
+  fassung: SCHEMA,
   klasse: "",
   slots: [
     {std:"1,2", von:"08:00", bis:"09:30"},
@@ -72,6 +85,7 @@ const STANDARD = {
   sicherTage: 28,               // Abstand der Erinnerung in Tagen, 0 = nie erinnern
   sicherAuto: false,            // beim Öffnen von selbst in den Ordner schreiben
   sicherHalten: 3,              // Monate, die im Ordner bleiben; 0 = alles behalten
+  startProfil: "immer",         // Profilauswahl beim Öffnen: immer | mehrere | nie
   stdProTag: 8,                 // Stunden je Schultag, für die Umrechnung in Fehltage
   reiheEin: null,               // Reihenfolge im Einträge-Menü
   reiheFach: null               // Reihenfolge der Fächer im Zeugnis
@@ -169,6 +183,23 @@ function zustandLaden(){
   sonder    = Speicher.lies("sonder", []);
   noten     = Speicher.lies("noten", []);
   merkblattUmziehen();
+  datenMigrieren();
+}
+/* Bis Fassung 3 erledigen normalisiere() und merkblattUmziehen() die
+   Umstellung alter Formen von selbst; hier wird nur festgehalten, worauf
+   spätere Schritte aufsetzen. Wichtig ist der umgekehrte Fall: Daten aus
+   einer neueren App-Fassung dürfen nicht stillschweigend beschnitten werden. */
+function datenMigrieren(){
+  const war = Number(cfg.fassung) || 0;
+  if(war === SCHEMA) return;
+  if(war > SCHEMA){
+    zeigeFehler("Diese Daten stammen aus einer neueren Fassung der App "
+      + `(Datenstand ${war}, diese App kennt ${SCHEMA}). `
+      + "Aktualisiere die App, bevor du weiterarbeitest.");
+    return;
+  }
+  cfg.fassung = SCHEMA;
+  Speicher.schreib("cfg", cfg);
 }
 /* Frühere Fassungen hielten Merkblätter als {FACH: Text}. Jetzt sind es
    normale Einträge vom Typ M — dadurch gelten Suche und Archiv auch dort. */
@@ -273,7 +304,9 @@ const eintraegeAm  = d => aktiv().filter(e => e.datum === iso(d) && e.typ !== "M
 
 function faecher(){
   const s = new Set();
-  ["A","B"].forEach(w => TAGE.forEach(t => (plan[w][t]||[]).forEach(x => x && x.fach && s.add(x.fach))));
+  /* plan[w] kann fehlen, wenn gelesen wird, bevor normalisiere() lief. */
+  ["A","B"].forEach(w => TAGE.forEach(t =>
+    ((plan[w] && plan[w][t]) || []).forEach(x => x && x.fach && s.add(x.fach))));
   return [...s].sort();
 }
 const alleFaecher = () => [...new Set([...faecher(), ...notenAktiv().map(n => n.fach),
@@ -284,7 +317,8 @@ const freiAm = d => { const s = iso(d); return ferien.find(f => s >= f.von && s 
 function hatFachAm(d, fach){
   if(!fach) return false;
   const i = tagIndex(d); if(i === 5) return false;
-  return (plan[wocheFuer(d)][TAGE[i]] || []).some(x => x && x.fach && x.fach.toUpperCase() === fach);
+  const woche = plan[wocheFuer(d)];
+  return ((woche && woche[TAGE[i]]) || []).some(x => x && x.fach && x.fach.toUpperCase() === fach);
 }
 function naechsterTagMitFach(d, fach){
   for(let i = 1; i <= 120; i++){
@@ -858,8 +892,16 @@ $("#tage").onclick = e => {
 $("#kalHeute").onclick = () => {
   kalTag = new Date(); kalMonat = new Date(); gewaehlt = new Date(); zeichne();
 };
+/* Doppeltippen selbst erkennen: das eingebaute dblclick-Ereignis bleibt aus,
+   weil der erste Klick das Gitter neu zeichnet und der zweite deshalb auf
+   einem anderen Element landet. */
+let letzterKalTipp = {datum:null, zeit:0};
 $("#gitter").onclick = e => {
   const b = e.target.closest("[data-kal]"); if(!b) return;
+  const jetzt = Date.now();
+  const doppelt = letzterKalTipp.datum === b.dataset.kal && jetzt - letzterKalTipp.zeit < 450;
+  letzterKalTipp = {datum: doppelt ? null : b.dataset.kal, zeit: jetzt};
+  if(doppelt){ kalMenuOeffnen(b.dataset.kal); return; }
   kalTag = new Date(b.dataset.kal+"T12:00"); zeichne();
 };
 
@@ -898,26 +940,60 @@ $("#wischPunkte").onclick = () => {
 $("#ansichtEin").addEventListener("click", e => {
   if(einSub !== null && e.target === $("#ansichtEin")){ einSub = null; zeichne(); }
 });
-/* Kalenderfeld gedrückt halten: eigenen freien Tag eintragen */
+/* Kalenderfeld gedrückt halten, doppelt antippen oder rechts klicken:
+   Auswahl, was an diesem Tag eingetragen werden soll. */
 (function(){
   let uhr = null, langKal = false;
   const g = $("#gitter");
+  const feld = e => e.target.closest("[data-kal]");
   g.addEventListener("touchstart", e => {
-    const b = e.target.closest("[data-kal]"); if(!b) return;
+    const b = feld(e); if(!b) return;
     uhr = setTimeout(() => {
       langKal = true;
       if(navigator.vibrate) navigator.vibrate(15);
-      tagFreiOeffnen(b.dataset.kal);
+      kalMenuOeffnen(b.dataset.kal);
     }, 500);
   }, {passive:true});
   ["touchmove","touchend","touchcancel"].forEach(t =>
     g.addEventListener(t, () => { clearTimeout(uhr); }, {passive:true}));
   g.addEventListener("contextmenu", e => {
-    const b = e.target.closest("[data-kal]"); if(!b) return;
-    e.preventDefault(); tagFreiOeffnen(b.dataset.kal);
+    const b = feld(e); if(!b) return;
+    e.preventDefault(); kalMenuOeffnen(b.dataset.kal);
   });
   g.addEventListener("click", e => { if(langKal){ langKal = false; e.stopPropagation(); } }, true);
 })();
+
+/* Was an einem Kalendertag angelegt werden kann. Der freie Tag war früher
+   das Einzige — der Kalender kann jetzt auch das, was ein Kalender kann. */
+let kalMenuDatum = null;
+function kalMenuOeffnen(datum){
+  kalMenuDatum = datum;
+  kalTag = new Date(datum + "T12:00");
+  const frei = freiAm(kalTag);
+  const eigen = ferien.find(f => f.typ === "eigen" && datum >= f.von && datum <= f.bis);
+  $("#kmTitel").textContent =
+    kalTag.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+  const dran = sonderTag(kalTag).length + eintraegeAm(kalTag).length;
+  $("#kmStand").textContent = [
+    frei ? frei.name + (frei.typ === "feiertag" ? " · Feiertag"
+                      : frei.typ === "eigen" ? " · eigener freier Tag" : " · Ferien") : "",
+    dran ? zahl(dran, "Eintrag", "Einträge") : ""
+  ].filter(Boolean).join(" · ") || "nichts eingetragen";
+  $("#bKmFreiText").textContent = eigen ? "Freien Tag ändern" : "Freier Tag";
+  $("#bKmFreiKlein").textContent = eigen ? eigen.name : "Praktikum, Ausflug, beweglicher Ferientag";
+  dlgKalTag.showModal();
+}
+const kalMenu = (typ, extra) => {
+  dlgKalTag.close();
+  eintragOeffnen(null, new Date(kalMenuDatum + "T12:00"), typ, "", undefined, extra);
+};
+$("#bKmTermin").onclick  = () => kalMenu("E");
+$("#bKmHA").onclick      = () => kalMenu("H");
+$("#bKmKlausur").onclick = () => kalMenu("K");
+$("#bKmNotiz").onclick   = () => kalMenu("N");
+$("#bKmFehl").onclick    = () => kalMenu("F");
+$("#bKmFrei").onclick    = () => { dlgKalTag.close(); tagFreiOeffnen(kalMenuDatum); };
+$("#bKmAb").onclick      = () => dlgKalTag.close();
 
 let tagFreiDatum = null;
 function tagFreiOeffnen(datum){
@@ -1623,11 +1699,23 @@ async function ferienLaden(land){
   const j = new Date().getFullYear();
   const url = a => `https://openholidaysapi.org/${a}?countryIsoCode=DE&subdivisionCode=${land}`
     + `&languageIsoCode=DE&validFrom=${j}-01-01&validTo=${j+1}-12-31`;
+  /* Ohne Abbruch bliebe „Wird geladen …" bei einem hängenden Dienst für
+     immer stehen. Fremde Antworten werden zudem nicht blind ausgepackt. */
   const hole = async (a,typ) => {
-    const r = await fetch(url(a), {headers:{accept:"application/json"}});
-    if(!r.ok) throw new Error(a+": "+r.status);
-    return (await r.json()).map(x => ({von:x.startDate, bis:x.endDate, typ,
-      name:(x.name.find(n => n.language === "DE") || x.name[0]).text}));
+    const stopp = new AbortController();
+    const uhr = setTimeout(() => stopp.abort(), 15000);
+    let r;
+    try{ r = await fetch(url(a), {headers:{accept:"application/json"}, signal:stopp.signal}); }
+    finally{ clearTimeout(uhr); }
+    if(!r.ok) throw new Error(a + ": " + r.status);
+    const liste = await r.json();
+    if(!Array.isArray(liste)) throw new Error(a + ": unerwartete Antwort");
+    return liste.map(x => {
+      const namen = Array.isArray(x && x.name) ? x.name : [];
+      const treffer = namen.find(nm => nm && nm.language === "DE") || namen[0];
+      return {von:x && x.startDate, bis:x && x.endDate, typ,
+              name:(treffer && treffer.text) || "Ferien"};
+    }).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x.von || ""));
   };
   const [feier, schul] = await Promise.all([hole("PublicHolidays","feiertag"), hole("SchoolHolidays","ferien")]);
   return [...feier, ...schul].sort((a,b) => a.von.localeCompare(b.von));
@@ -1640,7 +1728,11 @@ $("#sFerienLaden").onclick = async () => {
     const eigene = ferien.filter(f => f.typ === "eigen");   // selbst eingetragene behalten
     ferien = [...await ferienLaden(land), ...eigene].sort((a,b) => a.von.localeCompare(b.von));
     cfg.land = land; sichern(); ferienStand(); zeichne();
-  }catch(err){ $("#sFerienStand").textContent = "Laden fehlgeschlagen. Internet prüfen."; }
+  }catch(err){
+    $("#sFerienStand").textContent = (err && err.name === "AbortError")
+      ? "Der Dienst antwortet nicht. Später noch einmal versuchen."
+      : "Laden fehlgeschlagen. Internet prüfen.";
+  }
 };
 $("#sFerienWeg").onclick = () => {
   ferien = ferien.filter(f => f.typ === "eigen");
@@ -1830,6 +1922,8 @@ function cfgSaeubern(roh){
   c.sicherTage  = alsZahl(c.sicherTage, 0, 365, 28);
   c.sicherAuto  = !!c.sicherAuto;
   c.sicherHalten = alsZahl(c.sicherHalten, 0, 60, 3);
+  c.startProfil = ["immer","mehrere","nie"].includes(c.startProfil) ? c.startProfil : "immer";
+  c.fassung = alsZahl(c.fassung, 0, 999, 0);
   c.stdProTag  = alsZahl(c.stdProTag, 1, 16, 8);
   c.reiheEin   = Array.isArray(c.reiheEin)
     ? c.reiheEin.filter(x => REIHE_STANDARD.includes(x)) : null;
@@ -2211,6 +2305,8 @@ function einstellungenOeffnen(){
   slotEditorZeichnen(cfg.slots);
   sFarbe.value = cfg.akzent; sFarbeHex.value = cfg.akzent;
   sModus.value = cfg.modus; sSchrift.value = cfg.schrift;
+  sStartProfil.value = cfg.startProfil || "immer";
+  if(sStartProfil.selectedIndex < 0) sStartProfil.value = "immer";
   $("#sFarbVorlagen").innerHTML = FARBEN.map(f =>
     `<button type="button" data-farbe="${f}" style="border-color:${f};color:${f}">${f}</button>`).join("");
   sNotenSystem.value = cfg.notenSystem; sAnteilM.value = Number(cfg.anteilM)||0;
@@ -2380,6 +2476,16 @@ $("#sLaden").onclick = () => {
   if(d && Array.isArray(d.profile)) return alleProfileUebernehmen(d.profile);
   const teil = paketSaeubern(d);
   if(!Object.keys(teil).length) return alert("In der Datei steckt kein erkennbarer Stundenplan.");
+  /* Einlesen ersetzt, es ergänzt nicht. Wer das übersieht, verliert einen
+     Plan, den es nirgends sonst gibt. */
+  if(hatEchteDaten()){
+    const alter = sicherungAlter();
+    if(!confirm("Das ersetzt den gesamten Plan dieses Profils — Einträge, Noten, "
+      + "Merkblätter und Archiv.\n"
+      + (alter === null ? "Von den jetzigen Daten gibt es noch keine Sicherung."
+                        : `Letzte Sicherung der jetzigen Daten: vor ${zahl(alter,"Tag","Tagen")}.`)
+      + "\n\nFortfahren?")) return;
+  }
   if(teil.cfg)       cfg       = teil.cfg;
   if(teil.plan)      plan      = teil.plan;
   if(teil.eintraege) eintraege = teil.eintraege;
@@ -2425,6 +2531,7 @@ $("#bEinstSpeichern").onclick = () => {
   cfg.fachnamen = textPaare(sFaecher.value);
   if(/^#[0-9a-fA-F]{6}$/.test(sFarbeHex.value.trim())) cfg.akzent = sFarbeHex.value.trim();
   cfg.modus = sModus.value; cfg.schrift = sSchrift.value;
+  cfg.startProfil = sStartProfil.value;
   cfg.melden = sMelden.checked;
   cfg.stdProTag = Math.max(1, Math.min(16, Number(sStdProTag.value) || 8));
   cfg.sicherTage = Math.max(0, Math.min(365, Number(sRhythmus.value) || 0));
@@ -2452,7 +2559,9 @@ async function laufendeVersion(){
 }
 async function serverVersion(){
   try{
-    const t = await (await fetch("sw.js", {cache:"no-store"})).text();
+    const antwort = await mitZeitgrenze(fetch("sw.js", {cache:"no-store"}), 5000);
+    if(!antwort) return null;
+    const t = await antwort.text();
     const m = t.match(/VERSION\s*=\s*"([^"]+)"/);
     return m ? m[1] : null;
   }catch(e){ return null; }
@@ -2509,11 +2618,26 @@ window.addEventListener("storage", e => {
   zustandLaden(); normalisiere(); zeichne();
 });
 
+/* Ohne <dialog> läuft hier fast nichts: jeder Eintrag, jede Einstellung
+   steckt darin. Safari kennt es erst ab iOS 15.4. Ein klarer Satz ist besser
+   als Knöpfe, die stumm bleiben. */
+function browserPruefen(){
+  const fehlt = [];
+  if(!window.HTMLDialogElement || !HTMLDialogElement.prototype.showModal) fehlt.push("Dialogfenster");
+  try{ if(!window.localStorage) fehlt.push("Speicher"); }catch(e){ fehlt.push("Speicher"); }
+  if(!fehlt.length) return true;
+  zeigeFehler("Dieser Browser ist zu alt für die App — es fehlt: " + fehlt.join(", ")
+    + ".\nAuf dem iPhone braucht es iOS 15.4 oder neuer, sonst einen aktuellen "
+    + "Chrome, Firefox, Edge oder Safari.");
+  return false;
+}
+
 function starten(){
   if(!cfg || !Array.isArray(cfg.slots) || !cfg.slots.length){
     cfg = Object.assign({}, STANDARD, cfg || {});
     cfg.slots = STANDARD.slots.slice();
   }
+  browserPruefen();
   themaAnwenden();
   startAnsicht();
   normalisiere();
@@ -2523,7 +2647,10 @@ function starten(){
   meldemerkerAufraeumen();
   erinnerungenPruefen().catch(() => {});
   autoSicherung().catch(() => {});
-  if(profile.length > 1) profilAuswahlZeigen(false);
+  /* Die Profilauswahl steht am Anfang, nicht nur bei mehreren Profilen:
+     wer sie sieht, weiß, in welchem Datensatz er gleich schreibt. */
+  const wann = cfg.startProfil || "immer";
+  if(wann === "immer" || (wann === "mehrere" && profile.length > 1)) profilAuswahlZeigen(false);
 }
 try{ starten(); }
 catch(e){ zeigeFehler(e.message, (e.stack||"").split("\n")[1] || ""); }
