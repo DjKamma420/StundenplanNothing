@@ -2556,11 +2556,26 @@ window.addEventListener("storage", e => {
   zustandLaden(); normalisiere(); zeichne();
 });
 
+/* Ohne <dialog> läuft hier fast nichts: jeder Eintrag, jede Einstellung
+   steckt darin. Safari kennt es erst ab iOS 15.4. Ein klarer Satz ist besser
+   als Knöpfe, die stumm bleiben. */
+function browserPruefen(){
+  const fehlt = [];
+  if(!window.HTMLDialogElement || !HTMLDialogElement.prototype.showModal) fehlt.push("Dialogfenster");
+  try{ if(!window.localStorage) fehlt.push("Speicher"); }catch(e){ fehlt.push("Speicher"); }
+  if(!fehlt.length) return true;
+  zeigeFehler("Dieser Browser ist zu alt für die App — es fehlt: " + fehlt.join(", ")
+    + ".\nAuf dem iPhone braucht es iOS 15.4 oder neuer, sonst einen aktuellen "
+    + "Chrome, Firefox, Edge oder Safari.");
+  return false;
+}
+
 function starten(){
   if(!cfg || !Array.isArray(cfg.slots) || !cfg.slots.length){
     cfg = Object.assign({}, STANDARD, cfg || {});
     cfg.slots = STANDARD.slots.slice();
   }
+  browserPruefen();
   themaAnwenden();
   startAnsicht();
   normalisiere();

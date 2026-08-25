@@ -31,12 +31,15 @@ body.schrift-mono{ --sans:var(--mono) }
 body.schrift-serif{ --sans:ui-serif,Georgia,"Times New Roman",serif }
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--ink);color:var(--text);font-family:var(--sans);
-  -webkit-tap-highlight-color:transparent}
+  -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{padding:14px 16px 158px;max-width:640px;margin:0 auto;
   display:flex;flex-direction:column;min-height:100dvh}
 /* Fängt jede Wischgeste unterhalb des Inhalts ab und wechselt die Ansicht. */
 #leerraum{flex:1 0 48px;touch-action:pan-y}
-button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+/* Langes Drücken ist hier eine Geste der App. Ohne diese Zeilen legt iOS
+   sein eigenes Auswahlmenü darüber und markiert den Text im Knopf. */
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;
+  -webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 :focus-visible{outline:2px solid var(--akzent);outline-offset:2px}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
 .hidden{display:none !important}
@@ -50,6 +53,9 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 .reiter button[aria-pressed=true]{background:var(--text);color:var(--ink)}
 .ikon{border:1px solid var(--line);border-radius:10px;width:36px;height:36px;font-size:14px;color:var(--muted);flex:none}
 .ikon[aria-pressed=true]{border-color:var(--akzent);color:var(--akzent)}
+/* Der Stift gehört nur zur Tagesansicht. Verschwände er ganz, würde die
+   Reiterleiste bei jedem Ansichtswechsel um seine Breite springen. */
+#btnEdit.hidden{display:block !important;visibility:hidden;pointer-events:none}
 header h1{font-size:29px;line-height:1;letter-spacing:-.02em;margin:5px 0 0;font-weight:600}
 header h1 span{color:var(--muted);font-weight:400}
 .countdown{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;margin-top:8px}
@@ -116,7 +122,7 @@ section{margin-top:30px}
 .liste .weg .titel{color:var(--muted);text-decoration:line-through}
 .liste .notiz{font-size:13px;color:var(--muted);margin-top:3px;white-space:pre-wrap}
 .wann{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;margin-top:3px}
-.hak{appearance:none;width:18px;height:18px;border:1px solid var(--line);border-radius:5px;margin:2px 0 0;flex:none}
+.hak{-webkit-appearance:none;appearance:none;width:18px;height:18px;border:1px solid var(--line);border-radius:5px;margin:2px 0 0;flex:none}
 .hak:checked{background:var(--text);border-color:var(--text)}
 .wachs{flex:1;min-width:0}
 .nix{color:var(--muted);font-size:14px;margin:12px 0 0}
@@ -130,7 +136,12 @@ section{margin-top:30px}
   max-width:min(90vw,420px);text-align:center;word-break:break-word}
 
 /* Kalender */
-.monat{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+/* Drei gleich gewichtete Spalten: der Titel steht damit wirklich in der
+   Mitte und nicht dort, wo die Knöpfe rechts zufällig Platz lassen. */
+.monat{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:12px}
+.monat .mLinks{display:flex;gap:8px;justify-content:flex-start}
+.monat .mRechts{display:flex;gap:8px;justify-content:flex-end}
+.monat b{text-align:center;white-space:nowrap}
 .monat b{font-size:18px;font-weight:600}
 .monat.klein{margin-bottom:8px}
 .monat.klein b{font-size:14px}
@@ -189,7 +200,9 @@ section{margin-top:30px}
   border-top:1px solid var(--line2);touch-action:pan-y;
   padding:12px 16px calc(8px + env(safe-area-inset-bottom))}
 #fuss > *{max-width:608px;margin-left:auto;margin-right:auto}
-.gross{width:100%;background:var(--text);color:var(--ink);border-radius:14px;
+/* display:block, damit margin:auto oben greift — ein <button> ist von Haus
+   aus inline-block und liesse sich davon nicht zentrieren. */
+.gross{display:block;width:100%;background:var(--text);color:var(--ink);border-radius:14px;
   padding:17px;font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
 .wischzone{margin-top:10px;padding:6px 0 2px;display:flex;flex-direction:column;
   align-items:center;justify-content:center;gap:7px;touch-action:pan-y}
@@ -235,7 +248,9 @@ label span{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-tran
 input,select,textarea{width:100%;margin-top:6px;background:var(--ink);color:var(--text);
   border:1px solid var(--line);border-radius:10px;padding:11px;font:inherit}
 input[type=color]{padding:4px;height:46px}
-textarea{min-height:120px;font-family:var(--mono);font-size:12px}
+/* Unter 16 px zoomt Safari auf dem iPhone beim Antippen in die Seite hinein
+   und wieder heraus kommt man nicht. Deshalb bleibt jedes Eingabefeld bei 16. */
+textarea{min-height:120px;font-family:var(--mono);font-size:16px}
 .zwei{display:flex;gap:10px}
 .zwei label{flex:1}
 .reihe{display:flex;gap:9px;margin-top:20px}
@@ -252,26 +267,28 @@ textarea{min-height:120px;font-family:var(--mono);font-size:12px}
   border-radius:10px;padding:11px;text-align:left;font:inherit}
 .datumfeld[aria-expanded=true]{border-color:var(--text)}
 .datumwahl{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:12px}
-.slot{display:grid;grid-template-columns:1fr 1fr 1fr 34px;gap:6px;margin-top:7px;align-items:center}
-.slot input{margin-top:0;padding:9px;font-family:var(--mono);font-size:12.5px;text-align:center}
+.slot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 34px;gap:6px;margin-top:7px;align-items:center}
+.slot input{min-width:0}
+.slot input{margin-top:0;padding:9px 4px;font-family:var(--mono);font-size:16px;text-align:center}
 .slot button{color:var(--muted);font-size:16px}
-.kopfzeile{display:grid;grid-template-columns:1fr 1fr 1fr 34px;gap:6px;margin-top:12px}
-.kopfzeile.vier{grid-template-columns:44px 1fr 1fr .8fr}
+.kopfzeile{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 34px;gap:6px;margin-top:12px}
+.kopfzeile.vier{grid-template-columns:44px minmax(0,1fr) minmax(0,1fr) minmax(0,.8fr)}
 .kopfzeile span{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--muted);text-align:center}
-.izeile{display:grid;grid-template-columns:44px 1fr 1fr .8fr;gap:6px;margin-top:7px;align-items:center}
+.izeile{display:grid;grid-template-columns:44px minmax(0,1fr) minmax(0,1fr) minmax(0,.8fr);gap:6px;margin-top:7px;align-items:center}
+.izeile input{min-width:0}
 .izeile .std{font-family:var(--mono);font-size:12px;color:var(--muted);text-align:center}
-.izeile input{margin-top:0;padding:9px 7px;font-family:var(--mono);font-size:12.5px;text-align:center}
+.izeile input{margin-top:0;padding:9px 4px;font-family:var(--mono);font-size:16px;text-align:center}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .chips button{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:99px;
   padding:7px 11px;color:var(--muted)}
-.anteilzeile{display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;margin-top:7px}
+.anteilzeile{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;align-items:center;margin-top:7px}
 .anteilzeile span{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .reihezeile{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line2)}
 .reihezeile .rname{flex:1;font-size:14px}
 .reihezeile button{border:1px solid var(--line);border-radius:8px;width:34px;height:30px;
   color:var(--muted);font-size:13px}
-.anteilzeile input{margin-top:0;padding:9px;text-align:center;font-family:var(--mono);font-size:12.5px}
+.anteilzeile input{margin-top:0;padding:9px;text-align:center;font-family:var(--mono);font-size:16px}
 .fiZeile{display:flex;justify-content:space-between;gap:12px;padding:9px 0;
   border-top:1px solid var(--line);font-size:14px}
 .fiZeile span:first-child{color:var(--muted);font-family:var(--mono);font-size:11.5px;
@@ -345,10 +362,12 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 <!-- KALENDER -->
 <div id="ansichtKal" class="hidden">
   <div class="monat">
-    <button class="ikon" id="monatMinus" aria-label="Monat zurück">‹</button>
+    <div class="mLinks"><button class="ikon" id="monatMinus" aria-label="Monat zurück">‹</button></div>
     <b id="monatLabel"></b>
-    <button class="ikon" id="monatPlus" aria-label="Monat vor">›</button>
-    <button class="mini" id="kalHeute">Heute</button>
+    <div class="mRechts">
+      <button class="ikon" id="monatPlus" aria-label="Monat vor">›</button>
+      <button class="mini" id="kalHeute">Heute</button>
+    </div>
   </div>
   <div class="gitter" id="gitter"></div>
   <p class="hinweis">Ein Feld gedrückt halten oder doppelt antippen, um etwas einzutragen.</p>
@@ -480,9 +499,9 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </label>
   <div class="datumwahl hidden" id="eDatumWahl">
     <div class="monat klein">
-      <button type="button" class="ikon" id="eMonatMinus" aria-label="Monat zurück">‹</button>
+      <div class="mLinks"><button type="button" class="ikon" id="eMonatMinus" aria-label="Monat zurück">‹</button></div>
       <b id="eMonatLabel"></b>
-      <button type="button" class="ikon" id="eMonatPlus" aria-label="Monat vor">›</button>
+      <div class="mRechts"><button type="button" class="ikon" id="eMonatPlus" aria-label="Monat vor">›</button></div>
     </div>
     <div class="gitter" id="eGitter"></div>
     <p class="hinweis" id="eGitterHinweis"></p>

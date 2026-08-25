@@ -2,6 +2,27 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v36
+
+**Behoben (Darstellung am Rechner)**
+- Der Eintragsknopf stand links statt mittig. Er ist ein `<button>` und damit
+  von Haus aus inline — `margin:auto` zentriert daran nichts. Auf dem Handy
+  fiel es nicht auf, weil die Spalte dort die volle Breite hat
+- Die Reiterleiste sprang bei jedem Ansichtswechsel um 44 px, weil der Stift
+  nur in der Tagesansicht steht. Sein Platz bleibt jetzt reserviert
+- Der Monatstitel im Kalender stand 87 px neben der Mitte
+
+**Behoben (iPhone und iPad)**
+- Eingabefelder unter 16 px ließen Safari beim Antippen in die Seite zoomen,
+  ohne wieder herauszukommen. Stundenraster, Importtabelle, Merkblatt-Text
+  und Verhältnisfelder sind jetzt bei 16 px
+- Langes Drücken legte unter iOS das eigene Auswahlmenü über die Geste
+- Ankreuzfelder brauchen vor Safari 15.4 die Herstellerschreibweise
+- Safari vergrößerte die Schrift im Querformat eigenmächtig
+- Auf schmalen Geräten (360–375 px) liefen die Zeilen des Stundenrasters aus
+  dem Dialog heraus, weil `1fr` nicht unter die Inhaltsbreite schrumpft
+- Ein zu alter Browser zeigt jetzt einen klaren Satz statt stummer Knöpfe
+
 ## v35
 
 **Neu**

@@ -19,6 +19,7 @@ Das heißt konkret:
 - Löschst du in Chrome die **„Cookies und Websitedaten"**, ist dein kompletter Plan weg. Samt Noten, Hausaufgaben und Merkblättern. Unwiederbringlich.
 - Deinstallierst du die App oder wechselst das Handy, ist alles weg.
 - Der private oder Inkognito-Modus vergisst alles beim Schließen.
+- **Auf dem iPhone:** Öffnest du die App nur als Lesezeichen in Safari, löscht Safari die Daten nach sieben Tagen ohne Benutzung von selbst. Leg sie über *Teilen → Zum Home-Bildschirm* auf den Startbildschirm — dann bleibt alles.
 - Niemand kann dir die Daten wiederherstellen — auch ich nicht, denn sie waren nie irgendwo anders.
 
 **Deshalb: Mach regelmäßig eine Sicherung.** ⚙ → Sicherung → *Als Datei sichern*. Die Datei landet in deinen Downloads; schick sie dir selbst per Mail oder leg sie in eine Cloud. Nach vier Wochen erinnert dich die App oben in der Tagesansicht daran.
