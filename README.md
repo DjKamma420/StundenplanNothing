@@ -93,6 +93,10 @@ Viele Portale können zwischen Fach-, Raum- und Lehrkraftansicht umschalten. Geb
 
 ---
 
+## Anleitung in der App
+
+Alles Folgende steht auch in der App selbst: ⚙ → **Anleitung und Technik**. Dort mit Inhaltsverzeichnis, Suche nach Stichwörtern und einem Teil dazu, wie die App technisch funktioniert.
+
 ## Bedienung
 
 ### Die vier Reiter

@@ -2135,6 +2135,541 @@ async function autoSicherung(){
 }
 
 /* =====================================================================
+   Anleitung
+   Der Text steht als Datenstruktur, nicht als Markup: Inhaltsverzeichnis
+   und Suche entstehen dadurch aus derselben Quelle und können nicht
+   auseinanderlaufen. Der Inhalt ist Quelltext, keine Nutzereingabe — er
+   darf deshalb Markup enthalten und geht nicht durch esc().
+   ===================================================================== */
+const HILFE = [
+{id:"was", teil:"Erste Schritte", titel:"Was diese App ist", worte:"überblick zweck",
+ text:`<p>Ein Stundenplan fürs Handy, der zeigt, was Schulportale meist verschweigen:
+   <b>echte Uhrzeiten</b>, alle Kurse in <b>einer</b> Ansicht, dazu Hausaufgaben,
+   Klausuren, Noten, Merkblätter und Fehlzeiten.</p>
+  <p>Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume, Lehrkräfte
+   und Zeiten entstehen allein aus dem, was du einträgst.</p>
+  <p class="hWarn"><b>Das Wichtigste:</b> Alle Daten liegen ausschließlich im Speicher
+   deines Browsers. Es gibt keinen Server, kein Konto, keine Wiederherstellung.
+   Löschst du die Websitedaten, ist alles weg — auch der Entwickler kann nichts
+   zurückholen. Deshalb: regelmäßig sichern (siehe <i>Sicherung</i>).</p>`},
+
+{id:"installieren", teil:"Erste Schritte", titel:"Auf den Startbildschirm legen", worte:"installieren pwa app icon homescreen",
+ text:`<p>Die App läuft im Browser, lässt sich aber wie eine richtige App ablegen.
+   Danach startet sie ohne Browserleiste und funktioniert offline.</p>
+  <ul>
+   <li><b>Android, Chrome:</b> Adresse öffnen, Menü ⋮, <i>App installieren</i>
+     bzw. <i>Installieren und Verknüpfen</i>.</li>
+   <li><b>iPhone, Safari:</b> Adresse öffnen, Teilen-Knopf, <i>Zum Home-Bildschirm</i>.</li>
+   <li><b>Rechner:</b> Installationssymbol rechts in der Adressleiste.</li>
+  </ul>
+  <p class="hWarn"><b>Auf dem iPhone besonders wichtig:</b> Öffnest du die App nur als
+   Lesezeichen in Safari, löscht Safari die Daten nach sieben Tagen ohne Benutzung
+   von selbst. Auf dem Startbildschirm bleiben sie.</p>`},
+
+{id:"einrichten", teil:"Erste Schritte", titel:"Einrichten in zehn Minuten", worte:"anfang setup erste schritte klasse",
+ text:`<ol>
+   <li><b>⚙ oben rechts</b> öffnen.</li>
+   <li><b>Klasse</b> eintragen — sie steht später klein über dem Wochentag.</li>
+   <li><b>Stundenraster</b> prüfen. Zwei Vorlagen zum Antippen, sonst Zeilen von Hand.</li>
+   <li>Hat deine Schule <b>A- und B-Wochen</b>: Haken setzen.</li>
+   <li><b>Bundesland</b> wählen und <b>Ferien laden</b>.</li>
+   <li>Optional <b>Akzentfarbe</b>, <b>heller Modus</b>, <b>Schrift</b>.</li>
+   <li><b>Speichern</b>, dann den Plan eintragen (siehe <i>Der Stundenplan</i>).</li>
+  </ol>`},
+
+{id:"raster", teil:"Der Stundenplan", titel:"Stundenraster einstellen", worte:"zeiten stunden block doppelstunde pause slots",
+ text:`<p>Eine Zeile pro Feld im Tagesplan. Unter <b>Std.</b> stehen die
+   Stundennummern, die dieses Feld abdeckt — bei Doppelstunden mit Komma.</p>
+  <table class="hTab">
+   <tr><th>Std.</th><th>von</th><th>bis</th></tr>
+   <tr><td>1,2</td><td>08:00</td><td>09:30</td></tr>
+   <tr><td>3,4</td><td>09:50</td><td>11:20</td></tr>
+   <tr><td>5,6</td><td>11:40</td><td>13:10</td></tr>
+  </table>
+  <p>Keine Doppelstunden? Dann <code>1</code>, <code>2</code>, <code>3</code> …
+   in einzelne Zeilen. Das Raster darf beliebig viele Felder haben.</p>
+  <p class="hWarn"><b>Achtung beim Verkleinern:</b> Nimmst du Zeilen weg, verschwindet
+   der Unterricht am Ende der Tage. Die App fragt vorher nach und nennt die Zahl
+   der betroffenen Stunden.</p>`},
+
+{id:"handeintragen", teil:"Der Stundenplan", titel:"Plan von Hand eintragen", worte:"bearbeiten stift fach raum lehrer",
+ text:`<p><b>✎ oben antippen</b> schaltet das Bearbeiten ein — ein Hinweis unter dem
+   Plan zeigt das an. Jetzt öffnet ein Tipp auf eine Stunde die Felder
+   <i>Fach</i>, <i>Raum</i>, <i>Lehrkraft</i>.</p>
+  <p>Fächer werden immer <b>groß</b> gespeichert, egal wie du sie tippst. Sonst
+   würden „Ch“ und „CH“ als zwei Fächer gelten und der Notenschnitt zerfiele.</p>
+  <p>Erneut auf ✎ tippen beendet das Bearbeiten. Für eine Woche brauchst du keine
+   fünf Minuten — <b>ein Stundenplan wiederholt sich</b>, eine Woche reicht,
+   bei A/B-Wochen zwei.</p>`},
+
+{id:"import", teil:"Der Stundenplan", titel:"Plan aus dem Schulportal einfügen", worte:"import kopieren zwischenablage einfügen portal",
+ text:`<p>⚙ → <b>Plan einfügen</b>. Tag und Woche wählen, die kopierte Tabelle in
+   <i>Aus der Zwischenablage füllen</i> einsetzen, <b>In die Tabelle übernehmen</b>,
+   prüfen, <b>Speichern</b>.</p>
+  <p>Erwartet wird je Stunde eine Zeile im Format
+   <code>FACH, RAUM (LEHRKRAFT)</code>, davor die Stundennummer:</p>
+  <pre class="hCode">1
+CH, B005 (MUEL)
+2
+CH, B005 (MUEL)
+3
+MA, B006 (SCHM)</pre>
+  <p>Eckige Klammern werden auch erkannt; darin steht in vielen Portalen die Klasse
+   statt der Lehrkraft.</p>
+  <p class="hWarn">Viele Portale können zwischen Fach-, Raum- und Lehrkraftansicht
+   umschalten. Gebraucht wird die Ansicht, bei der <b>das Fach zuerst</b> steht —
+   sonst landen Lehrernamen als Fächer in deinem Plan.</p>
+  <p>Passt das Format deiner Schule gar nicht: Der Ausdruck steht in
+   <code>app.js</code> in der Funktion <code>parseZelle</code>.</p>`},
+
+{id:"abwoche", teil:"Der Stundenplan", titel:"A- und B-Wochen", worte:"wechselwoche gerade ungerade kalenderwoche",
+ text:`<p>Feste Regel: <b>ungerade Kalenderwoche = A, gerade = B.</b> Welche gerade
+   läuft, steht oben neben der Kalenderwoche und in den Einstellungen.</p>
+  <p>Passt es bei deiner Schule andersherum, trag deine A-Woche einfach als
+   B-Woche ein — die Regel selbst ist nicht einstellbar, das Ergebnis schon.</p>
+  <p>Unterscheiden sich die Wochen nur in ein paar Stunden: ⚙ → <b>Wochenwechsel</b>
+   → <i>A-Woche → B-Woche</i> kopiert alles herüber, danach änderst du die
+   Abweichungen.</p>`},
+
+{id:"namen", teil:"Der Stundenplan", titel:"Kürzel und ausgeschriebene Namen", worte:"lehrer fachnamen abkürzung",
+ text:`<p>Unter ⚙ → <b>Lehrkräfte</b> und <b>Fachnamen</b> je Zeile ein Kürzel und
+   der Name, getrennt durch ein Gleichheitszeichen:</p>
+  <pre class="hCode">WZET = Frau Wietzet
+CH = Chemie
+MA = Mathematik</pre>
+  <p>Der Plan zeigt weiter die Kürzel — sonst passt er nicht auf den Bildschirm.
+   Die vollen Namen erscheinen in der Fach-Info, im Zeugnis und in der Suche:
+   Wer „Chemie“ sucht, findet auch Einträge, die nur „CH“ tragen.</p>`},
+{id:"reiter", teil:"Täglich benutzen", titel:"Die vier Reiter", worte:"navigation wischen ansicht tag kalender einträge zeugnis",
+ text:`<table class="hTab">
+   <tr><th>Reiter</th><th>Inhalt</th></tr>
+   <tr><td><b>Tag</b></td><td>Plan des Tages mit Uhrzeiten, laufender Stunde, Fortschrittsbalken</td></tr>
+   <tr><td><b>Kalender</b></td><td>Monatsübersicht mit Markierungen, darunter der gewählte Tag</td></tr>
+   <tr><td><b>Einträge</b></td><td>Suche und alle Listen samt Archiv</td></tr>
+   <tr><td><b>Zeugnis</b></td><td>Alle Fächer mit Schnitt und gerundeter Note</td></tr>
+  </table>
+  <p>Wechseln durch Antippen, durch Antippen der vier Punkte unten oder durch
+   <b>Wischen in jedem freien Bereich unterhalb des Inhalts</b> — auch mitten auf
+   der Seite, wenn dort nichts mehr steht. Steht eine Unterliste offen, führt der
+   erste Wisch zurück ins Menü.</p>
+  <p>In der Tagesansicht wischt man zusätzlich <b>tagweise</b> vor und zurück, im
+   Kalender <b>monatsweise</b>.</p>`},
+
+{id:"stundeantippen", teil:"Täglich benutzen", titel:"Eine Stunde antippen", worte:"schnellauswahl hausaufgabe fällt aus vertretung fachinfo",
+ text:`<p><b>Kurz antippen</b> öffnet die Schnellauswahl für diese Stunde:</p>
+  <ul>
+   <li><b>Hausaufgabe</b> — das Fälligkeitsdatum ist schon auf die
+     <i>nächste Stunde dieses Fachs</i> gesetzt. Steht Chemie am Dienstag und
+     Freitag, ergibt ein Tipp am Dienstag automatisch Freitag.</li>
+   <li><b>Notiz</b> — freier Text zu diesem Tag.</li>
+   <li><b>Klausur</b> — Termin.</li>
+   <li><b>Fehlzeit</b> — die Stundenzahl des Blocks ist schon eingetragen.</li>
+   <li><b>Fällt aus</b> — nur an diesem einen Tag, das Fach wird durchgestrichen.</li>
+   <li><b>Vertretung</b> — anderes Fach oder anderer Raum, nur an diesem Tag.</li>
+   <li><b>Sonstiges Ereignis</b> — alles andere.</li>
+   <li><b>Fach-Info</b> — dasselbe wie langes Drücken.</li>
+  </ul>
+  <p><b>Gedrückt halten</b> öffnet direkt die Fach-Info: ausgeschriebener Name,
+   Lehrkraft, Raum, Wochenstunden, nächster Termin (antippbar, springt in den
+   Kalender), Notenschnitt, Zahl der Merkblätter und was offen ist.</p>
+  <p class="hHinweis"><i>Fällt aus</i>, <i>Vertretung</i> und Ereignisse gelten
+   <b>nur an diesem einen Tag</b>. Der Regelplan bleibt unangetastet.</p>`},
+
+{id:"eintragsknopf", teil:"Täglich benutzen", titel:"Der Eintragsknopf", worte:"plus neu anlegen art typ",
+ text:`<p>Ein Knopf für alles, unten am Bildschirm. Die Art richtet sich danach, wo
+   du gerade bist — bist du in den Noten, ist „Note“ vorausgewählt.</p>
+  <table class="hTab">
+   <tr><th>Art</th><th>Wofür</th><th>Beispiel</th></tr>
+   <tr><td>Hausaufgabe</td><td>mit Fälligkeit, abhakbar</td><td>MA — S. 42 Nr. 1–7</td></tr>
+   <tr><td>Klausur</td><td>Termin, abhakbar</td><td>CH — Redoxreaktionen</td></tr>
+   <tr><td>Notiz</td><td>freier Text zu einem Tag</td><td>Referat besprochen</td></tr>
+   <tr><td>Ereignis</td><td>einmalig, ganzer Tag oder eine Stunde</td><td>Zahnarzt, 3./4. Std.</td></tr>
+   <tr><td>Note</td><td>mündlich/schriftlich, Wofür, Notizen</td><td>2,3 schriftlich</td></tr>
+   <tr><td>Merkblatt</td><td>Formeln, Regeln, Vokabeln, mit Bildern</td><td>pq-Formel</td></tr>
+   <tr><td>Fehlzeit</td><td>in Unterrichtsstunden, ohne Fach</td><td>2 Stunden entschuldigt</td></tr>
+  </table>
+  <p>Ein <b>Fach ist nie vorausgewählt</b> — außer du kommst aus einer angetippten
+   Stunde. Das verhindert, dass Einträge stillschweigend am falschen Fach landen.</p>
+  <p>Bei der Datumsauswahl bekommt jeder Tag einen <b>roten Punkt</b>, an dem das
+   gewählte Fach im Plan steht. So findest du die nächste Stunde ohne Blättern.</p>`},
+
+{id:"kalendermenue", teil:"Täglich benutzen", titel:"Im Kalender eintragen", worte:"doppeltippen gedrückt halten tagesmenü termin freier tag",
+ text:`<p>Ein Kalenderfeld <b>doppelt antippen</b> oder <b>gedrückt halten</b>
+   (am Rechner auch Rechtsklick) öffnet das Tagesmenü: Termin, Hausaufgabe,
+   Klausur, Notiz, Fehlzeit oder freier Tag.</p>
+  <p>Oben im Menü steht, was an dem Tag schon eingetragen ist und ob er als frei
+   markiert ist. Ist er das, heißt der Knopf <i>Freien Tag ändern</i> und zeigt
+   dessen Bezeichnung.</p>
+  <p>Einzelnes Antippen wählt weiterhin nur den Tag aus — darunter erscheint, was
+   an ihm ansteht.</p>`},
+
+{id:"suchen", teil:"Täglich benutzen", titel:"Suchen", worte:"finden filter",
+ text:`<p>Im Reiter <b>Einträge</b> ganz oben. Gesucht wird über Fach, Titel, Notiz
+   und Raum — bei Ereignissen, Noten, Hausaufgaben, Klausuren, Notizen und
+   Merkblättern gleichzeitig.</p>
+  <p>Kürzel und ausgeschriebener Name gelten als dasselbe, sofern der Name unter
+   ⚙ hinterlegt ist. Höchstens 40 Treffer, neueste zuerst.</p>`},
+
+{id:"archiv", teil:"Täglich benutzen", titel:"Archiv und Löschen", worte:"papierkorb wiederherstellen zurückholen",
+ text:`<p>Gelöschtes verschwindet nicht sofort, sondern landet im <b>Archiv</b> —
+   Einträge, Ereignisse und Noten gleichermaßen. Von dort zurückholen oder
+   endgültig entfernen. Ein zweites Löschen ist unwiderruflich und wird
+   nachgefragt.</p>
+  <p>Abgehakte Hausaufgaben und Klausuren wandern nach <b>sieben Tagen</b>
+   automatisch ins Archiv. Notizen, Merkblätter und Fehlzeiten bleiben stehen —
+   die will man behalten.</p>`},
+
+{id:"noten", teil:"Noten und Zeugnis", titel:"Noten eintragen", worte:"note punkte system 1-6 0-15",
+ text:`<p>Unter ⚙ → <b>Noten</b> wählst du zwischen <b>Noten 1–6</b> und
+   <b>Punkten 0–15</b>. Die Eingabe akzeptiert Komma und Punkt, also 2,3 wie 2.3.</p>
+  <p>Jede Note ist entweder <b>mündlich</b> oder <b>schriftlich</b>. Beide werden
+   getrennt gemittelt und erst danach verrechnet.</p>`},
+
+{id:"verhaeltnis", teil:"Noten und Zeugnis", titel:"Verhältnis mündlich zu schriftlich", worte:"gewichtung anteil prozent",
+ text:`<p>Ein Standardwert gilt für alle Fächer, einzelne Fächer dürfen abweichen.
+   Einstellbar unter ⚙ → <i>Verhältnis je Fach</i> oder durch Antippen einer
+   Fachzeile im Zeugnis.</p>
+  <p><b>Rechenbeispiel.</b> Mündlich 3,0 · schriftlich 2,0 · Verhältnis 40 % mündlich:</p>
+  <pre class="hCode">3,0 × 0,40  +  2,0 × 0,60  =  1,2 + 1,2  =  2,40</pre>
+  <p>Gibt es nur eine Art Noten, zählt diese allein — das Verhältnis bleibt dann
+   ohne Wirkung.</p>`},
+
+{id:"zielnote", teil:"Noten und Zeugnis", titel:"Zielnoten-Rechner", worte:"was muss ich schreiben ziel rechner",
+ text:`<p>Eine Fachzeile im Zeugnis antippen, unten <b>Zielnote</b> eintragen und die
+   Art wählen. Die App rechnet aus, was die <i>nächste</i> Note dieser Art bringen
+   müsste, damit der Schnitt das Ziel erreicht.</p>
+  <p><b>Beispiel.</b> Zwei schriftliche Noten 3,0 und 3,0, Ziel 2,5 schriftlich,
+   keine mündlichen Noten. Gesucht ist x mit</p>
+  <pre class="hCode">(3,0 + 3,0 + x) / 3 = 2,5   →   x = 1,5</pre>
+  <p>Liegt das Ergebnis außerhalb der Skala, sagt die App das offen: „Mit einer
+   einzelnen Note nicht erreichbar“ — samt dem rechnerischen Wert.</p>`},
+
+{id:"zeugnis", teil:"Noten und Zeugnis", titel:"Die Zeugnis-Ansicht", worte:"schnitt gerundet durchschnitt",
+ text:`<p>Jedes Fach mit Schnitt und gerundeter Note, dazu oben der Gesamtschnitt
+   über alle Fächer, die Noten haben. Die Reihenfolge der Fächer ist unter ⚙
+   umsortierbar.</p>
+  <p class="hWarn"><b>Das ist eine Schätzung, keine Auskunft.</b> Die App gewichtet
+   alle Noten einer Art gleich. Lehrkräfte rechnen oft anders — eine Klausur zählt
+   selten so viel wie ein Test.</p>`},
+{id:"merkblatt", teil:"Merkblätter, Fehlzeiten, Ferien", titel:"Merkblätter", worte:"formeln vokabeln bilder foto tafelbild",
+ text:`<p>Beliebig viele je Fach, jedes mit Datum und Uhrzeit. Zeilenumbrüche und
+   Einrückungen bleiben erhalten, dargestellt wird in Monospace — Formeln bleiben
+   dadurch ausgerichtet.</p>
+  <p><b>Bilder</b> lassen sich einfügen, etwa vom Tafelbild. Sie werden automatisch
+   auf 1000 px verkleinert und als JPEG komprimiert.</p>
+  <p class="hWarn">Der Browserspeicher fasst rund 5 MB für alles zusammen. Unter
+   ⚙ → <b>Speicher</b> siehst du den Stand in Prozent; ab 80 % warnt die App,
+   solange noch Zeit für eine Sicherung bleibt.</p>
+  <p class="hHinweis">Bedenke, was du fotografierst — Aufnahmen von Mitschülerinnen
+   und Mitschülern gehören nur mit deren Einverständnis dorthin.</p>`},
+
+{id:"fehlzeiten", teil:"Merkblätter, Fehlzeiten, Ferien", titel:"Fehlzeiten", worte:"fehlstunden versäumt entschuldigt unentschuldigt verspätet",
+ text:`<p>Gezählt wird in <b>Unterrichtsstunden</b>, nicht je Fach — so steht es auch
+   auf dem Zeugnis. Drei Arten: entschuldigt, unentschuldigt, verspätet.</p>
+  <p>Unter ⚙ → <b>Fehlzeiten</b> stellst du ein, wie viele Stunden ein Schultag hat.
+   Daraus rechnet das Zeugnis die Fehltage aus.</p>
+  <p><b>Beispiel.</b> 8 Stunden je Schultag, 20 versäumte Stunden ergeben
+   <code>20 / 8 = 2,5 Tage</code>.</p>`},
+
+{id:"ferien", teil:"Merkblätter, Fehlzeiten, Ferien", titel:"Ferien und eigene freie Tage", worte:"feiertage bundesland openholidays praktikum ausflug",
+ text:`<p>⚙ → <b>Ferien und Feiertage</b> → Bundesland wählen → <b>Ferien laden</b>.
+   Die Termine kommen von openholidaysapi.org, einem offenen Datenprojekt.
+   Übertragen wird nur, welches Bundesland und welcher Zeitraum gefragt sind —
+   keine deiner Daten. Danach liegen sie lokal.</p>
+  <p><b>Eigene freie Tage</b> trägst du im Kalender über das Tagesmenü ein:
+   Praktikum, Ausflug, beweglicher Ferientag, auch über mehrere Tage. Sie werden
+   grau dargestellt wie Ferien und <b>überleben ein erneutes Laden</b> der
+   offiziellen Termine.</p>`},
+
+{id:"warumsichern", teil:"Sicherung", titel:"Warum du sichern musst", worte:"datenverlust backup verloren",
+ text:`<p class="hWarn">Deine Daten liegen nur auf diesem Gerät. Das heißt konkret:</p>
+  <ul>
+   <li>Löschst du in Chrome die <b>Cookies und Websitedaten</b>, ist der komplette
+     Plan weg — samt Noten, Hausaufgaben und Merkblättern.</li>
+   <li>Deinstallierst du die App oder wechselst das Handy, ist alles weg.</li>
+   <li>Der private Modus vergisst alles beim Schließen.</li>
+   <li>In Safari löscht das System die Daten nach sieben Tagen ohne Benutzung,
+     wenn die App nicht auf dem Startbildschirm liegt.</li>
+   <li><b>Niemand kann etwas wiederherstellen</b> — die Daten waren nie irgendwo
+     anders.</li>
+  </ul>`},
+
+{id:"sichernwie", teil:"Sicherung", titel:"Sichern und wieder einlesen", worte:"datei json export import teilen",
+ text:`<p>⚙ → <b>Sicherung</b>:</p>
+  <ul>
+   <li><b>Als Datei sichern</b> — eine JSON-Datei dieses Profils in die Downloads.</li>
+   <li><b>Alle Profile sichern</b> — eine einzige Datei für das ganze Gerät.
+     Erscheint erst ab zwei Profilen.</li>
+   <li><b>Teilen</b> — über das System-Teilen-Menü, etwa an dich selbst per Mail.
+     Kann das Gerät keine Dateien teilen, landet die Sicherung in der
+     Zwischenablage; ein abgebrochenes Teilen zählt nicht als Sicherung.</li>
+   <li><b>Datei einlesen</b> — stellt wieder her.</li>
+  </ul>
+  <p class="hWarn"><b>Einlesen ersetzt, es ergänzt nicht.</b> Der gesamte Plan des
+   Profils wird überschrieben. Die App fragt vorher nach und nennt dabei, wann
+   zuletzt gesichert wurde.</p>
+  <p>Eingelesen wird nur, was die App auch selbst schreibt: Jedes Feld wird auf
+   Form und Wertebereich geprüft, alles Unbekannte verworfen. Eine fremde oder
+   beschädigte Datei kann die App dadurch nicht durcheinanderbringen.</p>`},
+
+{id:"ordner", teil:"Sicherung", titel:"Sicherungsordner und Automatik", worte:"automatisch ordner rhythmus erinnerung haltefrist",
+ text:`<p><b>Am Rechner (Chrome, Edge):</b> ⚙ → <b>Sicherungsordner</b> → einmal einen
+   Ordner wählen. Danach legt die App ihre Sicherungen immer dort ab, ohne zu
+   fragen. Mit dem Häkchen <i>Beim Öffnen automatisch sichern</i> passiert das von
+   selbst, sobald es fällig ist.</p>
+  <p><b>Haltefrist:</b> Im Ordner bleiben die letzten 1, 3, 6 oder 12 Monate.
+   Ältere Sicherungen räumt die App weg — aber <b>nur ihre eigenen</b>, erkennbar
+   am Namensmuster. Fremde Dateien im Ordner bleiben unangetastet.</p>
+  <p><b>Rhythmus:</b> ⚙ → <i>Erinnerung</i> → alle 7, 14, 28 Tage, alle 3 Monate
+   oder nie. Ist es fällig, erscheint oben in der Tagesansicht ein Banner mit
+   <i>Jetzt sichern</i> und <i>Heute nicht</i>.</p>
+  <p class="hHinweis"><b>Auf dem Handy gibt es die Ordnerwahl nicht</b> — kein
+   mobiler Browser kann eine Seite dauerhaft in einen Ordner schreiben lassen.
+   Sicherungen gehen dort in die Downloads. Willst du sie sortiert haben, schalte
+   in Chrome unter <i>⋮ → Einstellungen → Downloads</i> die Option
+   <i>Speicherort für Dateien abfragen</i> ein.</p>`},
+
+{id:"profile", teil:"Sicherung", titel:"Profile", worte:"mehrere personen geschwister wechseln",
+ text:`<p>Mehrere Datensätze auf einem Gerät. Jedes Profil hat eigenen Plan, eigene
+   Einträge, Noten, Merkblätter und Einstellungen — <b>nichts wird geteilt</b>.</p>
+  <p>Beim Öffnen steht die Auswahl am Anfang, auch bei nur einem Profil: So siehst
+   du immer, in welchen Datensatz du gleich schreibst. Unter ⚙ → <i>Beim Öffnen</i>
+   umstellbar auf <i>nur bei mehreren Profilen</i> oder <i>gleich in den Plan</i>.</p>
+  <p>Jederzeit über den Buchstaben oben rechts erreichbar. Dort auch <i>Verwalten</i>
+   zum Anlegen, Umbenennen und Löschen.</p>`},
+
+{id:"erinnerungen", teil:"Erinnerungen", titel:"Warum sich die App nicht selbst weckt", worte:"benachrichtigung push melden",
+ text:`<p>Eine Web-App kann sich nicht selbst wecken. Es gibt deshalb zwei Wege:</p>
+  <ol>
+   <li><b>Beim Öffnen.</b> Die App meldet sich, wenn etwas ansteht — sonntags mit
+     einem Wochenüberblick, am Tag vor einer Klausur, bei Klausuren in den nächsten
+     drei Tagen. Höchstens einmal täglich. Berechtigung unter ⚙ → Erinnerungen.</li>
+   <li><b>Kalender-Export.</b> Der zuverlässige Weg — siehe nächster Abschnitt.</li>
+  </ol>
+  <p class="hHinweis">Auf dem iPhone gibt es Benachrichtigungen nur, wenn die App
+   auf dem Startbildschirm liegt.</p>`},
+
+{id:"ics", teil:"Erinnerungen", titel:"Kalender-Export (.ics)", worte:"google apple outlook termine wecker",
+ text:`<p>⚙ → Erinnerungen → <b>Kalender-Export</b>. Die Datei importierst du in
+   Google Kalender, Apple Kalender oder Outlook. Dort bekommst du <b>echte
+   Erinnerungen</b>, auch wenn die App geschlossen ist.</p>
+  <ul>
+   <li>Hausaufgaben und Klausuren: ganztags, Erinnerung <b>15 Stunden vorher</b> —
+     also am Vorabend gegen neun.</li>
+   <li>Ereignisse mit fester Stunde: als Termin von/bis, <b>30 Minuten vorher</b>.</li>
+   <li>„Fällt aus“ wird nicht exportiert, das würde den Kalender zumüllen.</li>
+  </ul>
+  <p>Bei einem erneuten Import werden dieselben Termine aktualisiert statt
+   verdoppelt — jeder trägt eine feste Kennung.</p>`},
+{id:"aufbau", teil:"Technik: wie es funktioniert", titel:"Aufbau — drei Dateien, kein Server", worte:"architektur html js quelltext",
+ text:`<p>Die ganze App besteht aus drei Textdateien und zwei Bildern:</p>
+  <table class="hTab">
+   <tr><th>Datei</th><th>Inhalt</th></tr>
+   <tr><td><code>index.html</code></td><td>Aufbau und sämtliches CSS, alle Dialoge</td></tr>
+   <tr><td><code>app.js</code></td><td>die gesamte Logik, auch dieser Text hier</td></tr>
+   <tr><td><code>sw.js</code></td><td>Offline-Speicher, Versionsnummer, Dateiliste</td></tr>
+  </table>
+  <p><b>Kein Server, keine Datenbank, kein Build-Vorgang, keine Bibliotheken.</b>
+   Nichts wird zur Laufzeit nachgeladen. Ausgeliefert wird über GitHub Pages, das
+   nur fertige Dateien verschickt und selbst nichts rechnet.</p>
+  <p>Der Verzicht ist Absicht: Die App bleibt vom Handy aus bearbeitbar, und was
+   es nicht gibt, kann nicht ausfallen, veralten oder abgeschaltet werden.</p>`},
+
+{id:"speicher", teil:"Technik: wie es funktioniert", titel:"Wo die Daten liegen", worte:"localstorage speicher schlüssel json",
+ text:`<p>Alles im <code>localStorage</code> des Browsers — einem Speicher, der zu
+   genau einer Webadresse gehört und das Gerät nicht verlässt. Je Profil ein
+   Satz Schlüssel mit dem Präfix <code>p&lt;id&gt;_</code>:</p>
+  <table class="hTab">
+   <tr><th>Schlüssel</th><th>Inhalt</th></tr>
+   <tr><td><code>cfg</code></td><td>Einstellungen, Stundenraster, Kürzel-Tabellen</td></tr>
+   <tr><td><code>plan</code></td><td><code>plan[A|B][MO..FR][Feld]</code> = Fach, Raum, Lehrkraft</td></tr>
+   <tr><td><code>eintraege</code></td><td>Hausaufgaben H, Klausuren K, Notizen N, Merkblätter M, Fehlzeiten F</td></tr>
+   <tr><td><code>sonder</code></td><td>einmalige Ereignisse, Ausfall, Vertretung</td></tr>
+   <tr><td><code>noten</code></td><td>alle Noten</td></tr>
+   <tr><td><code>ferien</code></td><td>Ferien, Feiertage und eigene freie Tage</td></tr>
+  </table>
+  <p>Alles als JSON. Gelöschtes bekommt nur die Markierung
+   <code>geloescht: true</code> und bleibt im Archiv, bis es endgültig entfernt wird.</p>
+  <p>In <code>cfg.fassung</code> steht der <b>Datenstand</b>. Trifft eine ältere App
+   auf neuere Daten, sagt sie das, statt sie stillschweigend zu beschneiden.</p>`},
+
+{id:"zeichnen", teil:"Technik: wie es funktioniert", titel:"Wie die Anzeige entsteht", worte:"rendern zeichne neu aufbauen",
+ text:`<p>Es gibt kein Framework und keine Datenbindung. Nach jeder Änderung läuft
+   eine Funktion <code>zeichne()</code>, die den sichtbaren Bereich komplett neu
+   aufbaut. Davor räumt <code>normalisiere()</code> die Daten auf: fehlende Felder
+   ergänzen, Fächer großschreiben, abgehakte Aufgaben nach sieben Tagen archivieren.</p>
+  <p>Das ist absichtlich stumpf. Der gesamte Zustand steht in wenigen Variablen,
+   und jede Ansicht ist eine reine Funktion davon — es gibt keinen Zwischenzustand,
+   der veralten könnte.</p>
+  <p>Ein Zeitgeber läuft alle 30 Sekunden und erneuert Fortschrittsbalken und
+   Countdown; wechselt dabei das Datum, springt die App auf den neuen Tag.</p>`},
+
+{id:"offline", teil:"Technik: wie es funktioniert", titel:"Offline und Aktualisieren", worte:"service worker cache update version zwischenspeicher",
+ text:`<p>Ein <b>Service Worker</b> legt die fünf Dateien beim ersten Besuch in einen
+   Zwischenspeicher. Danach werden Anfragen <b>zuerst daraus</b> beantwortet und im
+   Hintergrund erneuert. Deshalb startet die App sofort, auch ohne Netz und auch
+   bei schlechtem WLAN.</p>
+  <p>Die <b>Versionsnummer</b> steht an genau einer Stelle in <code>sw.js</code>
+   und ist unten unter den vier Punkten sichtbar. Die App fragt die laufende
+   Fassung beim Service Worker ab und vergleicht sie mit der auf dem Server;
+   bei einem Unterschied erscheint dort <i>tippen zum Aktualisieren</i>.</p>
+  <p>Beim Installieren holt der Service Worker seine Dateien ausdrücklich vom Netz.
+   Ohne das dürfte der Browser einzelne aus seinem eigenen Zwischenspeicher
+   liefern — dann träfe ein neues <code>index.html</code> auf ein altes
+   <code>app.js</code> und die App bräche ab. Genau das ist einmal passiert.</p>`},
+
+{id:"sicherheit", teil:"Technik: wie es funktioniert", titel:"Sicherheit", worte:"xss esc sanitizer csp schutz",
+ text:`<p>Die App zeigt viel selbst eingegebenen Text an. Drei Schichten verhindern,
+   dass daraus ausführbarer Code wird:</p>
+  <ol>
+   <li><b><code>esc()</code></b> — jeder Wert aus Daten wird maskiert, bevor er ins
+     HTML geht. Aus einem spitzen Klammerzeichen wird Text, kein Element.</li>
+   <li><b>Prüfung beim Einlesen</b> — eine Sicherungsdatei kann von überall
+     herkommen. Übernommen wird nur, was bekannt ist, und nur in der erwarteten
+     Form: Datumsangaben als Datum, Farben als Hex-Wert, Bilder nur als
+     eingebettete Bilddaten.</li>
+   <li><b>Content-Security-Policy</b> — die Seite darf keinen Code von fremden
+     Adressen laden und keinen aus dem Dokument selbst ausführen. Was die App
+     nicht braucht, kann sie auch nicht.</li>
+  </ol>
+  <p>Es gibt keine Zugangsdaten, keine Schlüssel und keine Anmeldung — also auch
+   nichts, was gestohlen werden könnte.</p>`},
+
+{id:"kalenderwoche", teil:"Technik: wie es funktioniert", titel:"Datum, Kalenderwoche, A/B", worte:"zeitzone iso woche berechnung",
+ text:`<p>Datumsangaben werden als <code>JJJJ-MM-TT</code> geführt und stets als
+   <b>lokale Zeit</b> gelesen. Der naheliegende Weg über die eingebaute
+   ISO-Umwandlung würde die Zeitzone verschieben und je nach Uhrzeit den Vortag
+   liefern — deshalb rechnet die App selbst.</p>
+  <p>Die Kalenderwoche folgt der ISO-Regel: Woche 1 ist die mit dem ersten
+   Donnerstag des Jahres. Daraus folgt die A/B-Woche über die Parität.</p>`},
+
+{id:"grenzen", teil:"Technik: wie es funktioniert", titel:"Grenzen und warum es sie gibt", worte:"portal abruf same-origin speicherplatz",
+ text:`<p><b>Warum kein automatischer Abruf vom Schulportal?</b> Die App liegt auf
+   einer anderen Adresse als dein Portal. Der Browser verbietet Zugriffe über
+   Domaingrenzen hinweg, solange die Gegenseite das nicht ausdrücklich erlaubt.
+   Diese <i>Same-Origin-Regel</i> lässt sich nicht wegprogrammieren. Nötig wäre
+   ein Vermittler-Dienst oder ein Skript auf der Portalseite — beides braucht
+   Zugangsdaten oder die Zustimmung der Schule.</p>
+  <p>Praktisch fällt es kaum ins Gewicht: Der Plan gilt ein halbes Jahr. Nur
+   Vertretungen musst du nachsehen, und die trägst du mit zwei Tipps ein.</p>
+  <p><b>Warum rund 5 MB?</b> Das ist die übliche Grenze des Browserspeichers.
+   Browser rechnen dabei in Zwei-Byte-Zeichen, weshalb die Anzeige unter
+   ⚙ → Speicher ebenso rechnet. Bilder in Merkblättern sind mit Abstand der
+   größte Posten.</p>`},
+
+{id:"nichttut", teil:"Technik: wie es funktioniert", titel:"Was die App nie tut", worte:"datenschutz tracking werbung server",
+ text:`<ul>
+   <li>Sie sendet keine deiner Daten irgendwohin.</li>
+   <li>Sie hat kein Konto, kein Passwort, keine Anmeldung.</li>
+   <li>Sie trackt nicht, wirbt nicht, analysiert nicht.</li>
+   <li>Sie lädt keinen fremden Code nach; alles liegt im Quelltext.</li>
+  </ul>
+  <p>Die <b>einzige</b> Verbindung nach außen ist der freiwillige Abruf der
+   Ferientermine. Dabei erfährt der Dienst nicht einmal, von welcher Seite die
+   Anfrage kommt.</p>`},
+
+{id:"fehlerkasten", teil:"Wenn etwas klemmt", titel:"Der rote Fehlerkasten", worte:"absturz fehler meldung neu laden",
+ text:`<p>Bricht etwas ab, erscheint oben ein roter Kasten mit der Meldung, der
+   Stelle im Quelltext, der Version und Angaben zum Gerät. <b>Deine Daten sind
+   dabei nicht betroffen</b> — die Anzeige ist abgestürzt, nicht der Speicher.</p>
+  <p>Im Kasten steht der Knopf <b>App neu laden</b>. Er leert die Zwischenspeicher
+   und startet neu, ohne die Daten anzurühren. Das behebt die häufigste Ursache:
+   eine halb erneuerte Fassung.</p>
+  <p>Bleibt es dabei, gib den Text weiter — er enthält alles, was zur Suche nötig
+   ist. Ohne Server gibt es kein Protokoll; deine Meldung ist die einzige Quelle.</p>`},
+
+{id:"problemdaten", teil:"Wenn etwas klemmt", titel:"Häufige Fälle", worte:"probleme hilfe funktioniert nicht leer",
+ text:`<table class="hTab">
+   <tr><th>Beobachtung</th><th>Ursache und Abhilfe</th></tr>
+   <tr><td>Plan ist leer</td><td>Anderes Profil aktiv? Buchstabe oben rechts prüfen.</td></tr>
+   <tr><td>Alles weg</td><td>Websitedaten gelöscht oder Speicher vom System geräumt. Ohne Sicherung nicht wiederherstellbar.</td></tr>
+   <tr><td>„Speicher voll“</td><td>Bilder aus alten Merkblättern entfernen, vorher sichern.</td></tr>
+   <tr><td>Keine Erinnerungen</td><td>Berechtigung unter ⚙ prüfen. Auf dem iPhone nur, wenn die App auf dem Startbildschirm liegt. Verlässlich ist der Kalender-Export.</td></tr>
+   <tr><td>Neue Fassung kommt nicht</td><td>⚙ → <i>Nach Update suchen</i>, sonst App schließen und neu öffnen.</td></tr>
+   <tr><td>Ferien laden schlägt fehl</td><td>Internet prüfen. Antwortet der Dienst nicht, bricht die App nach 15 Sekunden ab und sagt es.</td></tr>
+   <tr><td>Fach doppelt im Zeugnis</td><td>Sollte nicht mehr vorkommen; Fächer werden beim Öffnen vereinheitlicht. Sonst melden.</td></tr>
+  </table>`}
+
+];
+
+/* Sucht nur in den Textknoten. Über den fertigen HTML-Text zu ersetzen
+   würde Treffer mitten in Attributnamen markieren und das Markup zerreissen. */
+function hilfeMarkieren(wurzel, wort){
+  if(!wort) return;
+  const lauf = document.createTreeWalker(wurzel, NodeFilter.SHOW_TEXT);
+  const knoten = [];
+  while(lauf.nextNode()) knoten.push(lauf.currentNode);
+  const klein = wort.toLowerCase();
+  knoten.forEach(k => {
+    const text = k.nodeValue;
+    if(!text.toLowerCase().includes(klein)) return;
+    const stueck = document.createDocumentFragment();
+    let rest = text, i;
+    while((i = rest.toLowerCase().indexOf(klein)) !== -1){
+      if(i) stueck.appendChild(document.createTextNode(rest.slice(0, i)));
+      const mark = document.createElement("mark");
+      mark.textContent = rest.slice(i, i + wort.length);
+      stueck.appendChild(mark);
+      rest = rest.slice(i + wort.length);
+    }
+    if(rest) stueck.appendChild(document.createTextNode(rest));
+    k.parentNode.replaceChild(stueck, k);
+  });
+}
+
+function hilfeZeichnen(){
+  const wort = ($("#hilfeSuche").value || "").trim();
+  const klein = wort.toLowerCase();
+  const passt = a => !klein
+    || (a.titel + " " + a.teil + " " + a.text + " " + (a.worte || "")).toLowerCase().includes(klein);
+  const treffer = HILFE.filter(passt);
+
+  /* Inhaltsverzeichnis nur ohne Suche — bei einer Suche ist die Trefferliste
+     das Verzeichnis. */
+  const verz = $("#hilfeVerzeichnis");
+  verz.classList.toggle("hidden", !!klein);
+  if(!klein){
+    let letzterTeil = null;
+    verz.innerHTML = "<div class=\"eyebrow\">Inhalt</div>" + HILFE.map(a => {
+      const kopf = a.teil !== letzterTeil
+        ? `<div class="hvTeil">${esc(a.teil)}</div>` : "";
+      letzterTeil = a.teil;
+      return kopf + `<button type="button" class="hvZeile" data-zu="${esc(a.id)}">${esc(a.titel)}</button>`;
+    }).join("");
+  }
+
+  $("#hilfeStand").textContent = klein
+    ? (treffer.length ? `${zahl(treffer.length,"Abschnitt","Abschnitte")} zu „${wort}“`
+                      : `Nichts zu „${wort}“ gefunden.`)
+    : `${zahl(HILFE.length,"Abschnitt","Abschnitte")}`;
+
+  let letzter = null;
+  $("#hilfeInhalt").innerHTML = treffer.map(a => {
+    const kopf = a.teil !== letzter ? `<div class="eyebrow hTeil">${esc(a.teil)}</div>` : "";
+    letzter = a.teil;
+    return kopf + `<section class="hAbschnitt" id="h-${esc(a.id)}">
+      <h3>${esc(a.titel)}</h3>${a.text}</section>`;
+  }).join("");
+  if(klein) hilfeMarkieren($("#hilfeInhalt"), wort);
+}
+
+function hilfeOeffnen(){
+  $("#hilfeSuche").value = "";
+  hilfeZeichnen();
+  dlgHilfe.showModal();
+  $("#hilfeKoerper").scrollTop = 0;
+}
+$("#btnHilfe").onclick = hilfeOeffnen;
+$("#bHilfeAb").onclick = () => dlgHilfe.close();
+$("#bHilfeOben").onclick = () => { $("#hilfeKoerper").scrollTop = 0; };
+$("#hilfeSuche").oninput = hilfeZeichnen;
+$("#hilfeVerzeichnis").onclick = e => {
+  const b = e.target.closest("[data-zu]"); if(!b) return;
+  const ziel = document.getElementById("h-" + b.dataset.zu);
+  if(ziel) ziel.scrollIntoView({block:"start", behavior:"smooth"});
+};
+
+/* =====================================================================
    Einstellungen
    ===================================================================== */
 function slotEditorZeichnen(slots){

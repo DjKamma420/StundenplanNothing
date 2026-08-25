@@ -241,6 +241,44 @@ section{margin-top:30px}
 .kwerkzeug .loesch{border-color:var(--akzent);color:var(--akzent);flex:0 0 34px}
 .pFuss{display:flex;gap:8px;margin-top:32px}
 
+/* Anleitung */
+/* display nur im geöffneten Zustand: ein pauschales display:flex hebt das
+   display:none auf, das ein geschlossener dialog vom Browser bekommt — der
+   Dialog läge dann unsichtbar über der App und schluckte jeden Klick. */
+#dlgHilfe{width:min(96vw,720px);max-height:92vh;padding:0}
+#dlgHilfe[open]{display:flex;flex-direction:column}
+.hKopf{padding:18px 20px 12px;border-bottom:1px solid var(--line);flex:none}
+.hKopf h2{margin:0 0 10px}
+.hKopf input{margin-top:0}
+#hilfeStand{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:8px;letter-spacing:.06em}
+#hilfeKoerper{overflow-y:auto;padding:0 20px 8px;flex:1;overscroll-behavior:contain}
+#hilfeVerzeichnis{margin:16px 0 4px;border:1px solid var(--line);border-radius:12px;padding:14px}
+.hvTeil{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--akzent);margin:12px 0 4px}
+#hilfeVerzeichnis .eyebrow{margin-bottom:4px}
+.hvZeile{display:block;width:100%;text-align:left;padding:7px 0;font-size:14.5px;
+  border-bottom:1px solid var(--line2)}
+.hTeil{margin:30px 0 2px;color:var(--akzent)}
+.hAbschnitt{padding:14px 0 4px;border-top:1px solid var(--line);scroll-margin-top:8px}
+.hAbschnitt h3{font-size:17px;margin:0 0 8px;font-weight:600;letter-spacing:-.01em}
+.hAbschnitt p{margin:9px 0;font-size:14.5px;line-height:1.6}
+.hAbschnitt ul,.hAbschnitt ol{margin:9px 0;padding-left:20px;font-size:14.5px;line-height:1.6}
+.hAbschnitt li{margin:5px 0}
+.hAbschnitt code{font-family:var(--mono);font-size:12.5px;background:var(--line2);
+  border-radius:4px;padding:1px 5px}
+.hCode{font-family:var(--mono);font-size:12.5px;background:var(--line2);border-radius:9px;
+  padding:11px 13px;overflow-x:auto;white-space:pre;line-height:1.55;margin:10px 0}
+.hTab{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+.hTab th{text-align:left;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);font-weight:400;padding:6px 8px 6px 0;
+  border-bottom:1px solid var(--line)}
+.hTab td{padding:7px 8px 7px 0;border-bottom:1px solid var(--line2);vertical-align:top;line-height:1.5}
+.hWarn{border-left:2px solid var(--akzent);padding-left:12px}
+.hHinweis{border-left:2px solid var(--line);padding-left:12px;color:var(--muted)}
+.hAbschnitt mark{background:var(--akzent);color:#fff;border-radius:3px;padding:0 2px}
+#dlgHilfe .reihe{margin:0;padding:12px 20px calc(14px + env(safe-area-inset-bottom));
+  border-top:1px solid var(--line);flex:none}
+
 /* Dialoge */
 dialog{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:16px;
   padding:20px;width:min(93vw,440px);max-height:86vh}
@@ -624,9 +662,31 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
 </dialog>
 
+<!-- Anleitung -->
+<dialog id="dlgHilfe"><button class="fangfokus" autofocus aria-hidden="true"></button>
+  <div class="hKopf">
+    <h2>Anleitung</h2>
+    <input type="search" id="hilfeSuche" placeholder="Stichwort suchen, etwa „Sicherung“ …"
+      autocomplete="off" autocapitalize="none" spellcheck="false">
+    <div id="hilfeStand"></div>
+  </div>
+  <div id="hilfeKoerper">
+    <nav id="hilfeVerzeichnis" aria-label="Inhaltsverzeichnis"></nav>
+    <div id="hilfeInhalt"></div>
+  </div>
+  <div class="reihe">
+    <button type="button" id="bHilfeOben">↑ Anfang</button>
+    <button type="button" class="haupt" id="bHilfeAb">Fertig</button>
+  </div>
+</dialog>
+
 <!-- Einstellungen -->
 <dialog id="dlgEinst"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <h2>Einstellungen</h2>
+  <div class="chips">
+    <button type="button" id="btnHilfe" style="border-color:var(--akzent);color:var(--akzent)">
+      Anleitung und Technik</button>
+  </div>
 
   <div class="eyebrow" style="margin-top:18px">Darstellung</div>
   <div class="zwei">

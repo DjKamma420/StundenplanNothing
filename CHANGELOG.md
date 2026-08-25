@@ -2,6 +2,19 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v38
+
+**Neu**
+- **Anleitung in der App:** ⚙ → *Anleitung und Technik*. 37 Abschnitte in neun
+  Teilen, mit Inhaltsverzeichnis zum Anspringen und Suche nach Stichwörtern —
+  Treffer werden im Text hervorgehoben
+- Darin ein eigener Teil **wie die App technisch funktioniert**: Aufbau, wo die
+  Daten liegen, wie die Anzeige entsteht, Offline und Aktualisieren, die drei
+  Sicherheitsschichten, Datums- und Notenrechnung, und warum es kein
+  Portal-Abruf gibt
+- Dazu Beispiele: Importformat, Notenverrechnung, Zielnoten-Rechner,
+  Umrechnung von Fehlstunden in Tage — und eine Tabelle häufiger Probleme
+
 ## v37
 
 **Behoben**
