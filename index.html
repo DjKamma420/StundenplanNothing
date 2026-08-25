@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- Die App lädt nichts von fremden Servern. Was sie nicht braucht, darf sie
+     auch nicht können — das begrenzt den Schaden, falls doch einmal fremder
+     Text in einer eingelesenen Sicherung durchrutscht. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' blob:;
+  script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;
+  connect-src 'self' https://openholidaysapi.org; base-uri 'none'; form-action 'none';
+  object-src 'none'">
 <title>Stundenplan</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0a0a0a">
@@ -38,7 +45,7 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 /* Kopf */
 .top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
 .reiter{display:flex;gap:2px;border:1px solid var(--line);border-radius:99px;padding:3px;flex:1;min-width:0}
-.reiter button{font-family:var(--mono);font-size:9px;letter-spacing:.04em;text-transform:uppercase;
+.reiter button{font-family:var(--mono);font-size:10.5px;letter-spacing:.02em;text-transform:uppercase;
   padding:7px 2px;border-radius:99px;color:var(--muted);flex:1}
 .reiter button[aria-pressed=true]{background:var(--text);color:var(--ink)}
 .ikon{border:1px solid var(--line);border-radius:10px;width:36px;height:36px;font-size:14px;color:var(--muted);flex:none}
@@ -72,6 +79,7 @@ header h1 span{color:var(--muted);font-weight:400}
 .frei-banner{border:1px solid var(--akzent);border-radius:12px;padding:12px 14px;margin:16px 0 0}
 .frei-banner b{color:var(--akzent);font-size:15px}
 .frei-banner div{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:3px}
+.frei-banner .chips button{color:var(--text);border-color:var(--akzent)}
 .block{display:grid;grid-template-columns:58px 1fr;gap:14px;align-items:start;
   border-top:1px solid var(--line);padding:15px 0;width:100%;text-align:left}
 #plan .block:last-child{border-bottom:1px solid var(--line)}
@@ -318,6 +326,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <div class="zeile"><span id="fortLinks"></span><span id="fortRechts"></span></div>
   </div>
   <div class="frei-banner hidden" id="freiBanner"></div>
+  <div class="frei-banner hidden" id="sicherBanner"></div>
   <nav class="tage" id="tage" aria-label="Wochentag"></nav>
   <div id="plan"></div>
   <p class="hinweis hidden" id="editHinweis">Bearbeiten ist an: Antippen ändert Fach, Raum und Lehrkraft.</p>
@@ -356,7 +365,6 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <div id="einDetail" class="hidden">
     <div class="eyebrow mitte" id="einTitel"></div>
     <p class="hinweis mitte" id="einSubHinweis"></p>
-    <div id="einKopf"></div>
     <ul class="liste" id="einListe"></ul>
     <p class="nix mitte" id="einNix" hidden></p>
   </div>
@@ -414,6 +422,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <button type="button" id="bSchnellAusfall">Fällt aus<small>nur an diesem Tag</small></button>
     <button type="button" id="bSchnellVertretung">Vertretung<small>anderes Fach oder Raum</small></button>
     <button type="button" id="bSchnellErsatz">Sonstiges Ereignis<small>nur an diesem Tag</small></button>
+    <button type="button" id="bSchnellInfo">Fach-Info<small>Lehrkraft, Raum, Schnitt, Offenes</small></button>
   </div>
 </dialog>
 
@@ -608,6 +617,11 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </label>
   <p class="hinweis" id="ankerWrap">Feste Regel: ungerade Kalenderwoche = <b>A</b>, gerade = <b>B</b>.
      <span id="ankerJetzt"></span></p>
+  <div class="chips hidden" id="sWocheKopieren">
+    <button type="button" data-kopiere="AB">A-Woche → B-Woche</button>
+    <button type="button" data-kopiere="BA">B-Woche → A-Woche</button>
+  </div>
+  <p class="hinweis" id="sWocheStand"></p>
 
   <div class="eyebrow" style="margin-top:22px">Noten</div>
   <div class="zwei">
@@ -666,6 +680,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <p class="hinweis" id="sSicherStand"></p>
   <div class="chips">
     <button type="button" id="sDatei">Als Datei sichern</button>
+    <button type="button" id="sDateiAlle">Alle Profile sichern</button>
     <button type="button" id="sDateiWahl">Datei einlesen</button>
     <button type="button" id="sTeilen">Teilen</button>
   </div>

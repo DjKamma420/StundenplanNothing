@@ -10,6 +10,10 @@ Drei Dateien, kein Framework, kein Build-Vorgang:
 - `app.js` — die gesamte Logik
 - `sw.js` — Offline-Speicher und Versionsnummer
 
+Dazu `.github/workflows/pruefen.yml`: prüft bei jedem Push die JavaScript-Syntax,
+das Manifest und ob jede in `app.js` angesprochene Kennung in `index.html` steht.
+Das ist kein Build-Vorgang — es entsteht nichts, es wird nur nachgesehen.
+
 Zum Ausprobieren reicht es, `index.html` im Browser zu öffnen. Für Service Worker und Installation braucht es HTTPS, also GitHub Pages oder einen lokalen Server.
 
 ## Regeln
@@ -25,6 +29,8 @@ Zum Ausprobieren reicht es, `index.html` im Browser zu öffnen. Für Service Wor
 
 - Läuft die App noch, wenn der Speicher leer ist? (Neues Profil anlegen und ausprobieren)
 - Überlebt eine bestehende Sicherung deine Änderung?
+- Landet nichts Ungeprüftes im HTML? Alles, was aus Daten kommt, gehört durch `esc()`,
+  alles aus einer eingelesenen Sicherung zusätzlich durch die `…Saeubern`-Funktionen.
 - Erscheint kein roter Fehlerkasten?
 - Funktioniert es auf einem schmalen Handybildschirm?
 

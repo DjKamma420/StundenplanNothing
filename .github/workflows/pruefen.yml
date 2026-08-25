@@ -1,0 +1,47 @@
+# Kein Build-Vorgang — nur die Prüfungen, die ein kaputtes Deployment
+# verhindern. Ein Fehler in app.js macht die App auf allen Geräten
+# unbenutzbar, und ein Zurückrollen gibt es nicht.
+name: Prüfen
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JavaScript-Syntax
+        run: |
+          node --check app.js
+          node --check sw.js
+
+      - name: Versionsnummer vorhanden
+        run: grep -qE '^const VERSION = "v[0-9]+";$' sw.js
+
+      - name: Manifest ist gültiges JSON
+        run: node -e 'JSON.parse(require("fs").readFileSync("manifest.webmanifest","utf8"))'
+
+      - name: Verwendete Kennungen stehen in index.html
+        run: |
+          node -e '
+            const fs = require("fs");
+            const html = fs.readFileSync("index.html", "utf8");
+            const js = fs.readFileSync("app.js", "utf8");
+            const da = new Set([...html.matchAll(/\bid="([A-Za-z0-9_-]+)"/g)].map(m => m[1]));
+            const erlaubt = new Set(["fehlerkasten"]);   // legt app.js selbst an
+            const fehlt = new Set();
+            const suchen = (muster) => {
+              for (const m of js.matchAll(muster))
+                if (!da.has(m[1]) && !erlaubt.has(m[1])) fehlt.add(m[1]);
+            };
+            suchen(/\$\("#([A-Za-z0-9_-]+)"\)/g);
+            suchen(/getElementById\("([A-Za-z0-9_-]+)"\)/g);
+            if (fehlt.size) {
+              console.error("Fehlende Kennungen in index.html: " + [...fehlt].join(", "));
+              process.exit(1);
+            }
+            console.log(da.size + " Kennungen, keine offenen Verweise.");
+          '

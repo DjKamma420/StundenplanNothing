@@ -2,6 +2,42 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v32
+
+**Behoben**
+- Erinnerungen erscheinen jetzt auch auf Android. Sie liefen dort über einen Weg,
+  den Chrome verbietet, und schlugen still fehl — der Tag galt trotzdem als gemeldet
+- „Teilen" vermerkte eine Sicherung, auch wenn nur die Adresse der App geteilt wurde.
+  Der Vermerk entsteht jetzt nur noch, wenn die Daten das Gerät wirklich verlassen haben
+- Fächer werden im Plan groß gespeichert. „Ch" und „CH" galten als zwei Fächer:
+  das Zeugnis zeigte beide, der Notenschnitt zerfiel. Bestehende Pläne werden beim
+  Öffnen einmalig zusammengeführt
+- Eingelesene Sicherungen werden geprüft, statt ungesehen übernommen zu werden.
+  Eine fremde Datei konnte Text in die Oberfläche schleusen
+- Der Speicherstand zählt wie der Browser in Zwei-Byte-Zeichen — er zeigte bisher
+  die Hälfte, und der Speicher war schon bei angezeigten 2500 kB voll
+- Kalender-Export: Ganztagstermine enden am Folgetag und lange Zeilen werden
+  umgebrochen, wie es der ICS-Standard verlangt
+- Wird das Stundenraster kürzer, fragt die App nach, statt den Unterricht am
+  Tagesende kommentarlos zu löschen
+- Zwei offene Tabs desselben Profils überschreiben sich nicht mehr gegenseitig
+- Stundengebundene Ereignisse am Wochenende sind wieder sichtbar
+
+**Neu**
+- Erinnerung an die Sicherung steht in der Tagesansicht, nicht mehr nur in den
+  Einstellungen — dort sah sie niemand, der nicht ohnehin gerade sicherte
+- „Alle Profile sichern": eine Datei für das ganze Gerät statt eine je Profil
+- A-Woche in die B-Woche kopieren (und umgekehrt) unter ⚙ → Wochenwechsel
+- Warnung, bevor der Browserspeicher voll ist, statt erst danach
+- Ereignisse wandern mit in den Kalender-Export
+- Fach-Info über die Schnellauswahl erreichbar — bisher ging das nur durch
+  langes Drücken und damit nicht mit Tastatur
+
+**Geändert**
+- Offline zuerst: die App startet aus ihrem Zwischenspeicher und erneuert im
+  Hintergrund. Bei schlechtem Netz wartet sie nicht mehr auf den Zeitablauf
+- Die Seite erlaubt sich selbst keine fremden Quellen mehr (Content-Security-Policy)
+
 ## v31
 
 **Geändert**
