@@ -21,9 +21,11 @@ Das heißt konkret:
 - Der private oder Inkognito-Modus vergisst alles beim Schließen.
 - Niemand kann dir die Daten wiederherstellen — auch ich nicht, denn sie waren nie irgendwo anders.
 
-**Deshalb: Mach regelmäßig eine Sicherung.** ⚙ → Sicherung → *Als Datei sichern*. Die Datei landet in deinen Downloads; schick sie dir selbst per Mail oder leg sie in eine Cloud. Die App erinnert dich nach vier Wochen daran.
+**Deshalb: Mach regelmäßig eine Sicherung.** ⚙ → Sicherung → *Als Datei sichern*. Die Datei landet in deinen Downloads; schick sie dir selbst per Mail oder leg sie in eine Cloud. Nach vier Wochen erinnert dich die App oben in der Tagesansicht daran.
 
-Zurückholen geht über ⚙ → Sicherung → *Datei einlesen*.
+Führst du mehrere Profile, nimm *Alle Profile sichern* — das ist eine einzige Datei für das ganze Gerät.
+
+Zurückholen geht über ⚙ → Sicherung → *Datei einlesen*. Eingelesen wird nur, was die App auch selbst schreibt; alles andere in der Datei wird verworfen.
 
 ---
 
@@ -55,7 +57,7 @@ Das Icon liegt jetzt neben deinen anderen Apps und startet ohne Browserleiste.
 1. **⚙ oben rechts** öffnen.
 2. **Klasse** eintragen.
 3. **Stundenraster** prüfen. Zwei Vorlagen zum Antippen: *4 Blöcke à 90 min* und *8 Einzelstunden*. Sonst Zeilen von Hand anpassen — „Std." sind die Stundennummern, die ein Feld abdeckt.
-4. Wenn deine Schule **A- und B-Wochen** hat: Haken setzen. Feste Regel: **ungerade Kalenderwoche = A, gerade = B**. Die App zeigt dir, welche gerade läuft.
+4. Wenn deine Schule **A- und B-Wochen** hat: Haken setzen. Feste Regel: **ungerade Kalenderwoche = A, gerade = B**. Die App zeigt dir, welche gerade läuft. Unterscheiden sich die beiden Wochen nur in ein paar Stunden, trag eine ein und kopier sie mit *A-Woche → B-Woche* herüber.
 5. **Bundesland** wählen und **Ferien laden**.
 6. Optional **Akzentfarbe**, **heller Modus** und **Schriftart** einstellen.
 
@@ -99,7 +101,7 @@ Wechseln durch Antippen, durch Antippen der vier Punkte oder durch **Wischen in 
 
 ### Eine Stunde antippen
 
-- **Kurz antippen** öffnet die Schnellauswahl: Hausaufgabe für die nächste Stunde dieses Fachs, Notiz, Klausur, Fehlzeit, *Fällt aus*, *Vertretung* oder ein sonstiges Ereignis.
+- **Kurz antippen** öffnet die Schnellauswahl: Hausaufgabe für die nächste Stunde dieses Fachs, Notiz, Klausur, Fehlzeit, *Fällt aus*, *Vertretung*, ein sonstiges Ereignis — oder die Fach-Info.
 - **Gedrückt halten** öffnet die Fach-Info: ausgeschriebener Name, Lehrkraft, Raum, Wochenstunden, nächster Termin (antippbar → springt in den Kalender), Notenschnitt, Fehlzeiten, Merkblätter, Offenes.
 - **Mit ✎ oben** ändert Antippen dauerhaft Fach, Raum und Lehrkraft.
 
@@ -127,7 +129,7 @@ Bei der Datumsauswahl bekommt jeder Tag einen **roten Punkt**, an dem das gewäh
 
 Beliebig viele je Fach, jedes mit Datum und Uhrzeit. Zeilenumbrüche und Einrückungen bleiben erhalten, Darstellung in Monospace — Formeln bleiben ausgerichtet.
 
-**Bilder** lassen sich einfügen (Fotos vom Tafelbild oder einer Seite). Sie werden automatisch auf 1000 px verkleinert und komprimiert. Trotzdem gilt: Der Browserspeicher fasst rund 5 MB. Unter ⚙ → Speicher siehst du den Stand.
+**Bilder** lassen sich einfügen (Fotos vom Tafelbild oder einer Seite). Sie werden automatisch auf 1000 px verkleinert und komprimiert. Trotzdem gilt: Der Browserspeicher fasst rund 5 MB. Unter ⚙ → Speicher siehst du den Stand in Prozent; ab 80 % warnt die App, solange noch Zeit für eine Sicherung ist.
 
 ### Fehlzeiten
 
@@ -156,7 +158,7 @@ Die Zeugnisansicht ist eine **Schätzung**. Lehrkräfte gewichten oft anders.
 Eine Web-App kann sich **nicht selbst wecken**. Deshalb zwei Wege:
 
 1. **Beim Öffnen** meldet sich die App, wenn etwas ansteht — sonntags mit einem Wochenüberblick, am Tag vor einer Klausur, bei Klausuren in den nächsten drei Tagen. Einmal täglich, nicht öfter. Berechtigung erteilen unter ⚙ → Erinnerungen.
-2. **Kalender-Export (.ics)** unter ⚙ → Erinnerungen. Die Datei importierst du in Google Kalender, Apple Kalender oder Outlook. Dort bekommst du **echte Erinnerungen**, 15 Stunden vorher, auch wenn die App geschlossen ist. Das ist der zuverlässige Weg.
+2. **Kalender-Export (.ics)** unter ⚙ → Erinnerungen. Die Datei importierst du in Google Kalender, Apple Kalender oder Outlook. Dort bekommst du **echte Erinnerungen** — bei Hausaufgaben und Klausuren 15 Stunden vorher, bei Ereignissen mit fester Stunde 30 Minuten vorher —, auch wenn die App geschlossen ist. Das ist der zuverlässige Weg.
 
 ### Profile
 
