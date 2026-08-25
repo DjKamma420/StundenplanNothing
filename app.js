@@ -18,7 +18,14 @@ function zeigeFehler(text, quelle){
         + "white-space:pre-wrap;max-height:52vh;overflow:auto";
       (document.body || document.documentElement).appendChild(k);
     }
-    k.textContent = "Fehler\n" + text + (quelle ? "\n" + quelle : "")
+    let umgebung = "";
+    try{
+      umgebung = "\n" + (typeof BUILD === "string" ? BUILD : "?")
+        + " · " + (navigator.language || "?")
+        + " · " + (screen.width + "×" + screen.height)
+        + " · " + navigator.userAgent.slice(0, 120);
+    }catch(e){}
+    k.textContent = "Fehler\n" + text + (quelle ? "\n" + quelle : "") + umgebung
       + "\n\nBitte diesen Text weitergeben. Deine Daten sind nicht betroffen.";
     /* Wer hier steht, kommt sonst nicht weiter. Die häufigste Ursache ist eine
        halb erneuerte Fassung — neues index.html, altes app.js. Ein Neuladen
@@ -48,8 +55,14 @@ window.addEventListener("error", e => {
 window.addEventListener("unhandledrejection", e =>
   zeigeFehler("Unerledigt: " + ((e.reason && e.reason.message) || e.reason)));
 
+/* Fassung der Daten im Speicher — nicht die der App. Sie steigt nur, wenn
+   sich die Form der gespeicherten Daten ändert, und gibt späteren
+   Umstellungen einen Anker. Ohne sie weiß niemand, was da liegt. */
+const SCHEMA = 3;
+
 /* --- Voreinstellungen. Nichts davon ist auf eine Schule zugeschnitten. --- */
 const STANDARD = {
+  fassung: SCHEMA,
   klasse: "",
   slots: [
     {std:"1,2", von:"08:00", bis:"09:30"},
@@ -170,6 +183,23 @@ function zustandLaden(){
   sonder    = Speicher.lies("sonder", []);
   noten     = Speicher.lies("noten", []);
   merkblattUmziehen();
+  datenMigrieren();
+}
+/* Bis Fassung 3 erledigen normalisiere() und merkblattUmziehen() die
+   Umstellung alter Formen von selbst; hier wird nur festgehalten, worauf
+   spätere Schritte aufsetzen. Wichtig ist der umgekehrte Fall: Daten aus
+   einer neueren App-Fassung dürfen nicht stillschweigend beschnitten werden. */
+function datenMigrieren(){
+  const war = Number(cfg.fassung) || 0;
+  if(war === SCHEMA) return;
+  if(war > SCHEMA){
+    zeigeFehler("Diese Daten stammen aus einer neueren Fassung der App "
+      + `(Datenstand ${war}, diese App kennt ${SCHEMA}). `
+      + "Aktualisiere die App, bevor du weiterarbeitest.");
+    return;
+  }
+  cfg.fassung = SCHEMA;
+  Speicher.schreib("cfg", cfg);
 }
 /* Frühere Fassungen hielten Merkblätter als {FACH: Text}. Jetzt sind es
    normale Einträge vom Typ M — dadurch gelten Suche und Archiv auch dort. */
@@ -274,7 +304,9 @@ const eintraegeAm  = d => aktiv().filter(e => e.datum === iso(d) && e.typ !== "M
 
 function faecher(){
   const s = new Set();
-  ["A","B"].forEach(w => TAGE.forEach(t => (plan[w][t]||[]).forEach(x => x && x.fach && s.add(x.fach))));
+  /* plan[w] kann fehlen, wenn gelesen wird, bevor normalisiere() lief. */
+  ["A","B"].forEach(w => TAGE.forEach(t =>
+    ((plan[w] && plan[w][t]) || []).forEach(x => x && x.fach && s.add(x.fach))));
   return [...s].sort();
 }
 const alleFaecher = () => [...new Set([...faecher(), ...notenAktiv().map(n => n.fach),
@@ -285,7 +317,8 @@ const freiAm = d => { const s = iso(d); return ferien.find(f => s >= f.von && s 
 function hatFachAm(d, fach){
   if(!fach) return false;
   const i = tagIndex(d); if(i === 5) return false;
-  return (plan[wocheFuer(d)][TAGE[i]] || []).some(x => x && x.fach && x.fach.toUpperCase() === fach);
+  const woche = plan[wocheFuer(d)];
+  return ((woche && woche[TAGE[i]]) || []).some(x => x && x.fach && x.fach.toUpperCase() === fach);
 }
 function naechsterTagMitFach(d, fach){
   for(let i = 1; i <= 120; i++){
@@ -1666,11 +1699,23 @@ async function ferienLaden(land){
   const j = new Date().getFullYear();
   const url = a => `https://openholidaysapi.org/${a}?countryIsoCode=DE&subdivisionCode=${land}`
     + `&languageIsoCode=DE&validFrom=${j}-01-01&validTo=${j+1}-12-31`;
+  /* Ohne Abbruch bliebe „Wird geladen …" bei einem hängenden Dienst für
+     immer stehen. Fremde Antworten werden zudem nicht blind ausgepackt. */
   const hole = async (a,typ) => {
-    const r = await fetch(url(a), {headers:{accept:"application/json"}});
-    if(!r.ok) throw new Error(a+": "+r.status);
-    return (await r.json()).map(x => ({von:x.startDate, bis:x.endDate, typ,
-      name:(x.name.find(n => n.language === "DE") || x.name[0]).text}));
+    const stopp = new AbortController();
+    const uhr = setTimeout(() => stopp.abort(), 15000);
+    let r;
+    try{ r = await fetch(url(a), {headers:{accept:"application/json"}, signal:stopp.signal}); }
+    finally{ clearTimeout(uhr); }
+    if(!r.ok) throw new Error(a + ": " + r.status);
+    const liste = await r.json();
+    if(!Array.isArray(liste)) throw new Error(a + ": unerwartete Antwort");
+    return liste.map(x => {
+      const namen = Array.isArray(x && x.name) ? x.name : [];
+      const treffer = namen.find(nm => nm && nm.language === "DE") || namen[0];
+      return {von:x && x.startDate, bis:x && x.endDate, typ,
+              name:(treffer && treffer.text) || "Ferien"};
+    }).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x.von || ""));
   };
   const [feier, schul] = await Promise.all([hole("PublicHolidays","feiertag"), hole("SchoolHolidays","ferien")]);
   return [...feier, ...schul].sort((a,b) => a.von.localeCompare(b.von));
@@ -1683,7 +1728,11 @@ $("#sFerienLaden").onclick = async () => {
     const eigene = ferien.filter(f => f.typ === "eigen");   // selbst eingetragene behalten
     ferien = [...await ferienLaden(land), ...eigene].sort((a,b) => a.von.localeCompare(b.von));
     cfg.land = land; sichern(); ferienStand(); zeichne();
-  }catch(err){ $("#sFerienStand").textContent = "Laden fehlgeschlagen. Internet prüfen."; }
+  }catch(err){
+    $("#sFerienStand").textContent = (err && err.name === "AbortError")
+      ? "Der Dienst antwortet nicht. Später noch einmal versuchen."
+      : "Laden fehlgeschlagen. Internet prüfen.";
+  }
 };
 $("#sFerienWeg").onclick = () => {
   ferien = ferien.filter(f => f.typ === "eigen");
@@ -1874,6 +1923,7 @@ function cfgSaeubern(roh){
   c.sicherAuto  = !!c.sicherAuto;
   c.sicherHalten = alsZahl(c.sicherHalten, 0, 60, 3);
   c.startProfil = ["immer","mehrere","nie"].includes(c.startProfil) ? c.startProfil : "immer";
+  c.fassung = alsZahl(c.fassung, 0, 999, 0);
   c.stdProTag  = alsZahl(c.stdProTag, 1, 16, 8);
   c.reiheEin   = Array.isArray(c.reiheEin)
     ? c.reiheEin.filter(x => REIHE_STANDARD.includes(x)) : null;
@@ -2426,6 +2476,16 @@ $("#sLaden").onclick = () => {
   if(d && Array.isArray(d.profile)) return alleProfileUebernehmen(d.profile);
   const teil = paketSaeubern(d);
   if(!Object.keys(teil).length) return alert("In der Datei steckt kein erkennbarer Stundenplan.");
+  /* Einlesen ersetzt, es ergänzt nicht. Wer das übersieht, verliert einen
+     Plan, den es nirgends sonst gibt. */
+  if(hatEchteDaten()){
+    const alter = sicherungAlter();
+    if(!confirm("Das ersetzt den gesamten Plan dieses Profils — Einträge, Noten, "
+      + "Merkblätter und Archiv.\n"
+      + (alter === null ? "Von den jetzigen Daten gibt es noch keine Sicherung."
+                        : `Letzte Sicherung der jetzigen Daten: vor ${zahl(alter,"Tag","Tagen")}.`)
+      + "\n\nFortfahren?")) return;
+  }
   if(teil.cfg)       cfg       = teil.cfg;
   if(teil.plan)      plan      = teil.plan;
   if(teil.eintraege) eintraege = teil.eintraege;
@@ -2499,7 +2559,9 @@ async function laufendeVersion(){
 }
 async function serverVersion(){
   try{
-    const t = await (await fetch("sw.js", {cache:"no-store"})).text();
+    const antwort = await mitZeitgrenze(fetch("sw.js", {cache:"no-store"}), 5000);
+    if(!antwort) return null;
+    const t = await antwort.text();
     const m = t.match(/VERSION\s*=\s*"([^"]+)"/);
     return m ? m[1] : null;
   }catch(e){ return null; }

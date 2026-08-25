@@ -2,6 +2,37 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v37
+
+**Behoben**
+- Der Abruf der Ferientermine konnte ewig auf einen hängenden Dienst warten;
+  „Wird geladen …" blieb dann für immer stehen. Jetzt bricht er nach 15
+  Sekunden ab und sagt, was los ist
+- Eine unvollständige Antwort des Ferien-Dienstes konnte die Einstellungen
+  abstürzen lassen. Fehlende Felder werden übersprungen
+- Auch die Versionsabfrage hat jetzt eine Zeitgrenze
+- Zwei Zugriffe auf den Plan waren nicht abgesichert, wenn sie vor dem
+  ersten Zeichnen liefen
+
+**Neu**
+- Der Datenstand steht jetzt in den gespeicherten Daten. Trifft eine ältere
+  App auf neuere Daten, sagt sie das, statt sie stillschweigend zu beschneiden
+- Einlesen einer Sicherung fragt nach, bevor es einen vorhandenen Plan
+  ersetzt — und nennt dabei, wann zuletzt gesichert wurde
+- Der rote Fehlerkasten nennt Version, Sprache, Bildschirmgröße und Browser.
+  Ohne Server gibt es kein Protokoll; eine Meldung ist die einzige Quelle
+- Beim Abruf der Ferientermine erfährt der Dienst nicht mehr, von welcher
+  Seite die Anfrage kommt
+
+**Betrieb**
+- `.gitignore`: Sicherungsdateien der App gehören nie ins Repository — sie
+  enthalten Noten, Fehlzeiten und Fotos
+- Veröffentlichen läuft über GitHub Actions und erst nach bestandener
+  Prüfung. Bisher ging jeder Push live, auch ein kaputter
+- Die Prüfung schlägt fehl, wenn `index.html` oder `app.js` geändert wurden,
+  ohne die Versionsnummer in `sw.js` hochzuzählen
+- `DEPLOYMENT.md` beschreibt Veröffentlichen, Zurückrollen und Selbsthosten
+
 ## v36
 
 **Behoben (Darstellung am Rechner)**

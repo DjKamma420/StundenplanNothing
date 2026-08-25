@@ -1,0 +1,59 @@
+# Veröffentlichen auf GitHub Pages — aber erst, wenn die Prüfungen bestanden
+# sind. Wird Pages direkt an den Branch gehängt, geht jeder Push live, auch
+# ein kaputter: genau so kam in v32 ein Absturz auf die Geräte.
+#
+# WICHTIG: Damit dieser Weg greift, muss unter
+# Settings -> Pages -> "Build and deployment" -> Source
+# der Wert "GitHub Actions" stehen (nicht "Deploy from a branch").
+name: Veröffentlichen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Nie zwei Veröffentlichungen gleichzeitig; die laufende darf zu Ende gehen.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  pruefen:
+    uses: ./.github/workflows/pruefen.yml
+
+  veroeffentlichen:
+    needs: pruefen
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.pages.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versionsnummer muss sich geändert haben
+        run: |
+          git fetch --deepen=2 || true
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            ALT=$(git show HEAD~1:sw.js 2>/dev/null | grep -oP 'VERSION = "\K[^"]+' || echo "")
+            NEU=$(grep -oP 'VERSION = "\K[^"]+' sw.js)
+            if [ -n "$ALT" ] && [ "$ALT" = "$NEU" ]; then
+              if ! git diff --quiet HEAD~1 HEAD -- index.html app.js; then
+                echo "index.html oder app.js geändert, aber VERSION steht weiter auf $NEU."
+                echo "Ohne neue Nummer holen die Geräte die Änderung nicht."
+                exit 1
+              fi
+            fi
+          fi
+          echo "Version in Ordnung."
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: pages
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,31 @@
+# Sicherungsdateien der App. Sie enthalten Noten, Fehlzeiten, Namen von
+# Lehrkräften und Merkblatt-Fotos — nichts davon gehört in ein öffentliches
+# Repository. Der wichtigste Eintrag in dieser Datei.
+stundenplan-*.json
+*.backup.json
+
+# Was beim Ausprobieren anfällt
+node_modules/
+package-lock.json
+.cache/
+dist/
+build/
+
+# Betriebssysteme und Editoren
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.idea/
+.vscode/
+*.code-workspace
+
+# Umgebungsvariablen. Die App braucht keine — falls je ein Hilfsskript
+# eines braucht, landet es hier und nicht im Repository.
+.env
+.env.*
+!.env.example
+
+# Protokolle
+*.log
