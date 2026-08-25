@@ -2,6 +2,17 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v35
+
+**Neu**
+- Beim Öffnen steht die **Profilauswahl** am Anfang, auch bei nur einem Profil —
+  wer sie sieht, weiß, in welchen Datensatz er gleich schreibt. Unter ⚙ → Darstellung
+  umstellbar auf „nur bei mehreren Profilen" oder „gleich in den Plan"
+- Im Kalender öffnet **Doppeltippen oder gedrückt halten** ein Tagesmenü: Termin,
+  Hausaufgabe, Klausur, Notiz, Fehlzeit oder freier Tag. Bisher gab es dort nur
+  den freien Tag
+- Das Menü zeigt, was an dem Tag schon steht, und ob er als frei markiert ist
+
 ## v34
 
 **Neu**

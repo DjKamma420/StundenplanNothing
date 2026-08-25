@@ -351,7 +351,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <button class="mini" id="kalHeute">Heute</button>
   </div>
   <div class="gitter" id="gitter"></div>
-  <p class="hinweis">Ein Feld gedrückt halten, um einen freien Tag einzutragen.</p>
+  <p class="hinweis">Ein Feld gedrückt halten oder doppelt antippen, um etwas einzutragen.</p>
   <section>
     <div class="eyebrow" id="kalTagLabel"></div>
     <p class="hinweis hidden" id="kalFerien"></p>
@@ -516,6 +516,23 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
 </dialog>
 
+<!-- Was an diesem Kalendertag? -->
+<dialog id="dlgKalTag"><button class="fangfokus" autofocus aria-hidden="true"></button>
+  <h2 id="kmTitel" class="mitte">Tag</h2>
+  <div class="eyebrow mitte" id="kmStand"></div>
+  <div class="stapel">
+    <button type="button" id="bKmTermin">Termin<small>ganzer Tag oder eine bestimmte Stunde</small></button>
+    <button type="button" id="bKmHA">Hausaufgabe<small>mit Fälligkeit an diesem Tag</small></button>
+    <button type="button" id="bKmKlausur">Klausur<small>Termin eintragen</small></button>
+    <button type="button" id="bKmNotiz">Notiz<small>freier Text zu diesem Tag</small></button>
+    <button type="button" id="bKmFehl">Fehlzeit<small>versäumte Stunden</small></button>
+    <button type="button" id="bKmFrei"><span id="bKmFreiText">Freier Tag</span><small id="bKmFreiKlein"></small></button>
+  </div>
+  <div class="reihe">
+    <button type="button" class="haupt" id="bKmAb">Zurück</button>
+  </div>
+</dialog>
+
 <!-- Freier Tag -->
 <dialog id="dlgTagFrei"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <h2 class="mitte">Tag markieren</h2>
@@ -605,6 +622,13 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
         <option value="serif">Serif</option>
       </select></label>
   </div>
+
+  <label style="margin-top:14px"><span>Beim Öffnen</span>
+    <select id="sStartProfil">
+      <option value="immer">immer zur Profilauswahl</option>
+      <option value="mehrere">nur bei mehreren Profilen</option>
+      <option value="nie">gleich in den Plan</option>
+    </select></label>
 
   <div class="eyebrow" style="margin-top:22px">Schule</div>
   <label><span>Klasse</span><input type="text" id="sKlasse" placeholder="Deine Klasse"></label>

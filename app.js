@@ -72,6 +72,7 @@ const STANDARD = {
   sicherTage: 28,               // Abstand der Erinnerung in Tagen, 0 = nie erinnern
   sicherAuto: false,            // beim Öffnen von selbst in den Ordner schreiben
   sicherHalten: 3,              // Monate, die im Ordner bleiben; 0 = alles behalten
+  startProfil: "immer",         // Profilauswahl beim Öffnen: immer | mehrere | nie
   stdProTag: 8,                 // Stunden je Schultag, für die Umrechnung in Fehltage
   reiheEin: null,               // Reihenfolge im Einträge-Menü
   reiheFach: null               // Reihenfolge der Fächer im Zeugnis
@@ -858,8 +859,16 @@ $("#tage").onclick = e => {
 $("#kalHeute").onclick = () => {
   kalTag = new Date(); kalMonat = new Date(); gewaehlt = new Date(); zeichne();
 };
+/* Doppeltippen selbst erkennen: das eingebaute dblclick-Ereignis bleibt aus,
+   weil der erste Klick das Gitter neu zeichnet und der zweite deshalb auf
+   einem anderen Element landet. */
+let letzterKalTipp = {datum:null, zeit:0};
 $("#gitter").onclick = e => {
   const b = e.target.closest("[data-kal]"); if(!b) return;
+  const jetzt = Date.now();
+  const doppelt = letzterKalTipp.datum === b.dataset.kal && jetzt - letzterKalTipp.zeit < 450;
+  letzterKalTipp = {datum: doppelt ? null : b.dataset.kal, zeit: jetzt};
+  if(doppelt){ kalMenuOeffnen(b.dataset.kal); return; }
   kalTag = new Date(b.dataset.kal+"T12:00"); zeichne();
 };
 
@@ -898,26 +907,60 @@ $("#wischPunkte").onclick = () => {
 $("#ansichtEin").addEventListener("click", e => {
   if(einSub !== null && e.target === $("#ansichtEin")){ einSub = null; zeichne(); }
 });
-/* Kalenderfeld gedrückt halten: eigenen freien Tag eintragen */
+/* Kalenderfeld gedrückt halten, doppelt antippen oder rechts klicken:
+   Auswahl, was an diesem Tag eingetragen werden soll. */
 (function(){
   let uhr = null, langKal = false;
   const g = $("#gitter");
+  const feld = e => e.target.closest("[data-kal]");
   g.addEventListener("touchstart", e => {
-    const b = e.target.closest("[data-kal]"); if(!b) return;
+    const b = feld(e); if(!b) return;
     uhr = setTimeout(() => {
       langKal = true;
       if(navigator.vibrate) navigator.vibrate(15);
-      tagFreiOeffnen(b.dataset.kal);
+      kalMenuOeffnen(b.dataset.kal);
     }, 500);
   }, {passive:true});
   ["touchmove","touchend","touchcancel"].forEach(t =>
     g.addEventListener(t, () => { clearTimeout(uhr); }, {passive:true}));
   g.addEventListener("contextmenu", e => {
-    const b = e.target.closest("[data-kal]"); if(!b) return;
-    e.preventDefault(); tagFreiOeffnen(b.dataset.kal);
+    const b = feld(e); if(!b) return;
+    e.preventDefault(); kalMenuOeffnen(b.dataset.kal);
   });
   g.addEventListener("click", e => { if(langKal){ langKal = false; e.stopPropagation(); } }, true);
 })();
+
+/* Was an einem Kalendertag angelegt werden kann. Der freie Tag war früher
+   das Einzige — der Kalender kann jetzt auch das, was ein Kalender kann. */
+let kalMenuDatum = null;
+function kalMenuOeffnen(datum){
+  kalMenuDatum = datum;
+  kalTag = new Date(datum + "T12:00");
+  const frei = freiAm(kalTag);
+  const eigen = ferien.find(f => f.typ === "eigen" && datum >= f.von && datum <= f.bis);
+  $("#kmTitel").textContent =
+    kalTag.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+  const dran = sonderTag(kalTag).length + eintraegeAm(kalTag).length;
+  $("#kmStand").textContent = [
+    frei ? frei.name + (frei.typ === "feiertag" ? " · Feiertag"
+                      : frei.typ === "eigen" ? " · eigener freier Tag" : " · Ferien") : "",
+    dran ? zahl(dran, "Eintrag", "Einträge") : ""
+  ].filter(Boolean).join(" · ") || "nichts eingetragen";
+  $("#bKmFreiText").textContent = eigen ? "Freien Tag ändern" : "Freier Tag";
+  $("#bKmFreiKlein").textContent = eigen ? eigen.name : "Praktikum, Ausflug, beweglicher Ferientag";
+  dlgKalTag.showModal();
+}
+const kalMenu = (typ, extra) => {
+  dlgKalTag.close();
+  eintragOeffnen(null, new Date(kalMenuDatum + "T12:00"), typ, "", undefined, extra);
+};
+$("#bKmTermin").onclick  = () => kalMenu("E");
+$("#bKmHA").onclick      = () => kalMenu("H");
+$("#bKmKlausur").onclick = () => kalMenu("K");
+$("#bKmNotiz").onclick   = () => kalMenu("N");
+$("#bKmFehl").onclick    = () => kalMenu("F");
+$("#bKmFrei").onclick    = () => { dlgKalTag.close(); tagFreiOeffnen(kalMenuDatum); };
+$("#bKmAb").onclick      = () => dlgKalTag.close();
 
 let tagFreiDatum = null;
 function tagFreiOeffnen(datum){
@@ -1830,6 +1873,7 @@ function cfgSaeubern(roh){
   c.sicherTage  = alsZahl(c.sicherTage, 0, 365, 28);
   c.sicherAuto  = !!c.sicherAuto;
   c.sicherHalten = alsZahl(c.sicherHalten, 0, 60, 3);
+  c.startProfil = ["immer","mehrere","nie"].includes(c.startProfil) ? c.startProfil : "immer";
   c.stdProTag  = alsZahl(c.stdProTag, 1, 16, 8);
   c.reiheEin   = Array.isArray(c.reiheEin)
     ? c.reiheEin.filter(x => REIHE_STANDARD.includes(x)) : null;
@@ -2211,6 +2255,8 @@ function einstellungenOeffnen(){
   slotEditorZeichnen(cfg.slots);
   sFarbe.value = cfg.akzent; sFarbeHex.value = cfg.akzent;
   sModus.value = cfg.modus; sSchrift.value = cfg.schrift;
+  sStartProfil.value = cfg.startProfil || "immer";
+  if(sStartProfil.selectedIndex < 0) sStartProfil.value = "immer";
   $("#sFarbVorlagen").innerHTML = FARBEN.map(f =>
     `<button type="button" data-farbe="${f}" style="border-color:${f};color:${f}">${f}</button>`).join("");
   sNotenSystem.value = cfg.notenSystem; sAnteilM.value = Number(cfg.anteilM)||0;
@@ -2425,6 +2471,7 @@ $("#bEinstSpeichern").onclick = () => {
   cfg.fachnamen = textPaare(sFaecher.value);
   if(/^#[0-9a-fA-F]{6}$/.test(sFarbeHex.value.trim())) cfg.akzent = sFarbeHex.value.trim();
   cfg.modus = sModus.value; cfg.schrift = sSchrift.value;
+  cfg.startProfil = sStartProfil.value;
   cfg.melden = sMelden.checked;
   cfg.stdProTag = Math.max(1, Math.min(16, Number(sStdProTag.value) || 8));
   cfg.sicherTage = Math.max(0, Math.min(365, Number(sRhythmus.value) || 0));
@@ -2523,7 +2570,10 @@ function starten(){
   meldemerkerAufraeumen();
   erinnerungenPruefen().catch(() => {});
   autoSicherung().catch(() => {});
-  if(profile.length > 1) profilAuswahlZeigen(false);
+  /* Die Profilauswahl steht am Anfang, nicht nur bei mehreren Profilen:
+     wer sie sieht, weiß, in welchem Datensatz er gleich schreibt. */
+  const wann = cfg.startProfil || "immer";
+  if(wann === "immer" || (wann === "mehrere" && profile.length > 1)) profilAuswahlZeigen(false);
 }
 try{ starten(); }
 catch(e){ zeigeFehler(e.message, (e.stack||"").split("\n")[1] || ""); }
