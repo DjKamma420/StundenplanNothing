@@ -2,6 +2,25 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v33
+
+**Behoben**
+- Beim Wechsel auf den Einträge-Reiter erschien der rote Fehlerkasten
+  („Cannot set properties of null"). In v32 war ein ungenutztes Element aus
+  `index.html` verschwunden, auf das ältere Fassungen von `app.js` noch
+  zugreifen. Traf ein neues `index.html` auf ein altes `app.js` — was der
+  Browser-Zwischenspeicher zehn Minuten lang zulässt —, brach die Ansicht ab.
+  Das Element steht wieder, und der Service Worker holt seine Dateien jetzt
+  ausdrücklich vom Netz, damit nie wieder zwei Fassungen zusammen im
+  Zwischenspeicher landen
+
+**Neu**
+- Der Fehlerkasten hat einen Knopf *App neu laden*. Er leert die
+  Zwischenspeicher und startet neu; die Daten bleiben unberührt. Bisher war
+  der rote Kasten eine Sackgasse
+- Die Prüfung bei jedem Push schlägt Alarm, wenn eine Kennung aus
+  `index.html` verschwindet
+
 ## v32
 
 **Behoben**

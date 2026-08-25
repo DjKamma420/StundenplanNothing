@@ -365,6 +365,10 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <div id="einDetail" class="hidden">
     <div class="eyebrow mitte" id="einTitel"></div>
     <p class="hinweis mitte" id="einSubHinweis"></p>
+    <!-- Wird nicht mehr befüllt, bleibt aber stehen: Fassungen bis v31 greifen
+         beim Zeichnen darauf zu. Eine Kennung zu entfernen bricht jede App, die
+         noch mit älterem app.js im Speicher läuft. -->
+    <div id="einKopf"></div>
     <ul class="liste" id="einListe"></ul>
     <p class="nix mitte" id="einNix" hidden></p>
   </div>

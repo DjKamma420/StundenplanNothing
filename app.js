@@ -20,6 +20,25 @@ function zeigeFehler(text, quelle){
     }
     k.textContent = "Fehler\n" + text + (quelle ? "\n" + quelle : "")
       + "\n\nBitte diesen Text weitergeben. Deine Daten sind nicht betroffen.";
+    /* Wer hier steht, kommt sonst nicht weiter. Die häufigste Ursache ist eine
+       halb erneuerte Fassung — neues index.html, altes app.js. Ein Neuladen
+       ohne Zwischenspeicher behebt genau das. Der Speicher bleibt unberührt. */
+    const knopf = document.createElement("button");
+    knopf.textContent = "App neu laden";
+    knopf.style.cssText = "margin-top:12px;font:inherit;background:#fff;color:#e5382b;"
+      + "border:0;border-radius:8px;padding:9px 14px;font-weight:700";
+    knopf.onclick = async () => {
+      knopf.textContent = "Lädt …";
+      try{
+        if(window.caches) for(const name of await caches.keys()) await caches.delete(name);
+        if("serviceWorker" in navigator){
+          const reg = await navigator.serviceWorker.getRegistration();
+          if(reg){ await reg.update(); if(reg.waiting) reg.waiting.postMessage("sofort"); }
+        }
+      }catch(e){}
+      location.reload();
+    };
+    k.appendChild(knopf);
   }catch(e){}
 }
 window.addEventListener("error", e => {

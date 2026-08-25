@@ -24,6 +24,10 @@ Zum Ausprobieren reicht es, `index.html` im Browser zu öffnen. Für Service Wor
 4. **Kommentare erklären das Warum**, nicht das Was.
 5. **Nichts hart verdrahten**, was von der Schule abhängt. Zeiten, Fächer, Wochenrhythmus gehören in die Einstellungen.
 6. **Keine Daten nach außen.** Neue Netzwerkaufrufe nur, wenn sie freiwillig sind und im README stehen.
+7. **Kennungen aus `index.html` nie entfernen.** Nach einer Aktualisierung kann für
+   kurze Zeit ein neues `index.html` auf ein altes `app.js` treffen. Fehlt dann ein
+   `id`, bricht die App ab. Ein ungenutztes Element bleibt stehen — auch wenn es
+   niemand mehr befüllt.
 
 ## Vor einem Pull Request
 
