@@ -32,6 +32,9 @@ Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepfl
 - Die Prüfung schlägt fehl, wenn `index.html` oder `app.js` geändert wurden,
   ohne die Versionsnummer in `sw.js` hochzuzählen
 - `DEPLOYMENT.md` beschreibt Veröffentlichen, Zurückrollen und Selbsthosten
+- Kein Jekyll: veröffentlicht werden nur die sechs Dateien der App, und die
+  Liste stammt aus `sw.js` selbst — Auslieferung und Zwischenspeicher können
+  so nicht auseinanderlaufen
 
 ## v36
 

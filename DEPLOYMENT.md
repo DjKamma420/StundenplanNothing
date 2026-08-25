@@ -18,7 +18,15 @@ Node wird nur in der Prüfung auf GitHub gebraucht, nie zum Bauen.
 
 ## Veröffentlichen
 
-Der Ablauf steht in `.github/workflows/deploy.yml`. Bei jedem Push auf `main`:
+Der Ablauf steht in `.github/workflows/deploy.yml`. **Ohne Jekyll** — es gibt
+nichts zu bauen. Jekyll würde nur die Markdown-Dateien des Repositories zu
+Webseiten rendern und den Vorgang verlangsamen. Wer die Pages-Quelle auf
+„GitHub Actions" umstellt, bekommt von GitHub einen Jekyll-Beispiel-Workflow
+vorgeschlagen; der gehört hier gelöscht. Zwei Workflows, die beide auf Pages
+veröffentlichen, behindern sich gegenseitig, und der Beispiel-Workflow kennt
+die Prüfungen nicht.
+
+Bei jedem Push auf `main`:
 
 1. `pruefen.yml` läuft: JavaScript-Syntax, Manifest, alle in `app.js`
    angesprochenen Kennungen sind in `index.html` vorhanden, keine Kennung
@@ -26,7 +34,13 @@ Der Ablauf steht in `.github/workflows/deploy.yml`. Bei jedem Push auf `main`:
 2. Die Versionsnummer in `sw.js` muss sich geändert haben, sobald
    `index.html` oder `app.js` angefasst wurden. Sonst holen die Geräte die
    Änderung nicht.
-3. Erst danach wird auf Pages veröffentlicht.
+3. Die Seite wird zusammengestellt — und zwar **aus der Dateiliste in
+   `sw.js` selbst**. Damit können Auslieferung und Zwischenspeicher nicht
+   auseinanderlaufen: Steht dort eine Datei, die es nicht gibt, scheitert die
+   Veröffentlichung, statt dass sich der Service Worker später beim Nutzer
+   nicht installiert. Veröffentlicht werden nur die sechs Dateien der App;
+   `README.md`, `CHANGELOG.md` und die Workflows bleiben im Repository.
+4. Erst danach geht es auf Pages.
 
 **Einmalige Einstellung:** unter *Settings → Pages → Build and deployment →
 Source* muss **GitHub Actions** stehen. Steht dort „Deploy from a branch",

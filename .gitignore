@@ -29,3 +29,6 @@ desktop.ini
 
 # Protokolle
 *.log
+
+# Ergebnis der Veröffentlichung, wird bei jedem Lauf neu erzeugt
+_site/
