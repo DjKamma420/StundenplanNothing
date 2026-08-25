@@ -2,6 +2,25 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v34
+
+**Neu**
+- **Sicherungsordner:** einmal einen Ordner wählen, danach legt die App ihre
+  Sicherungen immer dort ab, ohne zu fragen. Das können nur Chrome und Edge
+  auf dem Rechner; wo es fehlt, sagt die App das und erklärt den Weg über
+  die Download-Einstellungen des Browsers
+- **Automatisch sichern:** beim Öffnen von selbst in den Ordner schreiben,
+  sobald es fällig ist. Ein kurzer Hinweis zeigt, dass es passiert ist
+- **Rhythmus einstellbar:** erinnern alle 7, 14, 28 Tage, alle 3 Monate —
+  oder gar nicht. Bisher waren es feste vier Wochen
+- **Haltefrist:** im Sicherungsordner bleiben die letzten 1, 3, 6 oder 12
+  Monate, ältere Sicherungen werden dort entfernt. Angefasst wird nur, was
+  die App selbst geschrieben hat — fremde Dateien im Ordner bleiben liegen
+
+**Geändert**
+- Wann zuletzt gesichert wurde, gilt jetzt für das Gerät statt für ein
+  einzelnes Profil. Eine Sicherung über alle Profile zählt für alle
+
 ## v33
 
 **Behoben**

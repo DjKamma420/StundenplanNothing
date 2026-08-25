@@ -123,6 +123,11 @@ section{margin-top:30px}
 .mini{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
   border:1px solid var(--line);border-radius:8px;padding:6px 9px;color:var(--muted)}
 .we-teil{border-top:1px solid var(--line);padding:14px 0}
+#toast{position:fixed;left:50%;transform:translateX(-50%);z-index:60;
+  bottom:calc(150px + env(safe-area-inset-bottom));background:var(--surface);
+  border:1px solid var(--akzent);border-radius:11px;padding:11px 15px;
+  font-family:var(--mono);font-size:11.5px;line-height:1.5;color:var(--text);
+  max-width:min(90vw,420px);text-align:center;word-break:break-word}
 
 /* Kalender */
 .monat{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
@@ -388,6 +393,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 </div>
 
 <div id="leerraum"></div>
+
+<div id="toast" class="hidden"></div>
 
 <div id="fuss">
   <button class="gross" id="btnEintrag">+ Eintrag</button>
@@ -688,6 +695,51 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <button type="button" id="sDateiWahl">Datei einlesen</button>
     <button type="button" id="sTeilen">Teilen</button>
   </div>
+
+  <div class="eyebrow" style="margin-top:20px">Erinnerung</div>
+  <div class="zwei">
+    <label><span>Sichern alle</span>
+      <select id="sRhythmus">
+        <option value="0">nie erinnern</option>
+        <option value="7">7 Tage</option>
+        <option value="14">14 Tage</option>
+        <option value="28">28 Tage</option>
+        <option value="90">3 Monate</option>
+      </select></label>
+    <label><span>Aufheben</span>
+      <select id="sHalten">
+        <option value="1">1 Monat</option>
+        <option value="3">3 Monate</option>
+        <option value="6">6 Monate</option>
+        <option value="12">1 Jahr</option>
+        <option value="0">alles behalten</option>
+      </select></label>
+  </div>
+  <p class="hinweis" id="sRhythmusHinweis"></p>
+
+  <div class="eyebrow" style="margin-top:20px">Sicherungsordner</div>
+  <div id="sOrdnerGeht" class="hidden">
+    <p class="hinweis">Wähle einmal einen Ordner — danach legt die App ihre Sicherungen
+       immer dort ab, ohne zu fragen.</p>
+    <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
+      <input type="checkbox" id="sAuto" style="width:18px;flex:none;margin:0">
+      <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)">
+        Beim Öffnen automatisch in den Ordner sichern, wenn es fällig ist</span>
+    </label>
+    <div class="chips">
+      <button type="button" id="sOrdnerWahl">Ordner wählen</button>
+      <button type="button" id="sOrdnerJetzt">Jetzt dorthin sichern</button>
+      <button type="button" id="sOrdnerWeg">Ordner lösen</button>
+    </div>
+    <p class="hinweis" id="sOrdnerStand"></p>
+  </div>
+  <p class="hinweis hidden" id="sOrdnerGehtNicht">
+     Dieser Browser kann keinen festen Ordner vergeben — das können bislang nur
+     Chrome und Edge auf dem Rechner. Sicherungen landen deshalb im normalen
+     Download-Ordner.<br><br>
+     <b>Auf dem Handy:</b> In Chrome unter <i>⋮ → Einstellungen → Downloads</i> die
+     Option <i>Speicherort für Dateien abfragen</i> einschalten. Dann fragt jeder
+     Download nach dem Ordner, und du kannst dort einen eigenen anlegen.</p>
   <input type="file" id="sDateiLesen" accept="application/json,.json" style="display:none">
   <textarea id="sDaten"></textarea>
   <div class="chips">

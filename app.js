@@ -69,6 +69,9 @@ const STANDARD = {
   schrift: "system",
   melden: true,
   letzteSicherung: null,
+  sicherTage: 28,               // Abstand der Erinnerung in Tagen, 0 = nie erinnern
+  sicherAuto: false,            // beim Öffnen von selbst in den Ordner schreiben
+  sicherHalten: 3,              // Monate, die im Ordner bleiben; 0 = alles behalten
   stdProTag: 8,                 // Stunden je Schultag, für die Umrechnung in Fehltage
   reiheEin: null,               // Reihenfolge im Einträge-Menü
   reiheFach: null               // Reihenfolge der Fächer im Zeugnis
@@ -457,18 +460,35 @@ function zeichneTag(){
 /* Das README verspricht eine Erinnerung nach vier Wochen. Sie stand bisher
    nur in den Einstellungen — also dort, wo sie niemand sieht, der nicht
    ohnehin gerade sichert. Jetzt steht sie im Weg, wo sie hingehört. */
+/* Wann zuletzt gesichert wurde, ist eine Frage des Geräts, nicht des
+   Profils — eine Sicherung über alle Profile gilt für alle. Der ältere
+   Eintrag im Profil zählt weiter mit, damit v32-Stände nicht verlorengehen. */
+function sicherungDatum(){
+  let geraet = "";
+  try{ geraet = localStorage.getItem("sicherungZuletzt") || ""; }catch(e){}
+  const imProfil = cfg.letzteSicherung || "";
+  return geraet > imProfil ? geraet : imProfil;
+}
+const sicherungAlter = () => {
+  const l = sicherungDatum();
+  return l ? Math.round((new Date() - new Date(l+"T12:00"))/864e5) : null;
+};
+const hatEchteDaten = () => !!(eintraege.length || noten.length || faecher().length);
+function sicherungFaellig(){
+  const tage = Math.max(0, Number(cfg.sicherTage) || 0);
+  if(!tage || !hatEchteDaten()) return false;
+  const alter = sicherungAlter();
+  return alter === null || alter >= tage;
+}
 function sicherungBanner(){
   const b = $("#sicherBanner");
-  const hatDaten = eintraege.length || noten.length || faecher().length;
-  const l = cfg.letzteSicherung;
-  const tage = l ? Math.round((new Date() - new Date(l+"T12:00"))/864e5) : null;
-  const faellig = !!hatDaten && (tage === null || tage > 28)
-    && Speicher.lies("sicherSpaeter", "") !== iso(new Date());
-  b.classList.toggle("hidden", !faellig);
-  if(!faellig) return;
+  const zeigen = sicherungFaellig() && Speicher.lies("sicherSpaeter", "") !== iso(new Date());
+  b.classList.toggle("hidden", !zeigen);
+  if(!zeigen) return;
+  const alter = sicherungAlter();
   b.innerHTML = `<b>Sicherung fällig</b>
-    <div>${tage === null ? "Dieser Plan wurde noch nie gesichert."
-      : "Letzte Sicherung vor " + zahl(tage,"Tag","Tagen") + "."}
+    <div>${alter === null ? "Dieser Plan wurde noch nie gesichert."
+      : "Letzte Sicherung vor " + zahl(alter,"Tag","Tagen") + "."}
       Löscht der Browser seine Websitedaten, ist ohne Sicherung alles weg.</div>
     <div class="chips" style="margin-top:11px">
       <button type="button" id="bSicherJetzt">Jetzt sichern</button>
@@ -476,16 +496,22 @@ function sicherungBanner(){
     </div>`;
 }
 $("#sicherBanner").onclick = e => {
-  if(e.target.closest("#bSicherJetzt")){
-    const alle = profile.length > 1;
-    herunterladen(alle ? sicherungAlleText() : sicherungsText(),
-      `stundenplan-${alle ? "alle" : dateiName()}-${iso(new Date())}.json`, "application/json");
-    sicherungNotiert(); return;
-  }
+  if(e.target.closest("#bSicherJetzt")){ jetztSichern(true); return; }
   if(e.target.closest("#bSicherSpaeter")){
     Speicher.schreib("sicherSpaeter", iso(new Date())); zeichne();
   }
 };
+/* Kurze Rückmeldung für Dinge, die von selbst passieren. Was unsichtbar
+   geschieht, glaubt einem niemand. */
+let hinweisUhr = null;
+function kurzHinweis(text){
+  const el = $("#toast"); if(!el) return;
+  el.textContent = text;
+  el.classList.remove("hidden");
+  clearTimeout(hinweisUhr);
+  hinweisUhr = setTimeout(() => el.classList.add("hidden"), 6000);
+}
+$("#toast").onclick = () => $("#toast").classList.add("hidden");
 
 const istHeuteSchultag = () =>
   gleich(gewaehlt, new Date()) && tagIndex(gewaehlt) !== 5 && cfg.slots.length && !freiAm(gewaehlt);
@@ -1801,6 +1827,9 @@ function cfgSaeubern(roh){
   c.schrift    = ["mono","serif"].includes(c.schrift) ? c.schrift : "system";
   c.melden     = !!c.melden;
   c.letzteSicherung = alsDatum(c.letzteSicherung) || null;
+  c.sicherTage  = alsZahl(c.sicherTage, 0, 365, 28);
+  c.sicherAuto  = !!c.sicherAuto;
+  c.sicherHalten = alsZahl(c.sicherHalten, 0, 60, 3);
   c.stdProTag  = alsZahl(c.stdProTag, 1, 16, 8);
   c.reiheEin   = Array.isArray(c.reiheEin)
     ? c.reiheEin.filter(x => REIHE_STANDARD.includes(x)) : null;
@@ -1882,6 +1911,133 @@ function paketSaeubern(d){
   if(Array.isArray(d.sonder))    p.sonder    = d.sonder.slice(0,5000).map(sonderSaeubern).filter(Boolean);
   if(Array.isArray(d.noten))     p.noten     = d.noten.slice(0,5000).map(noteSaeubern).filter(Boolean);
   return p;
+}
+
+/* =====================================================================
+   Sicherungsordner
+   Ein einmal gewählter Ordner bleibt gemerkt — der Griff darauf lebt in der
+   IndexedDB, die Berechtigung im Browser. Das gibt es nur, wo die File
+   System Access API vorhanden ist: auf dem Rechner in Chrome und Edge.
+   Chrome auf Android und Safari kennen sie nicht; dort bleibt es beim
+   gewöhnlichen Download, und die App sagt das auch.
+   ===================================================================== */
+const ordnerMoeglich = () => typeof window.showDirectoryPicker === "function" && window.isSecureContext;
+const IDB_NAME = "stundenplan", IDB_LAGER = "griffe";
+let ordner = null;                                   // Griff für diese Sitzung
+
+function idbOeffnen(){
+  return new Promise((fertig, weg) => {
+    let a;
+    try{ a = indexedDB.open(IDB_NAME, 1); }catch(e){ return weg(e); }
+    a.onupgradeneeded = () => {
+      if(!a.result.objectStoreNames.contains(IDB_LAGER)) a.result.createObjectStore(IDB_LAGER);
+    };
+    a.onsuccess = () => fertig(a.result);
+    a.onerror   = () => weg(a.error);
+  });
+}
+async function griffLegen(wert){
+  const db = await idbOeffnen();
+  return new Promise((fertig, weg) => {
+    const lager = db.transaction(IDB_LAGER, "readwrite").objectStore(IDB_LAGER);
+    const a = wert === null ? lager.delete("ordner") : lager.put(wert, "ordner");
+    a.onsuccess = () => fertig(true);
+    a.onerror   = () => weg(a.error);
+  });
+}
+async function ordnerLaden(){
+  if(!ordnerMoeglich()) return null;
+  try{
+    const db = await idbOeffnen();
+    ordner = await new Promise(fertig => {
+      const a = db.transaction(IDB_LAGER, "readonly").objectStore(IDB_LAGER).get("ordner");
+      a.onsuccess = () => fertig(a.result || null);
+      a.onerror   = () => fertig(null);
+    });
+  }catch(e){ ordner = null; }
+  return ordner;
+}
+/* fragen=true nur aus einem Antippen heraus: ohne Geste lehnt der Browser
+   die Nachfrage ab, und ein stiller Versuch beim Start soll nicht stören. */
+async function ordnerBereit(fragen){
+  if(!ordner) return false;
+  try{
+    const art = {mode:"readwrite"};
+    if(await ordner.queryPermission(art) === "granted") return true;
+    if(!fragen) return false;
+    return await ordner.requestPermission(art) === "granted";
+  }catch(e){ return false; }
+}
+const sicherungDateiname = () => {
+  const alle = profile.length > 1;
+  return `stundenplan-${alle ? "alle" : dateiName()}-${iso(new Date())}.json`;
+};
+const sicherungInhalt = () => profile.length > 1 ? sicherungAlleText() : sicherungsText();
+/* Erkennt die eigenen Sicherungen am Namen. Alles andere im Ordner bleibt
+   unangetastet — dort liegen womöglich fremde Dateien. */
+const SICHERUNGSNAME = /^stundenplan-.+-(\d{4}-\d{2}-\d{2})\.json$/;
+function haltegrenze(){
+  const monate = Math.max(0, Number(cfg.sicherHalten) || 0);
+  if(!monate) return null;
+  const d = new Date(); d.setMonth(d.getMonth() - monate);
+  return iso(d);
+}
+/** Namen der eigenen Sicherungen im Ordner, älteste zuerst. */
+async function ordnerSicherungen(){
+  const liste = [];
+  if(!ordner) return liste;
+  for await (const [name, griff] of ordner.entries()){
+    if(griff.kind !== "file") continue;
+    const m = name.match(SICHERUNGSNAME);
+    if(m) liste.push({name, datum:m[1]});
+  }
+  return liste.sort((a,b) => a.datum.localeCompare(b.datum));
+}
+/** Löscht die eigenen Sicherungen, die älter sind als die Haltefrist. */
+async function ordnerAufraeumen(){
+  const grenze = haltegrenze();
+  if(!grenze) return 0;
+  let weg = 0;
+  for(const s of await ordnerSicherungen())
+    if(s.datum < grenze){ try{ await ordner.removeEntry(s.name); weg++; }catch(e){} }
+  return weg;
+}
+/** Schreibt die Sicherung in den Ordner. null heißt: kein Ordner verfügbar. */
+async function inOrdnerSichern(fragen){
+  if(!await ordnerBereit(fragen)) return null;
+  const name = sicherungDateiname();
+  const datei = await ordner.getFileHandle(name, {create:true});
+  const strom = await datei.createWritable();
+  await strom.write(sicherungInhalt());
+  await strom.close();
+  const weg = await ordnerAufraeumen();
+  sicherungNotiert();
+  return {name, weg};
+}
+/** Erst den Ordner versuchen, sonst herunterladen. Immer eine echte Sicherung. */
+async function jetztSichern(fragen){
+  try{
+    const fertig = await inOrdnerSichern(fragen);
+    if(fertig){
+      kurzHinweis(`Gesichert: ${fertig.name}`
+        + (fertig.weg ? ` · ${zahl(fertig.weg,"alte Datei","alte Dateien")} entfernt` : ""));
+      return true;
+    }
+  }catch(e){ zeigeFehler("Ordner: " + ((e && e.message) || e)); return false; }
+  herunterladen(sicherungInhalt(), sicherungDateiname(), "application/json");
+  sicherungNotiert();
+  return true;
+}
+/* Beim Öffnen von selbst sichern. Ohne erteilte Berechtigung wird nicht
+   gefragt — dann übernimmt das Banner, wo ein Antippen die Frage erlaubt. */
+async function autoSicherung(){
+  if(!cfg.sicherAuto || !sicherungFaellig()) return;
+  await ordnerLaden();
+  try{
+    const fertig = await inOrdnerSichern(false);
+    if(fertig) kurzHinweis(`Sicherung angelegt: ${fertig.name}`
+      + (fertig.weg ? ` · ${zahl(fertig.weg,"alte Datei","alte Dateien")} entfernt` : ""));
+  }catch(e){}
 }
 
 /* =====================================================================
@@ -1991,13 +2147,64 @@ function speicherStand(){
   el.style.color = warn ? "var(--akzent)" : "";
 }
 function sicherungStand(){
-  const l = cfg.letzteSicherung;
-  if(!l){ $("#sSicherStand").textContent = "Noch nie gesichert. Jetzt wäre ein guter Zeitpunkt."; return; }
-  const tage = Math.round((new Date() - new Date(l+"T12:00"))/864e5);
-  $("#sSicherStand").textContent = tage > 28
-    ? `Letzte Sicherung vor ${zahl(tage,"Tag","Tagen")} — Zeit für eine neue.`
-    : `Letzte Sicherung: ${zeigDatum(l)}.`;
+  const l = sicherungDatum(), alter = sicherungAlter();
+  const el = $("#sSicherStand");
+  if(!l){ el.textContent = "Noch nie gesichert. Jetzt wäre ein guter Zeitpunkt."; return; }
+  el.textContent = sicherungFaellig()
+    ? `Letzte Sicherung vor ${zahl(alter,"Tag","Tagen")} — Zeit für eine neue.`
+    : `Letzte Sicherung: ${zeigDatum(l)}${alter ? ` (vor ${zahl(alter,"Tag","Tagen")})` : " (heute)"}.`;
 }
+function rhythmusHinweis(){
+  const tage = Math.max(0, Number(sRhythmus.value) || 0);
+  const monate = Math.max(0, Number(sHalten.value) || 0);
+  $("#sRhythmusHinweis").textContent = (tage
+    ? `Die App erinnert dich alle ${zahl(tage,"Tag","Tage")} in der Tagesansicht.`
+    : "Es wird nicht erinnert. Ans Sichern denkst du dann selbst.")
+    + (monate
+      ? ` Im Sicherungsordner bleiben die letzten ${zahl(monate,"Monat","Monate")}; ältere Sicherungen der App werden dort gelöscht.`
+      : " Im Sicherungsordner bleibt alles liegen.");
+}
+sRhythmus.onchange = rhythmusHinweis;
+sHalten.onchange = rhythmusHinweis;
+
+/* --- Ordner: Anzeige und Knöpfe --- */
+async function ordnerStand(){
+  const el = $("#sOrdnerStand");
+  if(!el) return;
+  if(!ordner){ el.textContent = "Noch kein Ordner gewählt. Sicherungen gehen in die Downloads."; return; }
+  const frei = await ordnerBereit(false);
+  let zusatz = "";
+  if(frei){
+    try{
+      const liste = await ordnerSicherungen();
+      const grenze = haltegrenze();
+      const alt = grenze ? liste.filter(x => x.datum < grenze).length : 0;
+      zusatz = ` · ${zahl(liste.length,"Sicherung","Sicherungen")} darin`
+        + (alt ? `, ${alt} davon älter als die Haltefrist` : "");
+    }catch(e){}
+  }
+  el.textContent = `Ordner: ${ordner.name}`
+    + (frei ? "" : " · Zugriff muss beim nächsten Sichern einmal bestätigt werden")
+    + zusatz;
+}
+$("#sOrdnerWahl").onclick = async () => {
+  try{
+    const gewaehlterOrdner = await window.showDirectoryPicker({mode:"readwrite", id:"stundenplan"});
+    ordner = gewaehlterOrdner;
+    await griffLegen(ordner);
+    ordnerStand();
+  }catch(e){ if(e && e.name !== "AbortError") zeigeFehler("Ordner: " + ((e && e.message) || e)); }
+};
+$("#sOrdnerWeg").onclick = async () => {
+  ordner = null;
+  try{ await griffLegen(null); }catch(e){}
+  ordnerStand();
+};
+$("#sOrdnerJetzt").onclick = async () => {
+  if(!ordner) return alert("Wähle zuerst einen Ordner.");
+  await jetztSichern(true);
+  ordnerStand();
+};
 function einstellungenOeffnen(){
   sKlasse.value = cfg.klasse;
   sZweiWochen.checked = cfg.zweiWochen;
@@ -2017,6 +2224,16 @@ function einstellungenOeffnen(){
   sLand.innerHTML = `<option value="">— wählen —</option>` +
     Object.entries(LAENDER).map(([k,v]) => `<option value="${k}" ${cfg.land === k ? "selected":""}>${v}</option>`).join("");
   ferienStand();
+  /* Ein Wert, den die Auswahl nicht kennt, lässt selectedIndex auf -1 fallen. */
+  sRhythmus.value = String(Math.max(0, Number(cfg.sicherTage) || 0));
+  if(sRhythmus.selectedIndex < 0) sRhythmus.value = "28";
+  sHalten.value = String(Math.max(0, Number(cfg.sicherHalten) || 0));
+  if(sHalten.selectedIndex < 0) sHalten.value = "3";
+  sAuto.checked = !!cfg.sicherAuto;
+  rhythmusHinweis();
+  $("#sOrdnerGeht").classList.toggle("hidden", !ordnerMoeglich());
+  $("#sOrdnerGehtNicht").classList.toggle("hidden", ordnerMoeglich());
+  if(ordnerMoeglich()) ordnerLaden().then(ordnerStand);
   sDaten.value = sicherungsText();
   $("#ankerJetzt").textContent = `Diese Woche ist KW ${kalenderwoche(new Date())}, also ${kalenderwoche(new Date())%2===1?"A":"B"}.`;
   $("#ankerWrap").classList.toggle("hidden", !cfg.zweiWochen);
@@ -2087,7 +2304,10 @@ function sicherungAlleText(){
 /* Nur vermerken, wenn die Daten das Gerät wirklich verlassen haben. Ein
    falscher Vermerk verschweigt vier Wochen lang, dass keine Sicherung besteht. */
 function sicherungNotiert(){
-  cfg.letzteSicherung = iso(new Date());
+  const heute = iso(new Date());
+  cfg.letzteSicherung = heute;
+  try{ localStorage.setItem("sicherungZuletzt", heute); }catch(e){}
+  Speicher.entferne("sicherSpaeter");      // erledigt ist nicht vertagt
   sichern(); sicherungStand(); zeichne();
 }
 $("#sDatei").onclick = () => {
@@ -2207,6 +2427,9 @@ $("#bEinstSpeichern").onclick = () => {
   cfg.modus = sModus.value; cfg.schrift = sSchrift.value;
   cfg.melden = sMelden.checked;
   cfg.stdProTag = Math.max(1, Math.min(16, Number(sStdProTag.value) || 8));
+  cfg.sicherTage = Math.max(0, Math.min(365, Number(sRhythmus.value) || 0));
+  cfg.sicherHalten = Math.max(0, Math.min(60, Number(sHalten.value) || 0));
+  cfg.sicherAuto = sAuto.checked;
   cfg.reiheEin = reiheEinListe.slice();
   cfg.reiheFach = reiheFachListe.slice();
   normalisiere(); sichern(); dlgEinst.close(); zeichne();
@@ -2299,6 +2522,7 @@ function starten(){
   versionPruefen();
   meldemerkerAufraeumen();
   erinnerungenPruefen().catch(() => {});
+  autoSicherung().catch(() => {});
   if(profile.length > 1) profilAuswahlZeigen(false);
 }
 try{ starten(); }
