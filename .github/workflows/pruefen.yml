@@ -1,6 +1,7 @@
 # Kein Build-Vorgang — nur die Prüfungen, die ein kaputtes Deployment
 # verhindern. Ein Fehler in app.js macht die App auf allen Geräten
-# unbenutzbar, und ein Zurückrollen gibt es nicht.
+# unbenutzbar. Die Logik steht in werkzeug/pruefen.mjs, damit sie hier und
+# auf dem Rechner dieselbe ist.
 name: Prüfen
 
 on:
@@ -16,54 +17,10 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: JavaScript-Syntax
+      - name: Alle statischen Prüfungen
         run: |
-          node --check app.js
-          node --check sw.js
-
-      - name: Versionsnummer vorhanden
-        run: grep -qE '^const VERSION = "v[0-9]+";$' sw.js
-
-      - name: Manifest ist gültiges JSON
-        run: node -e 'JSON.parse(require("fs").readFileSync("manifest.webmanifest","utf8"))'
-
-      - name: Verwendete Kennungen stehen in index.html
-        run: |
-          node -e '
-            const fs = require("fs");
-            const html = fs.readFileSync("index.html", "utf8");
-            const js = fs.readFileSync("app.js", "utf8");
-            const da = new Set([...html.matchAll(/\bid="([A-Za-z0-9_-]+)"/g)].map(m => m[1]));
-            const erlaubt = new Set(["fehlerkasten"]);   // legt app.js selbst an
-            const fehlt = new Set();
-            const suchen = (muster) => {
-              for (const m of js.matchAll(muster))
-                if (!da.has(m[1]) && !erlaubt.has(m[1])) fehlt.add(m[1]);
-            };
-            suchen(/\$\("#([A-Za-z0-9_-]+)"\)/g);
-            suchen(/getElementById\("([A-Za-z0-9_-]+)"\)/g);
-            if (fehlt.size) {
-              console.error("Fehlende Kennungen in index.html: " + [...fehlt].join(", "));
-              process.exit(1);
-            }
-            console.log(da.size + " Kennungen, keine offenen Verweise.");
-          '
-
-      - name: Keine Kennung ersatzlos entfernt
-        run: |
-          git rev-parse HEAD~1 >/dev/null 2>&1 || { echo "Kein Vorgänger — übersprungen."; exit 0; }
-          git show HEAD~1:index.html > /tmp/vorher.html
-          node -e '
-            const fs = require("fs");
-            const ids = (datei) => new Set(
-              [...fs.readFileSync(datei, "utf8").matchAll(/\bid="([A-Za-z0-9_-]+)"/g)].map(m => m[1]));
-            const weg = [...ids("/tmp/vorher.html")].filter(x => !ids("index.html").has(x));
-            if (weg.length) {
-              console.error("Entfernte Kennungen: " + weg.join(", "));
-              console.error("Eine Kennung aus index.html zu streichen bricht jede App, die noch");
-              console.error("mit aelterem app.js im Speicher laeuft — das Element muss stehen");
-              console.error("bleiben, auch wenn es niemand mehr befuellt.");
-              process.exit(1);
-            }
-            console.log("Keine Kennung verschwunden.");
-          '
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            node werkzeug/pruefen.mjs --basis HEAD~1
+          else
+            node werkzeug/pruefen.mjs
+          fi

@@ -10,9 +10,21 @@ Drei Dateien, kein Framework, kein Build-Vorgang:
 - `app.js` — die gesamte Logik
 - `sw.js` — Offline-Speicher und Versionsnummer
 
-Dazu `.github/workflows/pruefen.yml`: prüft bei jedem Push die JavaScript-Syntax,
-das Manifest und ob jede in `app.js` angesprochene Kennung in `index.html` steht.
-Das ist kein Build-Vorgang — es entsteht nichts, es wird nur nachgesehen.
+Dazu Entwicklerwerkzeug, das **nie ausgeliefert** wird (`werkzeug/seite-bauen.mjs`
+kopiert nur die sechs Dateien der App):
+
+- `werkzeug/pruefen.mjs` — alle statischen Prüfungen. Dieselbe Datei benutzen
+  die Workflows und wer von Hand prüft.
+- `werkzeug/browser.mjs` + `werkzeug/pruefungen/` — Prüfungen im Browser.
+  Brauchen Playwright, aber nur zum Prüfen; die App selbst hat keine
+  Abhängigkeit.
+- `werkzeug/seite-bauen.mjs` — stellt zusammen, was veröffentlicht wird.
+- `.github/workflows/` — Prüfen und Veröffentlichen.
+- `CLAUDE.md`, `.claude/skills/` — Kontext und Abläufe für die Arbeit mit
+  Claude Code.
+
+Das ist kein Build-Vorgang: für die App entsteht nichts, es wird nur
+nachgesehen und kopiert.
 
 Betrieb, Veröffentlichung und Rückzug stehen in [DEPLOYMENT.md](DEPLOYMENT.md).
 
@@ -30,6 +42,14 @@ Zum Ausprobieren reicht es, `index.html` im Browser zu öffnen. Für Service Wor
    kurze Zeit ein neues `index.html` auf ein altes `app.js` treffen. Fehlt dann ein
    `id`, bricht die App ab. Ein ungenutztes Element bleibt stehen — auch wenn es
    niemand mehr befüllt.
+
+## Prüfen
+
+```
+node werkzeug/pruefen.mjs --basis origin/main
+node werkzeug/pruefungen/grund.mjs
+node werkzeug/pruefungen/layout.mjs
+```
 
 ## Vor einem Pull Request
 

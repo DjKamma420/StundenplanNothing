@@ -37,45 +37,12 @@ jobs:
       url: ${{ steps.pages.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Versionsnummer muss sich geändert haben
-        run: |
-          if git rev-parse HEAD~1 >/dev/null 2>&1; then
-            ALT=$(git show HEAD~1:sw.js 2>/dev/null | grep -oP 'VERSION = "\K[^"]+' || echo "")
-            NEU=$(grep -oP 'VERSION = "\K[^"]+' sw.js)
-            if [ -n "$ALT" ] && [ "$ALT" = "$NEU" ]; then
-              if ! git diff --quiet HEAD~1 HEAD -- index.html app.js; then
-                echo "index.html oder app.js geändert, aber VERSION steht weiter auf $NEU."
-                echo "Ohne neue Nummer holen die Geräte die Änderung nicht."
-                exit 1
-              fi
-            fi
-          fi
-          echo "Version in Ordnung."
 
       # Die Liste stammt aus sw.js selbst. Damit kann sie nicht auseinander-
       # laufen: fehlt eine dort genannte Datei, scheitert die Veröffentlichung,
       # statt dass der Service Worker später beim Nutzer nicht installiert.
-      - name: Seite aus der Dateiliste des Service Workers zusammenstellen
-        run: |
-          node -e '
-            const fs = require("fs");
-            const treffer = fs.readFileSync("sw.js", "utf8").match(/const DATEIEN = \[([^\]]+)\]/);
-            if (!treffer) { console.error("DATEIEN in sw.js nicht gefunden."); process.exit(1); }
-            const dateien = (treffer[1].match(/"([^"]+)"/g) || [])
-              .map(s => s.slice(1, -1).replace(/^\.\//, ""))
-              .filter(Boolean);
-            if (!dateien.length) { console.error("DATEIEN ist leer."); process.exit(1); }
-            fs.mkdirSync("_site", { recursive: true });
-            for (const d of dateien.concat("sw.js")) {
-              if (!fs.existsSync(d)) { console.error("In sw.js genannt, aber nicht vorhanden: " + d); process.exit(1); }
-              fs.copyFileSync(d, "_site/" + d);
-            }
-            fs.writeFileSync("_site/.nojekyll", "");
-            console.log("Veröffentlicht wird: " + dateien.concat("sw.js").join(", "));
-          '
+      - name: Seite zusammenstellen
+        run: node werkzeug/seite-bauen.mjs _site
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
