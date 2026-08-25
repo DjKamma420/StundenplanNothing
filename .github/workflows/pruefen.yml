@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: JavaScript-Syntax
         run: |
@@ -44,4 +46,23 @@ jobs:
               process.exit(1);
             }
             console.log(da.size + " Kennungen, keine offenen Verweise.");
+          '
+
+      - name: Keine Kennung ersatzlos entfernt
+        run: |
+          git rev-parse HEAD~1 >/dev/null 2>&1 || { echo "Kein Vorgänger — übersprungen."; exit 0; }
+          git show HEAD~1:index.html > /tmp/vorher.html
+          node -e '
+            const fs = require("fs");
+            const ids = (datei) => new Set(
+              [...fs.readFileSync(datei, "utf8").matchAll(/\bid="([A-Za-z0-9_-]+)"/g)].map(m => m[1]));
+            const weg = [...ids("/tmp/vorher.html")].filter(x => !ids("index.html").has(x));
+            if (weg.length) {
+              console.error("Entfernte Kennungen: " + weg.join(", "));
+              console.error("Eine Kennung aus index.html zu streichen bricht jede App, die noch");
+              console.error("mit aelterem app.js im Speicher laeuft — das Element muss stehen");
+              console.error("bleiben, auch wenn es niemand mehr befuellt.");
+              process.exit(1);
+            }
+            console.log("Keine Kennung verschwunden.");
           '

@@ -25,6 +25,12 @@ Das heißt konkret:
 
 Führst du mehrere Profile, nimm *Alle Profile sichern* — das ist eine einzige Datei für das ganze Gerät.
 
+**Am Rechner geht es bequemer.** In Chrome und Edge kannst du unter ⚙ → *Sicherungsordner* einmal einen Ordner wählen. Danach landet jede Sicherung dort, ohne Nachfrage, und auf Wunsch **automatisch beim Öffnen**, sobald sie fällig ist. Die letzten drei Monate bleiben liegen (einstellbar), ältere Sicherungen räumt die App dort weg — nur ihre eigenen, fremde Dateien im Ordner bleiben unberührt.
+
+Auf dem **Handy** gibt es diese Ordnerwahl nicht: kein mobiler Browser kann eine App dauerhaft in einen Ordner schreiben lassen. Sicherungen gehen deshalb in die Downloads. Wenn du sie sortiert haben willst, schalte in Chrome unter *⋮ → Einstellungen → Downloads* die Option **„Speicherort für Dateien abfragen"** ein — dann fragt jeder Download nach dem Ordner, und du kannst dir dort einen eigenen anlegen.
+
+Wie oft die App erinnert, stellst du unter ⚙ → *Erinnerung* ein: alle 7, 14, 28 Tage, alle 3 Monate oder nie.
+
 Zurückholen geht über ⚙ → Sicherung → *Datei einlesen*. Eingelesen wird nur, was die App auch selbst schreibt; alles andere in der Datei wird verworfen.
 
 ---

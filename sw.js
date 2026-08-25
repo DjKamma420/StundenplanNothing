@@ -2,11 +2,23 @@
    Die Versionsnummer steht NUR hier. Die App fragt sie per Nachricht ab
    und vergleicht sie mit der Fassung auf dem Server. Nach jeder Änderung
    an index.html oder app.js diese Zeile hochzählen. */
-const VERSION = "v32";
+const VERSION = "v34";
 const DATEIEN = ["./","./index.html","./app.js","./manifest.webmanifest","./icon-192.png","./icon-512.png"];
 
+/* cache:"reload" erzwingt das Netz. Ohne das darf der Browser einzelne
+   Dateien aus seinem eigenen Zwischenspeicher liefern — GitHub Pages erlaubt
+   das zehn Minuten lang. Dann landen ein neues index.html und ein altes
+   app.js zusammen im selben Zwischenspeicher, und die App bricht an einer
+   Kennung ab, die es in der einen Fassung gibt und in der anderen nicht.
+   Schlägt eine Datei fehl, scheitert die Installation ganz und die bisherige
+   Fassung bleibt — eine alte, stimmige App ist besser als eine gemischte. */
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(DATEIEN)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => Promise.all(
+    DATEIEN.map(d => fetch(new Request(d, {cache:"reload"})).then(a => {
+      if(!a.ok) throw new Error(d + ": " + a.status);
+      return c.put(d, a);
+    }))
+  )).then(() => self.skipWaiting()));
 });
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys()

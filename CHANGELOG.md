@@ -2,6 +2,44 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v34
+
+**Neu**
+- **Sicherungsordner:** einmal einen Ordner wählen, danach legt die App ihre
+  Sicherungen immer dort ab, ohne zu fragen. Das können nur Chrome und Edge
+  auf dem Rechner; wo es fehlt, sagt die App das und erklärt den Weg über
+  die Download-Einstellungen des Browsers
+- **Automatisch sichern:** beim Öffnen von selbst in den Ordner schreiben,
+  sobald es fällig ist. Ein kurzer Hinweis zeigt, dass es passiert ist
+- **Rhythmus einstellbar:** erinnern alle 7, 14, 28 Tage, alle 3 Monate —
+  oder gar nicht. Bisher waren es feste vier Wochen
+- **Haltefrist:** im Sicherungsordner bleiben die letzten 1, 3, 6 oder 12
+  Monate, ältere Sicherungen werden dort entfernt. Angefasst wird nur, was
+  die App selbst geschrieben hat — fremde Dateien im Ordner bleiben liegen
+
+**Geändert**
+- Wann zuletzt gesichert wurde, gilt jetzt für das Gerät statt für ein
+  einzelnes Profil. Eine Sicherung über alle Profile zählt für alle
+
+## v33
+
+**Behoben**
+- Beim Wechsel auf den Einträge-Reiter erschien der rote Fehlerkasten
+  („Cannot set properties of null"). In v32 war ein ungenutztes Element aus
+  `index.html` verschwunden, auf das ältere Fassungen von `app.js` noch
+  zugreifen. Traf ein neues `index.html` auf ein altes `app.js` — was der
+  Browser-Zwischenspeicher zehn Minuten lang zulässt —, brach die Ansicht ab.
+  Das Element steht wieder, und der Service Worker holt seine Dateien jetzt
+  ausdrücklich vom Netz, damit nie wieder zwei Fassungen zusammen im
+  Zwischenspeicher landen
+
+**Neu**
+- Der Fehlerkasten hat einen Knopf *App neu laden*. Er leert die
+  Zwischenspeicher und startet neu; die Daten bleiben unberührt. Bisher war
+  der rote Kasten eine Sackgasse
+- Die Prüfung bei jedem Push schlägt Alarm, wenn eine Kennung aus
+  `index.html` verschwindet
+
 ## v32
 
 **Behoben**
