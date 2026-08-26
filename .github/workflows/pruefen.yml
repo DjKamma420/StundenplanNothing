@@ -4,6 +4,9 @@
 # auf dem Rechner dieselbe ist.
 name: Prüfen
 
+permissions:
+  contents: read
+
 on:
   push:
   pull_request:
