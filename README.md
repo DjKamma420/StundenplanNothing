@@ -165,7 +165,9 @@ Das Menü zeigt oben, was an dem Tag schon steht. Freie Tage werden grau dargest
 
 ### Reihenfolge anpassen
 
-Unter ⚙ lässt sich die Reihenfolge der Kacheln im Einträge-Menü und die Reihenfolge der Fächer im Zeugnis mit Pfeilen umsortieren.
+Die Reihenfolge der Kacheln änderst du direkt im Einträge-Reiter: **✎ neben der Suche** antippen, dann mit den Pfeilen umsortieren, nochmal auf ✎ zum Beenden.
+
+Die Reihenfolge der Fächer im Zeugnis steht unter ⚙ → *Reihenfolge der Fächer*.
 
 ### Noten und Zeugnis
 
@@ -209,7 +211,7 @@ Alles über **⚙ Einstellungen**, ohne eine Zeile Code:
 
 Keine Doppelstunden? Dann `1`, `2`, `3` … in einzelne Zeilen. Das Raster darf beliebig viele Felder haben.
 
-**Namen statt Kürzel.** Unter *Lehrkräfte* und *Fachnamen* je Zeile ein Kürzel und der Name:
+**Namen statt Kürzel.** Unter *Lehrkräfte* und *Fachnamen* stehen alle Kürzel aus deinem Plan bereits untereinander — du füllst nur die Namen dahinter aus. Zeilen ohne Namen werden nicht gespeichert, du kannst also nach und nach ergänzen.
 
 ```
 WZET = Frau Wietzet

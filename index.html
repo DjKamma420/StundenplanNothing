@@ -21,14 +21,16 @@
 :root{
   --akzent:#e5382b;
   --ink:#0a0a0a; --surface:#141414; --line:#262626; --line2:#1a1a1a;
-  --text:#ededed; --muted:#7a7a7a; --dim:#3a3a3a;
+  --text:#ededed; --muted:#7a7a7a; --dim:#5f5f5f;
+  --aufAkzent:#fff; --schleier:#000c;
   --red:var(--akzent);
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 body.hell{
   --ink:#f7f7f5; --surface:#fff; --line:#dcdcd8; --line2:#ebebe7;
-  --text:#141414; --muted:#6b6b66; --dim:#b8b8b2;
+  --text:#141414; --muted:#6b6b66; --dim:#8a8a86;
+  --schleier:#1414147a;
 }
 body.schrift-mono{ --sans:var(--mono) }
 body.schrift-serif{ --sans:ui-serif,Georgia,"Times New Roman",serif }
@@ -199,7 +201,8 @@ section{margin-top:30px}
   color:var(--akzent);border-radius:8px;width:26px;height:26px;font-size:13px}
 
 /* Fuß */
-#fuss{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--ink);
+#fuss{position:fixed;left:50%;transform:translateX(-50%);width:100%;max-width:640px;bottom:0;
+  z-index:5;background:var(--ink);
   border-top:1px solid var(--line2);touch-action:pan-y;
   padding:12px 16px calc(8px + env(safe-area-inset-bottom))}
 #fuss > *{max-width:608px;margin-left:auto;margin-right:auto}
@@ -275,14 +278,14 @@ section{margin-top:30px}
 .hTab td{padding:7px 8px 7px 0;border-bottom:1px solid var(--line2);vertical-align:top;line-height:1.5}
 .hWarn{border-left:2px solid var(--akzent);padding-left:12px}
 .hHinweis{border-left:2px solid var(--line);padding-left:12px;color:var(--muted)}
-.hAbschnitt mark{background:var(--akzent);color:#fff;border-radius:3px;padding:0 2px}
+.hAbschnitt mark{background:var(--akzent);color:var(--aufAkzent);border-radius:3px;padding:0 2px}
 #dlgHilfe .reihe{margin:0;padding:12px 20px calc(14px + env(safe-area-inset-bottom));
   border-top:1px solid var(--line);flex:none}
 
 /* Dialoge */
 dialog{background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:16px;
   padding:20px;width:min(93vw,440px);max-height:86vh}
-dialog::backdrop{background:#000c}
+dialog::backdrop{background:var(--schleier)}
 dialog h2{font-size:17px;margin:0 0 3px;font-weight:600}
 label{display:block;margin-top:14px}
 label span{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
@@ -340,6 +343,17 @@ textarea{min-height:120px;font-family:var(--mono);font-size:16px}
 .fusszeile b{color:var(--muted);font-weight:500}
 details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
   color:var(--muted);cursor:pointer;padding:8px 0}
+/* Am Rechner gibt es einen Zeiger — dort ist eine Rückmeldung beim
+   Überfahren üblich. Auf dem Handy bleibt alles wie bisher. */
+@media (hover:hover) and (pointer:fine){
+  .block:hover,.zeuZeile:hover,.merkzeile:hover,.stapel button:hover,
+  .liste li:hover .titel{color:var(--akzent)}
+  .ikon:hover,.mini:hover,.chips button:hover,.reihe button:hover,
+  .tagfeld:hover,.tage button:hover{border-color:var(--muted);color:var(--text)}
+  .gross:hover{filter:brightness(.92)}
+  .kachel:hover .feld{border-color:var(--muted)}
+  button{transition:color .12s,border-color .12s,filter .12s}
+}
 @media (prefers-reduced-motion:no-preference){dialog[open]{animation:auf .16s ease}}
 @keyframes auf{from{opacity:0;transform:translateY(8px)}}
 </style>
@@ -423,7 +437,13 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 <!-- EINTRÄGE -->
 <div id="ansichtEin" class="hidden">
   <div id="einMenu">
-    <label style="margin-top:0"><span>Suche</span><input type="text" id="suchFeld" placeholder="Fach, Aufgabe, Notiz …"></label>
+    <div style="display:flex;align-items:flex-end;gap:10px">
+      <label style="margin-top:0;flex:1"><span>Suche</span>
+        <input type="text" id="suchFeld" placeholder="Fach, Aufgabe, Notiz …"></label>
+      <button class="ikon" id="btnSort" aria-pressed="false" aria-label="Reihenfolge ändern"
+        style="margin-bottom:1px">✎</button>
+    </div>
+    <p class="hinweis hidden" id="sortHinweis">Mit den Pfeilen umsortieren. Nochmal auf ✎ tippen, wenn du fertig bist.</p>
     <div class="stapel" id="einKacheln"></div>
     <ul class="liste" id="suchListe"></ul>
   </div>
@@ -754,6 +774,10 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <p class="hinweis">Leer lassen heißt: Standard von oben.</p>
   <div id="sAnteilFaecher"></div>
 
+  <div class="eyebrow" style="margin-top:16px">Reihenfolge der Fächer</div>
+  <p class="hinweis">Gilt für das Zeugnis und die Liste darüber.</p>
+  <div id="sReiheFach"></div>
+
   <div class="eyebrow" style="margin-top:22px">Fehlzeiten</div>
   <label><span>Stunden je Schultag</span><input type="number" id="sStdProTag" min="1" max="16" step="1"></label>
   <p class="hinweis">Damit rechnet das Zeugnis versäumte Stunden in Tage um.</p>
@@ -768,13 +792,6 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
       <option value="365">1 Jahr</option>
     </select></label>
   <p class="hinweis" id="sArchivHinweis"></p>
-
-  <div class="eyebrow" style="margin-top:22px">Reihenfolge im Einträge-Menü</div>
-  <div id="sReiheEin"></div>
-
-  <div class="eyebrow" style="margin-top:22px">Reihenfolge der Fächer</div>
-  <p class="hinweis">Gilt für das Zeugnis.</p>
-  <div id="sReiheFach"></div>
 
   <div class="eyebrow" style="margin-top:22px">Erinnerungen</div>
   <p class="hinweis">Die App kann sich nicht selbst wecken. Sie meldet sich beim Öffnen —

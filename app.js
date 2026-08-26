@@ -409,8 +409,25 @@ const oktette = t => new TextEncoder().encode(t).length;
 const mitZeitgrenze = (v,ms) => Promise.race([v, new Promise(r => setTimeout(() => r(null), ms))]);
 
 /* --- Darstellung anwenden --- */
+/** Helligkeit einer Farbe nach WCAG — entscheidet, ob Text darauf hell oder dunkel sein muss. */
+function helligkeit(farbe){
+  const h = String(farbe || "").replace("#","");
+  if(h.length !== 6) return 0;
+  const teil = i => {
+    const v = parseInt(h.slice(i,i+2),16)/255;
+    return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4);
+  };
+  return 0.2126*teil(0) + 0.7152*teil(2) + 0.0722*teil(4);
+}
 function themaAnwenden(){
-  document.documentElement.style.setProperty("--akzent", cfg.akzent || "#e5382b");
+  const akzent = cfg.akzent || "#e5382b";
+  document.documentElement.style.setProperty("--akzent", akzent);
+  /* Nicht raten, sondern rechnen: Welche der beiden Textfarben hat auf diesem
+     Akzent den besseren Kontrast? Bei Gelb oder Türkis gewinnt Schwarz. */
+  const L = helligkeit(akzent);
+  const gegenWeiss = 1.05 / (L + 0.05);
+  const gegenSchwarz = (L + 0.05) / (helligkeit("#111111") + 0.05);
+  document.documentElement.style.setProperty("--aufAkzent", gegenSchwarz > gegenWeiss ? "#111" : "#fff");
   document.body.classList.toggle("hell", cfg.modus === "hell");
   document.body.classList.remove("schrift-mono","schrift-serif");
   if(cfg.schrift === "mono") document.body.classList.add("schrift-mono");
@@ -714,9 +731,22 @@ function reiheEin(){
   const w = Array.isArray(cfg.reiheEin) ? cfg.reiheEin.filter(x => REIHE_STANDARD.includes(x)) : [];
   return [...w, ...REIHE_STANDARD.filter(x => !w.includes(x))];
 }
+let sortModus = false;
+
 function kachelnZeichnen(){
-  $("#einKacheln").innerHTML = reiheEin().map(k =>
-    `<button type="button" data-sub="${k}">${ARTLANG[k]}<small id="zahl${k}"></small></button>`).join("");
+  const liste = reiheEin();
+  $("#einKacheln").innerHTML = liste.map((k,i) => {
+    const knopf = `<button type="button" data-sub="${k}">${ARTLANG[k]}<small id="zahl${k}"></small></button>`;
+    if(!sortModus) return knopf;
+    /* Im Sortiermodus zählt der Kachelklick nicht — sonst öffnet sich beim
+       Umsortieren dauernd eine Liste. */
+    return `<div style="display:flex;gap:8px;align-items:stretch">
+      <div style="flex:1;pointer-events:none;opacity:.75">${knopf}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;justify-content:center">
+        <button type="button" class="mini" data-khoch="${i}" ${i === 0 ? "disabled style=opacity:.3" : ""}>↑</button>
+        <button type="button" class="mini" data-krunter="${i}" ${i === liste.length-1 ? "disabled style=opacity:.3" : ""}>↓</button>
+      </div></div>`;
+  }).join("");
 }
 const listeVonTyp = t => {
   const heuteIso = iso(new Date());
@@ -1090,8 +1120,9 @@ $("#bTagFreiWeg").onclick = () => {
 
 /* Dialoge: Tippen auf den Hintergrund schließt */
 document.querySelectorAll("dialog").forEach(d => {
-  d.addEventListener("click", e => { if(e.target === d) d.close(); });
-  wischen(d, () => d.close());
+  const zu = () => { if(d.id === "dlgEinst") einstSchliessen(); else d.close(); };
+  d.addEventListener("click", e => { if(e.target === d) zu(); });
+  wischen(d, zu);
 });
 
 /* =====================================================================
@@ -1529,7 +1560,24 @@ $("#einListe").addEventListener("click", e => {
     sichern(); zeichne();
   }
 });
+$("#btnSort").onclick = () => {
+  sortModus = !sortModus;
+  $("#btnSort").setAttribute("aria-pressed", sortModus);
+  $("#sortHinweis").classList.toggle("hidden", !sortModus);
+  zeichne();
+};
 $("#einMenu").onclick = e => {
+  const h = e.target.closest("[data-khoch]"), r = e.target.closest("[data-krunter]");
+  if(h || r){
+    const liste = reiheEin();
+    const i = +( h ? h.dataset.khoch : r.dataset.krunter), j = i + (h ? -1 : 1);
+    if(j >= 0 && j < liste.length){
+      [liste[i], liste[j]] = [liste[j], liste[i]];
+      cfg.reiheEin = liste; sichern(); zeichne();
+    }
+    return;
+  }
+  if(sortModus) return;
   const b = e.target.closest("[data-sub]"); if(!b) return;
   einSub = b.dataset.sub; zeichne();
 };
@@ -2764,11 +2812,24 @@ const slotsAuslesen = () => [...document.querySelectorAll("#slotEditor .slot")].
   bis:z.querySelector('[data-feld=bis]').value
 })).filter(s => s.std && s.von && s.bis);
 const paareText = obj => Object.entries(obj||{}).map(([k,v]) => `${k} = ${v}`).join("\n");
+/** Alle Lehrkraft-Kürzel aus dem Plan. */
+function alleLehrer(){
+  const s = new Set();
+  ["A","B"].forEach(w => TAGE.forEach(t =>
+    (plan[w] && plan[w][t] || []).forEach(x => { if(x && x.lk) s.add(x.lk.toUpperCase()); })));
+  return [...s].sort();
+}
+/** Kürzelliste als Text: bekannte Namen dahinter, unbekannte leer zum Ausfüllen. */
+function paareVorbelegt(obj, kuerzel){
+  const o = Object.assign({}, obj || {});
+  kuerzel.forEach(k => { if(o[k] === undefined) o[k] = ""; });
+  return Object.keys(o).sort().map(k => `${k} = ${o[k]}`).join("\n");
+}
 function textPaare(t){
   const o = {};
   String(t||"").split("\n").forEach(z => {
-    const m = z.match(/^\s*([^=]+?)\s*=\s*(.+?)\s*$/);
-    if(m) o[m[1].toUpperCase()] = m[2];
+    const m = z.match(/^\s*([^=]+?)\s*=\s*(.*?)\s*$/);
+    if(m && m[2]) o[m[1].toUpperCase()] = m[2];   // Zeilen ohne Namen werden nicht gespeichert
   });
   return o;
 }
@@ -2780,9 +2841,8 @@ function reiheZeichnen(sel, liste, beschriften){
     <button type="button" data-runter="${i}" ${i === liste.length-1 ? "disabled style=opacity:.3" : ""} aria-label="nach unten">↓</button>
   </div>`).join("");
 }
-let reiheEinListe = [], reiheFachListe = [];
+let reiheFachListe = [];
 function reihenZeichnen(){
-  reiheZeichnen("#sReiheEin", reiheEinListe, k => ARTLANG[k] || k);
   reiheZeichnen("#sReiheFach", reiheFachListe, fachName);
 }
 function reiheSchieben(liste, i, r){
@@ -2791,13 +2851,6 @@ function reiheSchieben(liste, i, r){
   [liste[i], liste[j]] = [liste[j], liste[i]];
   return liste;
 }
-$("#sReiheEin").onclick = e => {
-  const h = e.target.closest("[data-hoch]"), r = e.target.closest("[data-runter]");
-  if(h) reiheEinListe = reiheSchieben(reiheEinListe, +h.dataset.hoch, -1);
-  else if(r) reiheEinListe = reiheSchieben(reiheEinListe, +r.dataset.runter, 1);
-  else return;
-  reihenZeichnen();
-};
 $("#sReiheFach").onclick = e => {
   const h = e.target.closest("[data-hoch]"), r = e.target.closest("[data-runter]");
   if(h) reiheFachListe = reiheSchieben(reiheFachListe, +h.dataset.hoch, -1);
@@ -2935,6 +2988,17 @@ $("#sOrdnerJetzt").onclick = async () => {
   await jetztSichern(true);
   ordnerStand();
 };
+/* Merkt sich beim Öffnen den Zustand aller Felder. Beim Schließen wird
+   verglichen — nur dann fragt die App nach. */
+let einstStand = null;
+function einstFelder(){
+  return [...dlgEinst.querySelectorAll("input,select,textarea")]
+    .filter(el => el.id && el.type !== "file")
+    .map(el => el.id + "=" + (el.type === "checkbox" ? el.checked : el.value)).join("\u0001")
+    + "\u0001reihe=" + (reiheFachListe || []).join(",");
+}
+const einstGeaendert = () => einstStand !== null && einstFelder() !== einstStand;
+
 function einstellungenOeffnen(){
   sKlasse.value = cfg.klasse;
   sZweiWochen.checked = cfg.zweiWochen;
@@ -2951,11 +3015,13 @@ function einstellungenOeffnen(){
   sArchivTage.value = String(archivFrist());
   if(sArchivTage.selectedIndex < 0) sArchivTage.value = "0";
   archivHinweisEinstellung();
-  reiheEinListe = reiheEin().slice();
   reiheFachListe = fachReihenfolge().slice();
   reihenZeichnen();
   sMelden.checked = !!cfg.melden; meldeStand();
-  sLehrer.value = paareText(cfg.lehrer); sFaecher.value = paareText(cfg.fachnamen);
+  /* Alle im Plan vorkommenden Kürzel stehen schon da — eingetragen werden
+     muss nur der Name dahinter. Vorhandene Zuordnungen bleiben erhalten. */
+  sLehrer.value  = paareVorbelegt(cfg.lehrer, alleLehrer());
+  sFaecher.value = paareVorbelegt(cfg.fachnamen, alleFaecher());
   sLand.innerHTML = `<option value="">— wählen —</option>` +
     Object.entries(LAENDER).map(([k,v]) => `<option value="${k}" ${cfg.land === k ? "selected":""}>${v}</option>`).join("");
   ferienStand();
@@ -2977,13 +3043,30 @@ function einstellungenOeffnen(){
   $("#sDateiAlle").classList.toggle("hidden", profile.length < 2);
   sicherungStand(); speicherStand(); versionPruefen();
   dlgEinst.showModal();
+  einstStand = einstFelder();
 }
 $("#btnEinst").onclick = einstellungenOeffnen;
+
+/* Schließen mit ungesicherten Änderungen: fragen statt verwerfen.
+   Betrifft Zurück-Geste, Hintergrundtipp und Wischen gleichermaßen. */
+function einstSchliessen(){
+  if(!einstGeaendert()){ einstStand = null; dlgEinst.close(); return; }
+  if(confirm("Es gibt ungespeicherte Änderungen.\n\nOK = speichern und schließen\nAbbrechen = verwerfen")){
+    $("#bEinstSpeichern").click();
+  } else {
+    einstStand = null; dlgEinst.close();
+  }
+}
+dlgEinst.addEventListener("cancel", e => {          // Zurück-Geste oder Esc
+  if(einstGeaendert()){ e.preventDefault(); einstSchliessen(); }
+  else einstStand = null;
+});
+dlgEinst.addEventListener("close", () => { einstStand = null; });
 sZweiWochen.onchange = () => {
   $("#ankerWrap").classList.toggle("hidden", !sZweiWochen.checked);
   $("#sWocheKopieren").classList.toggle("hidden", !sZweiWochen.checked);
 };
-$("#sImport").onclick = () => { zurueckZuEinst = true; dlgEinst.close(); importOeffnen(); };
+$("#sImport").onclick = () => { zurueckZuEinst = true; einstStand = null; dlgEinst.close(); importOeffnen(); };
 /* A- und B-Woche unterscheiden sich meist nur in ein, zwei Stunden.
    Einmal kopieren spart, den ganzen Plan zweimal einzutragen. */
 $("#sWocheKopieren").onclick = e => {
@@ -3177,8 +3260,8 @@ $("#bEinstSpeichern").onclick = () => {
   cfg.sicherTage = Math.max(0, Math.min(365, Number(sRhythmus.value) || 0));
   cfg.sicherHalten = Math.max(0, Math.min(60, Number(sHalten.value) || 0));
   cfg.sicherAuto = sAuto.checked;
-  cfg.reiheEin = reiheEinListe.slice();
   cfg.reiheFach = reiheFachListe.slice();
+  einstStand = null;
   normalisiere(); sichern(); dlgEinst.close(); zeichne();
 };
 

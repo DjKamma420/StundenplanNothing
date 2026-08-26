@@ -2,6 +2,25 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v40
+
+**Neu**
+- Die Einstellungen fragen beim Verlassen nach, wenn etwas geändert und nicht
+  gespeichert wurde — OK speichert, Abbrechen verwirft. Gilt für die
+  Zurück-Geste, das Tippen daneben und das Wischen gleichermaßen
+- Lehrkraft- und Fachkürzel stehen in den Einstellungen schon da; einzutragen
+  ist nur noch der Name dahinter. Zeilen ohne Namen werden nicht gespeichert
+- Reihenfolge der Kacheln: ✎ neben der Suche im Einträge-Reiter, nicht mehr in
+  den Einstellungen
+
+**Geändert**
+- Hell-Modus überarbeitet: `--dim` war in beiden Modi zu blass (1,7:1 bzw.
+  1,9:1), jetzt über 3:1. Der Schleier hinter Dialogen passt sich an
+- Die Textfarbe auf dem Akzent wird berechnet statt geraten. Bei Gold oder
+  Türkis stand vorher weiße Schrift mit 2,2:1 darauf, jetzt schwarze mit 8,5:1
+- Am Rechner gibt es Rückmeldung beim Überfahren mit dem Zeiger
+- Die Fußleiste bleibt auf breiten Bildschirmen in der Spaltenbreite
+
 ## v39
 
 **Neu**
