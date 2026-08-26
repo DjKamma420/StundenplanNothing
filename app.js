@@ -838,7 +838,7 @@ function zeichneEintraege(){
     $("#einListe").innerHTML = liste.map(o => {
       const d = new Date(o.datum+"T12:00");
       const wann = d.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"}) +
-        (o.slot !== null && cfg.slots[o.slot] ? ` · ${cfg.slots[o.slot].von}` : " · ganzer Tag");
+        (o.slot !== null && cfg.slots[o.slot] ? ` · ${esc(cfg.slots[o.slot].von)}` : " · ganzer Tag");
       return `<li><span style="width:18px;flex:none"></span>
         <div class="wachs" data-ereignis="${o.id}">
           <div class="kopf"><span class="einmalig">${o.art === "ausfall" ? "Ausfall" : o.art === "vertretung" ? "Vertretung" : "Ereignis"}</span>
@@ -1300,7 +1300,7 @@ eTyp.onchange = artUmschalten;
 
 function stundenAuswahlFuellen(slot){
   eStunde.innerHTML = `<option value="">ganzer Tag</option>` +
-    cfg.slots.map((s,i) => `<option value="${i}" ${i === slot ? "selected" : ""}>${stdText(s)} · ${esc(s.von)}</option>`).join("");
+    cfg.slots.map((s,i) => `<option value="${i}" ${i === slot ? "selected" : ""}>${esc(stdText(s))} · ${esc(s.von)}</option>`).join("");
   if(slot === null || slot === undefined) eStunde.value = "";
 }
 function artUmschalten(){
@@ -1600,7 +1600,7 @@ function suchen(){
   const treffer = [
     ...aktiv().filter(e => suchtext(e).includes(q)),
     ...notenAktiv().filter(n => suchtext(n).includes(q))
-      .map(n => ({id:n.id, typ:"G", fach:n.fach, titel:`${notenText(n.wert)} ${n.titel||""}`, datum:n.datum, note:true})),
+      .map(n => ({id:n.id, typ:"G", fach:n.fach, titel:`${notenText(n.wert)} ${n.titel || ""}`.trim(), datum:n.datum, note:true})),
     ...sonderAktiv().filter(o => suchtext(o).includes(q))
       .map(o => ({id:o.id, typ:"E", fach:"", titel:o.titel, datum:o.datum, ereignis:true}))
   ].sort((a,b) => b.datum.localeCompare(a.datum)).slice(0, 40);
@@ -1695,7 +1695,7 @@ function importTabelle(werte){
   $("#iTabelle").innerHTML = cfg.slots.map((sl,i) => {
     const v = werte[i] || {};
     return `<div class="izeile" data-zeile="${i}">
-      <div class="std">${stdText(sl)}</div>
+      <div class="std">${esc(stdText(sl))}</div>
       <input type="text" data-f="fach" value="${esc(v.fach||"")}" placeholder="Fach" autocapitalize="characters">
       <input type="text" data-f="raum" value="${esc(v.raum||"")}" placeholder="Raum" autocapitalize="characters">
       <input type="text" data-f="lk" value="${esc(v.lk||"")}" placeholder="LK" autocapitalize="characters">
@@ -2802,8 +2802,8 @@ $("#hilfeVerzeichnis").onclick = e => {
 function slotEditorZeichnen(slots){
   $("#slotEditor").innerHTML = slots.map((s,i) => `<div class="slot" data-slot="${i}">
     <input type="text" value="${esc(s.std)}" data-feld="std" inputmode="numeric">
-    <input type="time" value="${s.von}" data-feld="von">
-    <input type="time" value="${s.bis}" data-feld="bis">
+    <input type="time" value="${esc(s.von)}" data-feld="von">
+    <input type="time" value="${esc(s.bis)}" data-feld="bis">
     <button type="button" data-slotweg="${i}" aria-label="Zeile löschen">×</button></div>`).join("");
 }
 const slotsAuslesen = () => [...document.querySelectorAll("#slotEditor .slot")].map(z => ({
@@ -2864,7 +2864,7 @@ function anteilFaecherZeichnen(){
   $("#sAnteilFaecher").innerHTML = liste.length
     ? liste.map(f => `<div class="anteilzeile"><span>${esc(fachName(f))}</span>
         <input type="number" min="0" max="100" step="5" data-anteilfach="${esc(f)}"
-          placeholder="${Number(cfg.anteilM)||0}" value="${hatEigenenAnteil(f) ? cfg.anteile[f] : ""}"></div>`).join("")
+          placeholder="${Number(cfg.anteilM)||0}" value="${hatEigenenAnteil(f) ? esc(cfg.anteile[f]) : ""}"></div>`).join("")
     : `<p class="hinweis">Sobald Fächer im Plan stehen, erscheinen sie hier.</p>`;
 }
 function anteilFaecherLesen(){

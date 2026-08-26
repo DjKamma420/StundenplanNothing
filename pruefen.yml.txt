@@ -1,0 +1,32 @@
+# Kein Build-Vorgang — nur die Prüfungen, die ein kaputtes Deployment
+# verhindern. Ein Fehler in app.js macht die App auf allen Geräten
+# unbenutzbar. Die Logik steht in werkzeug/pruefen.mjs, damit sie hier und
+# auf dem Rechner dieselbe ist.
+name: Prüfen
+
+on:
+  push:
+  pull_request:
+  workflow_call:        # damit deploy.yml diese Prüfungen davorschalten kann
+
+# Nur Lesen. Ohne diese Angabe bekommt der Ablauf die Standardrechte des
+# Repositories, was bei öffentlichen Projekten mehr ist als nötig — genau das
+# hat die Code-Prüfung bemängelt.
+permissions:
+  contents: read
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Alle statischen Prüfungen
+        run: |
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            node werkzeug/pruefen.mjs --basis HEAD~1
+          else
+            node werkzeug/pruefen.mjs
+          fi

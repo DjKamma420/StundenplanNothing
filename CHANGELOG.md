@@ -2,7 +2,13 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
-## v40
+## v41
+
+**Sicherheit**
+- Zeitwerte und Stundennummern aus dem Rastereditor wurden ungeschützt in
+  HTML eingesetzt. Ein Eintrag wie `<b>` in der Spalte „Std." hätte das
+  Markup zerlegt. Alle Einsetzungen laufen jetzt durch `esc()`
+- Der Prüf-Workflow bekommt ausdrücklich nur Leserechte
 
 **Neu**
 - Die Einstellungen fragen beim Verlassen nach, wenn etwas geändert und nicht
