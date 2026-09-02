@@ -70,11 +70,21 @@ pruef("Angesprochene Kennungen stehen in index.html", () => {
   return da.size + " Kennungen";
 });
 
+/* null, wenn die Datei im Vergleichsstand noch nicht existierte (etwa der
+   allererste Commit eines Repos) — dann gibt es schlicht nichts, wogegen
+   zu vergleichen wäre, kein Fehler. */
+const zeigeDatei = (ref, pfad) => {
+  try { return execSync(`git show ${ref}:${pfad}`, { encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] }); }
+  catch { return null; }
+};
+
 if (basis) {
   /* Eine Kennung zu entfernen bricht jede App, die noch mit älterem app.js
      im Speicher läuft. Genau so entstand der Absturz in v32. */
   pruef(`Keine Kennung entfernt (gegen ${basis})`, () => {
-    const vorher = kennungen(execSync(`git show ${basis}:index.html`, { encoding: "utf8" }));
+    const vorherText = zeigeDatei(basis, "index.html");
+    if (vorherText === null) return "keine Vorfassung";
+    const vorher = kennungen(vorherText);
     const jetzt = kennungen(lies("index.html"));
     const weg = [...vorher].filter((x) => !jetzt.has(x));
     if (weg.length) throw new Error("entfernt: " + weg.join(", "));
@@ -82,8 +92,10 @@ if (basis) {
   });
 
   pruef(`Versionsnummer gestiegen, falls nötig (gegen ${basis})`, () => {
+    const altText = zeigeDatei(basis, "sw.js");
+    if (altText === null) return "keine Vorfassung";
     const nummer = (t) => (t.match(/VERSION = "([^"]+)"/) || [])[1];
-    const alt = nummer(execSync(`git show ${basis}:sw.js`, { encoding: "utf8" }));
+    const alt = nummer(altText);
     const neu = nummer(lies("sw.js"));
     if (alt !== neu) return `${alt} → ${neu}`;
     const geaendert = execSync(
