@@ -2,6 +2,39 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v42
+
+Gefunden durch einen Backtest über den ganzen Code (Angriffsflächen und
+mehrere Nutzerprofile: alt, jung, Tastatur-only, Screenreader-nah).
+Sicherheit war bereits sauber — nur `werkzeug/pruefungen/angriff.mjs` neu
+dazugekommen, um das auch künftig automatisch zu prüfen. Drei echte Fehler
+gefunden und behoben:
+
+**Behoben**
+- Dreifaches schnelles Tippen auf „Speichern" im Eintragsdialog konnte
+  denselben Eintrag mehrfach anlegen. Die Sperre war nur eine bloße
+  `disabled`-Markierung ohne Zeitrückstellung; sie blieb außerdem stehen,
+  wenn kurz danach ein neuer Dialog geöffnet wurde, und blockierte dort
+  jedes Tippen. Jetzt eine benannte, löschbare Sperre, die beim Öffnen
+  jedes Eintrags-, Ereignis- und Notendialogs zurückgesetzt wird
+- Ein sehr langer Titel (getestet: 5000 Zeichen) lief in Listen seitlich
+  über den Bildschirm hinaus. `overflow-wrap:break-word` allein reichte
+  nicht — als Flex-Kind hatte `.titel` weiterhin `min-width:auto` und
+  durfte dadurch nicht unter seine Inhaltsbreite schrumpfen. Jetzt mit
+  `min-width:0`
+- Regression aus v41: Der Monatstitel im Kalender saß am Rechner (1280px)
+  13px neben der Mitte. Ursache war `.monat{grid-template-columns:1fr auto
+  1fr}` — bei ungleich breiten Nachbarspalten zieht `1fr` (= `minmax(auto,
+  1fr)`) nicht gleich. Jetzt `minmax(0,1fr) auto minmax(0,1fr)`, wie schon
+  an anderer Stelle in v36
+
+**Neu**
+- `werkzeug/pruefungen/angriff.mjs` (Angriffsflächen: XSS über jedes Feld,
+  bösartige Sicherung, Prototype-Pollution, URL-Parameter-Whitelist,
+  ICS-Injektion) und `werkzeug/pruefungen/personas.mjs` (Tap-Ziele,
+  Kontrast, Tastaturbedienung, Mehrfachtippen, lange Titel, Emoji, 500
+  Einträge, Abbrechen-Rückfrage) als feste Prüfungen
+
 ## v41
 
 **Sicherheit**

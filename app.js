@@ -1426,6 +1426,7 @@ function eintragOeffnen(e, datum, typ, fach, slot, extra){
   fachAuswahlFuellen(e ? e.fach : (fach || ""));
   datumFeldText(); datumWahlOeffnen(false); artUmschalten();
   $("#bEintragWeg").classList.toggle("hidden", !(e || vorhanden));
+  speichernSperreAus();
   dlgEintrag.showModal();
 }
 function ereignisOeffnen(id){
@@ -1439,6 +1440,7 @@ function ereignisOeffnen(id){
   fachAuswahlFuellen("");
   datumFeldText(); datumWahlOeffnen(false); artUmschalten();
   $("#bEintragWeg").classList.remove("hidden");
+  speichernSperreAus();
   dlgEintrag.showModal();
 }
 function noteOeffnen(n){
@@ -1451,12 +1453,24 @@ function noteOeffnen(n){
   fachAuswahlFuellen(n.fach);
   datumFeldText(); datumWahlOeffnen(false); artUmschalten();
   $("#bEintragWeg").classList.remove("hidden");
+  speichernSperreAus();
   dlgEintrag.showModal();
 }
 $("#btnEintrag").onclick = () => eintragOeffnen(null, ansicht === "kalender" ? kalTag : gewaehlt);
 $("#bEintragAb").onclick = () => dlgEintrag.close();
 
+/* Schnelles Mehrfachtippen darf keinen Eintrag verdoppeln. Timeout statt
+   nur "disabled", damit ein sofort danach neu geöffneter Dialog nicht durch
+   die Sperre eines vorigen Speicherns blockiert bleibt (speichernSperreAus). */
+let speichernSperre = null;
+function speichernSperreAus(){
+  clearTimeout(speichernSperre); speichernSperre = null;
+  $("#bEintragSpeichern").disabled = false;
+}
 $("#bEintragSpeichern").onclick = () => {
+  if(speichernSperre) return;
+  $("#bEintragSpeichern").disabled = true;
+  speichernSperre = setTimeout(speichernSperreAus, 600);
   const datum = eDatum.value || iso(new Date());
   const fach = aktuellesFach();
   const t = eTyp.value;

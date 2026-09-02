@@ -34,7 +34,10 @@ body.hell{
 }
 body.schrift-mono{ --sans:var(--mono) }
 body.schrift-serif{ --sans:ui-serif,Georgia,"Times New Roman",serif }
-*{box-sizing:border-box}
+/* Ohne das reißt ein einzelnes sehr langes Wort (langer Titel, eingefügter
+   Text ohne Leerzeichen) die ganze Seite in die Breite — betrifft jedes
+   Element, deshalb global statt an einzelnen Klassen geflickt. */
+*{box-sizing:border-box;overflow-wrap:break-word}
 html,body{margin:0;background:var(--ink);color:var(--text);font-family:var(--sans);
   -webkit-tap-highlight-color:transparent;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{padding:14px 16px 158px;max-width:640px;margin:0 auto;
@@ -123,7 +126,10 @@ section{margin-top:30px}
 .liste{list-style:none;padding:0;margin:10px 0 0}
 .liste li{display:flex;gap:11px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
 .liste .kopf{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
-.liste .titel{font-size:15px}
+/* min-width:0, weil .titel als Flex-Kind von .kopf sonst min-width:auto
+   erbt — das verhindert Schrumpfen unter die Inhaltsbreite und hebelt
+   overflow-wrap komplett aus, egal wie schmal der Container ist. */
+.liste .titel{font-size:15px;min-width:0}
 .liste .weg .titel{color:var(--muted);text-decoration:line-through}
 .liste .notiz{font-size:13px;color:var(--muted);margin-top:3px;white-space:pre-wrap}
 .wann{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;margin-top:3px}
@@ -143,7 +149,11 @@ section{margin-top:30px}
 /* Kalender */
 /* Drei gleich gewichtete Spalten: der Titel steht damit wirklich in der
    Mitte und nicht dort, wo die Knöpfe rechts zufällig Platz lassen. */
-.monat{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;margin-bottom:12px}
+/* Bare 1fr ist minmax(auto,1fr): die Spalte darf nicht unter den Inhalt
+   schrumpfen. Die rechte Seite (Pfeil + „Heute") ist breiter als die linke
+   (nur ein Pfeil) und zog den Titel deshalb aus der Mitte — derselbe Fehler
+   wie beim Stundenraster in v36, hier bisher übersehen. */
+.monat{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;margin-bottom:12px}
 .monat .mLinks{display:flex;gap:8px;justify-content:flex-start}
 .monat .mRechts{display:flex;gap:8px;justify-content:flex-end}
 .monat b{text-align:center;white-space:nowrap}
