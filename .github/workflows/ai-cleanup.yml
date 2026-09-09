@@ -1,0 +1,70 @@
+name: Interne Hilfsdateien entfernen
+
+on:
+  push:
+    branches: [cleanup/remove-ai-files]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Öffentliche Dateien bereinigen
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          app = Path('app.js')
+          s = app.read_text(encoding='utf-8')
+          alt = '''   Aufbau siehe CLAUDE.md. Kurz: kein Framework, ein Datensatz je
+   Profil im localStorage, bei jeder Änderung wird die sichtbare Ansicht
+   neu gezeichnet.'''
+          neu = '''   Kein Framework: ein Datensatz je Profil im localStorage. Bei jeder
+   Änderung wird die sichtbare Ansicht neu gezeichnet.'''
+          if alt not in s:
+              raise SystemExit('app.js: erwarteter Claude-Verweis fehlt')
+          app.write_text(s.replace(alt, neu, 1), encoding='utf-8')
+
+          beitrag = Path('CONTRIBUTING.md')
+          s = beitrag.read_text(encoding='utf-8')
+          s = s.replace('''- `CLAUDE.md`, `.claude/skills/` — Kontext und Abläufe für die Arbeit mit
+  Claude Code.\n''', '')
+          beitrag.write_text(s, encoding='utf-8')
+
+          sw = Path('sw.js')
+          s = sw.read_text(encoding='utf-8')
+          if 'const VERSION = "v47";' not in s:
+              raise SystemExit('sw.js: v47 nicht gefunden')
+          sw.write_text(s.replace('const VERSION = "v47";', 'const VERSION = "v48";', 1), encoding='utf-8')
+
+          ch = Path('CHANGELOG.md')
+          s = ch.read_text(encoding='utf-8')
+          s = s.replace('- `app.js` verweist nicht mehr auf die nicht vorhandene `ARCHITEKTUR.md`, sondern auf `CLAUDE.md`.',
+                        '- Der veraltete Verweis auf die nicht vorhandene `ARCHITEKTUR.md` wurde entfernt.')
+          marker = 'Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.\n\n'
+          neu = '''## v48
+
+**Aufgeräumt**
+- Entwicklungsinterne KI-/Assistenten-Hilfsdateien aus dem öffentlichen Repository entfernt; sie sind für Nutzung und Beiträge nicht erforderlich.
+- Verweise darauf aus Quellkommentar und Mitmach-Dokumentation entfernt.
+- Keine funktionale Änderung an der App.
+
+'''
+          if '## v48' not in s:
+              if marker not in s:
+                  raise SystemExit('CHANGELOG.md: Einfügepunkt fehlt')
+              s = s.replace(marker, marker + neu, 1)
+          ch.write_text(s, encoding='utf-8')
+          PY
+
+          git rm -r .claude CLAUDE.md
+          git rm .github/workflows/ai-cleanup.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app.js sw.js CONTRIBUTING.md CHANGELOG.md
+          git commit -m "v48: interne KI-Hilfsdateien aus öffentlichem Repo entfernen"
+          git push
