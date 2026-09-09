@@ -20,8 +20,6 @@ kopiert nur die sechs Dateien der App):
   Abhängigkeit.
 - `werkzeug/seite-bauen.mjs` — stellt zusammen, was veröffentlicht wird.
 - `.github/workflows/` — Prüfen und Veröffentlichen.
-- `CLAUDE.md`, `.claude/skills/` — Kontext und Abläufe für die Arbeit mit
-  Claude Code.
 
 Das ist kein Build-Vorgang: für die App entsteht nichts, es wird nur
 nachgesehen und kopiert.

@@ -2,6 +2,13 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v48
+
+**Aufgeräumt**
+- Entwicklungsinterne KI-/Assistenten-Hilfsdateien aus dem öffentlichen Repository entfernt; sie sind für Nutzung und Beiträge nicht erforderlich.
+- Verweise darauf aus Quellkommentar und Mitmach-Dokumentation entfernt.
+- Keine funktionale Änderung an der App.
+
 ## v47
 
 **Behoben**
@@ -11,7 +18,7 @@ Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepfl
 - Anleitung und README beschreiben Fehlzeiten wieder korrekt: Das Fach ist optional und wird aus einer angetippten Stunde übernommen.
 
 **Aufgeräumt**
-- `app.js` verweist nicht mehr auf die nicht vorhandene `ARCHITEKTUR.md`, sondern auf `CLAUDE.md`.
+- Der veraltete Verweis auf die nicht vorhandene `ARCHITEKTUR.md` wurde entfernt.
 - `LICENSE` ist wieder unverändertes Standard-MIT, damit Lizenztext, README und GitHub-Lizenzanzeige dasselbe aussagen.
 
 ## v46
