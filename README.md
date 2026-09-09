@@ -1,84 +1,90 @@
-# Stundenplan
+<p align="center">
+  <img src="icon-192.png" width="96" height="96" alt="Stundenplan App Icon">
+</p>
 
-Ein Stundenplan fürs Handy, der zeigt, was Schulportale meist nicht zeigen: **echte Uhrzeiten**, alle Kurse in **einer** Ansicht, dazu Hausaufgaben, Klausuren, Noten, Merkblätter und Fehlzeiten.
+<h1 align="center">Stundenplan</h1>
 
-Läuft im Browser, lässt sich auf den Startbildschirm legen und funktioniert offline. Kein Server, kein Konto, keine Zugangsdaten. **Alle Daten bleiben auf deinem Gerät.**
+<p align="center">
+  Eine lokale, installierbare Stundenplan-App für Schüler — mit Hausaufgaben, Klausuren, Noten, Kalender und Offline-Modus.
+</p>
 
-**➡️ Zum Ausprobieren: https://djkamma420.github.io/StundenplanNothing/**
-
-Nichts ist auf eine bestimmte Schule zugeschnitten. Fächer, Räume, Lehrkräfte und Zeiten entstehen allein aus dem, was du einträgst.
-
----
-
-## ⚠️ Das Wichtigste zuerst
-
-**Deine Daten liegen ausschließlich im Speicher deines Browsers.**
-
-Das heißt konkret:
-
-- Löschst du in Chrome die **„Cookies und Websitedaten"**, ist dein kompletter Plan weg. Samt Noten, Hausaufgaben und Merkblättern. Unwiederbringlich.
-- Deinstallierst du die App oder wechselst das Handy, ist alles weg.
-- Der private oder Inkognito-Modus vergisst alles beim Schließen.
-- **Auf dem iPhone:** Öffnest du die App nur als Lesezeichen in Safari, löscht Safari die Daten nach sieben Tagen ohne Benutzung von selbst. Leg sie über *Teilen → Zum Home-Bildschirm* auf den Startbildschirm — dann bleibt alles.
-- Niemand kann dir die Daten wiederherstellen — auch ich nicht, denn sie waren nie irgendwo anders.
-
-**Deshalb: Mach regelmäßig eine Sicherung.** ⚙ → Sicherung → *Als Datei sichern*. Die Datei landet in deinen Downloads; schick sie dir selbst per Mail oder leg sie in eine Cloud. Nach vier Wochen erinnert dich die App oben in der Tagesansicht daran.
-
-Führst du mehrere Profile, nimm *Alle Profile sichern* — das ist eine einzige Datei für das ganze Gerät.
-
-**Am Rechner geht es bequemer.** In Chrome und Edge kannst du unter ⚙ → *Sicherungsordner* einmal einen Ordner wählen. Danach landet jede Sicherung dort, ohne Nachfrage, und auf Wunsch **automatisch beim Öffnen**, sobald sie fällig ist. Die letzten drei Monate bleiben liegen (einstellbar), ältere Sicherungen räumt die App dort weg — nur ihre eigenen, fremde Dateien im Ordner bleiben unberührt.
-
-Auf dem **Handy** gibt es diese Ordnerwahl nicht: kein mobiler Browser kann eine App dauerhaft in einen Ordner schreiben lassen. Sicherungen gehen deshalb in die Downloads. Wenn du sie sortiert haben willst, schalte in Chrome unter *⋮ → Einstellungen → Downloads* die Option **„Speicherort für Dateien abfragen"** ein — dann fragt jeder Download nach dem Ordner, und du kannst dir dort einen eigenen anlegen.
-
-Wie oft die App erinnert, stellst du unter ⚙ → *Erinnerung* ein: alle 7, 14, 28 Tage, alle 3 Monate oder nie.
-
-Zurückholen geht über ⚙ → Sicherung → *Datei einlesen*. Eingelesen wird nur, was die App auch selbst schreibt; alles andere in der Datei wird verworfen.
+<p align="center">
+  <strong><a href="https://djkamma420.github.io/StundenplanNothing/">App öffnen</a></strong>
+  ·
+  <a href="PRIVACY.md">Datenschutz</a>
+  ·
+  <a href="SECURITY.md">Sicherheit</a>
+  ·
+  <a href="CHANGELOG.md">Changelog</a>
+</p>
 
 ---
 
-## Einrichten — Schritt für Schritt
+## Was die App macht
 
-Du brauchst **keine Programmierkenntnisse**. Zehn Minuten, alles am Handy.
+Stundenplan ersetzt keinen Schulserver. Sie ist eine persönliche Übersicht auf deinem eigenen Gerät.
 
-### Was du brauchst
+- Tagesansicht mit echten Uhrzeiten und aktueller Stunde
+- Wochenansicht für Montag bis Freitag
+- A-/B-Wochen
+- Hausaufgaben, Klausuren, Notizen und Ereignisse
+- Ausfall und Vertretung für einzelne Stunden
+- Notenübersicht und Zeugnis-Schätzung
+- Fehlzeiten und Archiv
+- Merkblätter mit Bildern
+- Ferien und Feiertage
+- Kalender-Export als `.ics`
+- mehrere Profile
+- Stundenplan gezielt an Mitschüler weitergeben
+- Sicherungen als JSON-Datei
+- installierbar als PWA und nach dem ersten Laden weitgehend offline nutzbar
 
-| | |
+## Grundprinzip
+
+**Kein Konto. Keine Datenbank. Kein Tracking. Keine Cloud-Synchronisierung.**
+
+Die persönlichen Daten liegen im `localStorage` des Browsers auf dem jeweiligen Gerät. Die App selbst wird über GitHub Pages ausgeliefert. Für das optionale Laden deutscher Ferien wird `openholidaysapi.org` angesprochen.
+
+Das bedeutet auch: Wenn Browser- oder Websitedaten gelöscht werden, können die lokalen Daten verloren gehen. Deshalb regelmäßig eine Sicherung erstellen.
+
+Mehr dazu: [PRIVACY.md](PRIVACY.md)
+
+---
+
+## Schnellstart
+
+### 1. App öffnen
+
+**https://djkamma420.github.io/StundenplanNothing/**
+
+### 2. Installieren
+
+| Gerät | Installation |
 |---|---|
-| **Gerät** | Handy, Tablet oder Rechner — Android, iOS, Windows, Mac, Linux |
-| **Browser** | Chrome, Edge, Firefox oder Safari, jeweils aktuell |
-| **Internet** | beim Einrichten und zum Laden der Ferientermine. Danach läuft alles offline |
-| **Deinen Stundenplan** | auf Papier oder als Tabelle zum Kopieren |
+| Android / Chrome | Menü → **App installieren** |
+| iPhone / Safari | Teilen → **Zum Home-Bildschirm** |
+| Desktop | Installationssymbol in der Adressleiste, sofern vom Browser angeboten |
 
-Nicht nötig: ein Editor, Node.js, ein Build-Vorgang, eine Datenbank, ein Konto bei der App.
+Die App funktioniert auch direkt im Browser. Als installierte PWA ist sie für den täglichen Einsatz sinnvoller.
 
-### Installieren
+### 3. Stundenplan einrichten
 
-- **Android/Chrome:** Adresse öffnen → Menü ⋮ → *Installieren und Verknüpfen* bzw. *App installieren*
-- **iPhone/Safari:** Adresse öffnen → Teilen → *Zum Home-Bildschirm*
-- **Rechner:** Installationssymbol rechts in der Adressleiste
+1. Einstellungen öffnen.
+2. Stundenraster festlegen.
+3. Falls nötig A-/B-Woche aktivieren.
+4. Stunden von Hand eintragen oder einen kopierten Plan importieren.
+5. Optional Fachnamen, Lehrkräfte und Bundesland ergänzen.
+6. Erste Sicherung erstellen.
 
-Das Icon liegt jetzt neben deinen anderen Apps und startet ohne Browserleiste.
+Eine Woche reicht; bei A-/B-Wochen werden zwei Wochen gepflegt.
 
-### Einrichten
+---
 
-1. **⚙ oben rechts** öffnen.
-2. **Klasse** eintragen.
-3. **Stundenraster** prüfen. Zwei Vorlagen zum Antippen: *4 Blöcke à 90 min* und *8 Einzelstunden*. Sonst Zeilen von Hand anpassen — „Std." sind die Stundennummern, die ein Feld abdeckt.
-4. Wenn deine Schule **A- und B-Wochen** hat: Haken setzen. Feste Regel: **ungerade Kalenderwoche = A, gerade = B**. Die App zeigt dir, welche gerade läuft. Unterscheiden sich die beiden Wochen nur in ein paar Stunden, trag eine ein und kopier sie mit *A-Woche → B-Woche* herüber.
-5. **Bundesland** wählen und **Ferien laden**.
-6. Optional **Akzentfarbe**, **heller Modus** und **Schriftart** einstellen.
+## Stundenplan importieren
 
-### Plan eintragen
+Beim Import aus einem Schulportal erwartet die App pro Stunde ungefähr dieses Format:
 
-Zwei Wege:
-
-**Von Hand:** ✎ oben antippen, dann jedes Feld ausfüllen. Für eine Woche brauchst du keine fünf Minuten.
-
-**Aus dem Schulportal kopieren:** ⚙ → **Plan einfügen**. Tag und Woche wählen, die kopierte Tabelle in *Aus der Zwischenablage füllen* einfügen, **In die Tabelle übernehmen**, prüfen, **Speichern**.
-
-Der Import erwartet je Stunde eine Zeile im Format `FACH, RAUM (LEHRKRAFT)`:
-
-```
+```text
 1
 CH, B005 (MUEL)
 2
@@ -87,168 +93,119 @@ CH, B005 (MUEL)
 MA, B006 (SCHM)
 ```
 
-Viele Portale können zwischen Fach-, Raum- und Lehrkraftansicht umschalten. Gebraucht wird die Ansicht, bei der **das Fach zuerst** steht — sonst landen Lehrernamen als Fächer in deinem Plan.
+Dabei steht zuerst das Fach, danach Raum und optional die Lehrkraft.
 
-**Du musst kein halbes Jahr eintragen.** Ein Stundenplan wiederholt sich. Eine Woche reicht, bei A/B-Wochen zwei.
-
----
-
-## Anleitung in der App
-
-Alles Folgende steht auch in der App selbst: ⚙ → **Anleitung und Technik**. Dort mit Inhaltsverzeichnis, Suche nach Stichwörtern und einem Teil dazu, wie die App technisch funktioniert.
-
-## Bedienung
-
-### Die vier Reiter
-
-| Reiter | Inhalt |
-|---|---|
-| **Tag** | Der Plan des Tages mit Uhrzeiten, laufender Stunde und Fortschrittsbalken |
-| **Kalender** | Monatsübersicht mit Markierungen, darunter der angetippte Tag |
-| **Einträge** | Suche und alle Listen: Hausaufgaben, Klausuren, Notizen, Ereignisse, Noten, Merkblätter, Fehlzeiten, Archiv |
-| **Zeugnis** | Alle Fächer mit Schnitt und gerundeter Note |
-
-Wechseln durch Antippen, durch Antippen der vier Punkte oder durch **Wischen in jedem freien Bereich unterhalb des Inhalts** — auch mitten auf der Seite, wenn dort nichts mehr steht. Steht eine Unterliste offen, führt der erste Wisch zurück ins Menü.
-
-### Eine Stunde antippen
-
-- **Woche** neben der Kalenderwoche öffnet das Wochenraster: alle fünf Tage nebeneinander, mit Ausfall, Ferien und Marken für Klausuren und Hausaufgaben.
-- **Kurz antippen** öffnet die Schnellauswahl: Hausaufgabe für die nächste Stunde dieses Fachs, Notiz, Klausur, Fehlzeit, *Fällt aus*, *Vertretung*, ein sonstiges Ereignis — oder die Fach-Info.
-- **Gedrückt halten** öffnet die Fach-Info: ausgeschriebener Name, Lehrkraft, Raum, Wochenstunden, nächster Termin (antippbar → springt in den Kalender), Notenschnitt, Fehlzeiten, Merkblätter, Offenes.
-- **Mit ✎ oben** ändert Antippen dauerhaft Fach, Raum und Lehrkraft.
-
-Hinter **⚙** liegen acht Bereiche — Darstellung, Schule und Stundenraster, Noten und Zeugnis, Fehlzeiten und Archiv, Erinnerungen und Kalender, Ferien und Feiertage, Fächer und Lehrkräfte, Sicherung und Speicher. Das Menü nennt unter jedem Namen seinen jetzigen Stand; *Speichern* gilt für alle Bereiche zusammen. Der Stift sitzt in jeder Ansicht an derselben Stelle: im Reiter **Einträge** sortiert er die Kacheln um.
-
-*Fällt aus*, *Vertretung* und Ereignisse gelten **nur an diesem einen Tag**. Der Regelplan bleibt unangetastet.
-
-### Der Eintragsknopf
-
-Ein Knopf für alles. Die Art richtet sich danach, wo du gerade bist — bist du in den Noten, ist „Note" vorausgewählt.
-
-| Art | Wofür |
-|---|---|
-| Hausaufgabe | mit Fälligkeitsdatum, abhakbar |
-| Klausur | Termin, abhakbar |
-| Notiz | freier Text zu einem Tag |
-| Ereignis | einmalig, ganzer Tag oder eine bestimmte Stunde |
-| Note | mit mündlich/schriftlich, Wofür und Notizen |
-| Merkblatt | Formeln, Regeln, Vokabeln — mit Bildern |
-| Fehlzeit | in Unterrichtsstunden, entschuldigt/unentschuldigt/verspätet; Fach optional |
-
-Ein **Fach ist nie vorausgewählt** — außer du kommst aus einer angetippten Stunde.
-
-Bei der Datumsauswahl bekommt jeder Tag einen **roten Punkt**, an dem das gewählte Fach im Plan steht. So findest du die nächste Stunde, ohne zu blättern.
-
-### Merkblätter
-
-Beliebig viele je Fach, jedes mit Datum und Uhrzeit. Zeilenumbrüche und Einrückungen bleiben erhalten, Darstellung in Monospace — Formeln bleiben ausgerichtet.
-
-**Bilder** lassen sich einfügen (Fotos vom Tafelbild oder einer Seite). Sie werden automatisch auf 1000 px verkleinert und komprimiert. Trotzdem gilt: Der Browserspeicher fasst rund 5 MB. Unter ⚙ → Speicher siehst du den Stand in Prozent; ab 80 % warnt die App, solange noch Zeit für eine Sicherung ist.
-
-### Fehlzeiten
-
-Werden in **Unterrichtsstunden** gezählt, nicht je Fach — so steht es auch auf dem Zeugnis. Unter ⚙ → Fehlzeiten stellst du ein, wie viele Stunden ein Schultag hat; daraus rechnet das Zeugnis die Fehltage aus.
-
-Tippst du eine Stunde im Plan an und wählst *Fehlzeit*, ist die Stundenzahl des Blocks schon eingetragen. Das Fach wird ebenfalls übernommen; bei einer manuell angelegten Fehlzeit ist es optional.
-
-### Im Kalender eintragen
-
-Ein Feld **doppelt antippen** oder **gedrückt halten** öffnet das Tagesmenü. Von dort legst du an, was an diesem Tag ansteht:
-
-| | |
-|---|---|
-| **Termin** | ganzer Tag oder eine bestimmte Stunde |
-| **Hausaufgabe** | mit Fälligkeit an diesem Tag |
-| **Klausur** | Termin |
-| **Notiz** | freier Text |
-| **Fehlzeit** | versäumte Stunden |
-| **Freier Tag** | schuleigene freie Tage, Praktika, Ausflüge — auch über mehrere Tage |
-
-Das Menü zeigt oben, was an dem Tag schon steht. Freie Tage werden grau dargestellt wie Ferien und überleben ein erneutes Laden der offiziellen Ferientermine.
-
-### Reihenfolge anpassen
-
-Die Reihenfolge der Kacheln änderst du direkt im Einträge-Reiter: **✎ neben der Suche** antippen, dann mit den Pfeilen umsortieren, nochmal auf ✎ zum Beenden.
-
-Die Reihenfolge der Fächer im Zeugnis steht unter ⚙ → *Reihenfolge der Fächer*.
-
-### Noten und Zeugnis
-
-Mündlich und schriftlich werden getrennt gemittelt und nach einem einstellbaren Verhältnis verrechnet — **je Fach einzeln** einstellbar, mit einem Standardwert für den Rest. Umschaltbar zwischen Noten 1–6 und Punkten 0–15.
-
-Im Zeugnis-Reiter steht jedes Fach mit Schnitt und gerundeter Note. Eine Zeile antippen öffnet Verhältnis und **Zielnoten-Rechner**: Zielnote eingeben, die App sagt dir, was die nächste Arbeit bringen müsste.
-
-Die Zeugnisansicht ist eine **Schätzung**. Lehrkräfte gewichten oft anders.
-
-### Erinnerungen
-
-Eine Web-App kann sich **nicht selbst wecken**. Deshalb zwei Wege:
-
-1. **Beim Öffnen** meldet sich die App, wenn etwas ansteht — sonntags mit einem Wochenüberblick, am Tag vor einer Klausur, bei Klausuren in den nächsten drei Tagen. Einmal täglich, nicht öfter. Berechtigung erteilen unter ⚙ → Erinnerungen.
-2. **Kalender-Export (.ics)** unter ⚙ → Erinnerungen. Die Datei importierst du in Google Kalender, Apple Kalender oder Outlook. Dort bekommst du **echte Erinnerungen** — bei Hausaufgaben und Klausuren 15 Stunden vorher, bei Ereignissen mit fester Stunde 30 Minuten vorher —, auch wenn die App geschlossen ist. Das ist der zuverlässige Weg.
-
-### Profile
-
-Mehrere Profile auf einem Gerät. Jedes hat eigenen Plan, eigene Einträge, Noten, Merkblätter und Einstellungen — nichts wird geteilt.
-
-Beim Öffnen steht die Auswahl am Anfang, auch bei nur einem Profil: So siehst du immer, in welchen Datensatz du gleich schreibst. Unter ⚙ → *Beim Öffnen* lässt sich das auf *nur bei mehreren Profilen* oder *gleich in den Plan* stellen. Jederzeit über den Buchstaben oben rechts erreichbar.
-
-### Archiv
-
-Gelöschtes verschwindet nicht sofort, sondern landet im Archiv — Einträge, Ereignisse und Noten gleichermaßen. Von dort zurückholen oder endgültig entfernen. Abgehakte Hausaufgaben und Klausuren wandern nach sieben Tagen automatisch dorthin.
-
-Wie lange das Archiv aufbewahrt, stellst du unter ⚙ → **Archiv** ein: für immer (Voreinstellung), 30 Tage, 3, 6 oder 12 Monate. Ist eine Frist gesetzt, nennt der Hinweis oben im Archiv sie, und jede Zeile zeigt ihre Restzeit.
+Der Import ist absichtlich überprüfbar: Die erkannten Daten werden vor dem Speichern in einer Tabelle angezeigt.
 
 ---
 
-## An eine andere Schule anpassen
+## Einen Plan an Mitschüler weitergeben
 
-Alles über **⚙ Einstellungen**, ohne eine Zeile Code:
+Unter **Einstellungen → Sicherung und Speicher → Nur den Plan teilen** wird eine eigene JSON-Datei erzeugt.
 
-**Stundenraster.** Eine Zeile pro Feld im Plan.
+Diese Plan-Datei enthält nur die für den Stundenplan benötigten Informationen, insbesondere:
 
-| Std. | von | bis |
-|---|---|---|
-| 1,2 | 08:00 | 09:30 |
-| 3,4 | 09:50 | 11:20 |
+- Stundenraster
+- Fächer
+- Räume
+- Lehrkräfte
+- Fach- und Lehrkraftnamen
 
-Keine Doppelstunden? Dann `1`, `2`, `3` … in einzelne Zeilen. Das Raster darf beliebig viele Felder haben.
+Persönliche Einträge wie Noten, Fehlzeiten, Hausaufgaben oder Merkblattbilder werden dabei nicht mitgegeben.
 
-**Namen statt Kürzel.** Unter *Lehrkräfte* und *Fachnamen* stehen alle Kürzel aus deinem Plan bereits untereinander — du füllst nur die Namen dahinter aus. Zeilen ohne Namen werden nicht gespeichert, du kannst also nach und nach ergänzen.
+Kann der Browser Dateien direkt teilen, öffnet die App das Teilen-Menü. Andernfalls wird die Plan-Datei heruntergeladen. Der Empfänger liest sie über **Datei einlesen** ein; bestehende persönliche Einträge bleiben dabei erhalten.
 
-```
-WZET = Frau Wietzet
-CH = Chemie
+---
+
+## Sicherungen
+
+Da die Daten nicht auf einem Server liegen, ist die Sicherung Teil des Nutzungskonzepts.
+
+Unter **Einstellungen → Sicherung und Speicher** stehen je nach Gerät unter anderem zur Verfügung:
+
+- aktuelles Profil sichern
+- alle Profile sichern
+- Sicherungsdatei wieder einlesen
+- Sicherungs-Erinnerung
+- auf unterstützten Desktop-Browsern ein fester Sicherungsordner
+
+Eine vollständige Sicherung kann persönliche Daten enthalten. Sie sollte entsprechend behandelt werden.
+
+---
+
+## Kalender
+
+Die App kann zwei Arten von Kalenderdaten exportieren:
+
+- persönliche Termine, Hausaufgaben und Klausuren
+- den wiederkehrenden Unterrichtsplan
+
+Der Unterrichts-Export berücksichtigt A-/B-Wochen sowie bekannte Ferien und freie Tage.
+
+Die `.ics`-Dateien können beispielsweise in Apple Kalender, Google Kalender oder Outlook importiert werden.
+
+---
+
+## Unterstützte Umgebung
+
+Die App ist als moderne Web-App gebaut und auf aktuelle Browser ausgelegt.
+
+Typische Zielgeräte:
+
+- Android mit Chrome
+- iPhone/iPad mit Safari
+- Windows, macOS und Linux mit modernen Browsern
+
+Einige Browserfunktionen sind systembedingt nicht überall identisch. Dazu gehören insbesondere Datei-Share, Dateisystemzugriff, Installation und Benachrichtigungen. Für nicht verfügbare Funktionen verwendet die App nach Möglichkeit einen Fallback.
+
+---
+
+## Technischer Aufbau
+
+Das Projekt ist bewusst klein gehalten:
+
+```text
+index.html              Oberfläche und Styles
+app.js                  Anwendungslogik
+sw.js                   Service Worker und App-Version
+manifest.webmanifest    PWA-Metadaten
+icon-192.png
+icon-512.png
+
+.github/workflows/      Prüfung und GitHub-Pages-Deployment
+werkzeug/               Prüf- und Deployment-Werkzeuge
 ```
 
-Der Plan zeigt weiter die Kürzel — sonst passt er nicht auf den Bildschirm. Die vollen Namen erscheinen in der Fach-Info und im Zeugnis.
+Es gibt im Browserbetrieb:
 
-**Dasselbe Fach bei zwei Lehrkräften?** Dann setz im selben Abschnitt den Haken *Fächer nach Lehrkraft trennen*. Danach sucht die Schnellauswahl die nächste Stunde desselben Fachs **bei derselben Lehrkraft**, Einträge und Noten bekommen ein Feld dafür, und Zeugnis, Notizen, Merkblätter und Fehlzeiten zeigen Unterpunkte je Lehrkraft. Auch Verhältnis und Zielnote lassen sich dann je Lehrkraft setzen — als Regel: was es je Fach gibt, gibt es dann auch je Lehrkraft. Ohne den Haken bleibt alles wie bisher.
+- kein Framework
+- keinen App-Server
+- keine Datenbank
+- keine Runtime-Paketabhängigkeiten
 
-**Anderes Importformat?** Der Ausdruck steht in `app.js` in der Funktion `parseZelle`.
+Die Anwendung wird statisch ausgeliefert. Persönliche Daten werden im Browser gespeichert.
 
----
+## Entwicklung
 
-## Warum kein automatischer Abruf vom Schulportal
+Änderungen an `index.html` oder `app.js` benötigen eine neue Versionsnummer in `sw.js`, damit installierte PWAs zuverlässig aktualisiert werden.
 
-Die App liegt auf `github.io`, dein Portal auf einem anderen Server. Der Browser verbietet Zugriffe über Domaingrenzen hinweg, solange die Gegenseite das nicht ausdrücklich erlaubt. Diese **Same-Origin-Regel** lässt sich nicht wegprogrammieren.
+Die GitHub Actions prüfen Änderungen vor der Veröffentlichung. Deployment nach GitHub Pages erfolgt automatisiert über den `main`-Branch.
 
-Nötig wäre ein Vermittler-Dienst oder ein Skript, das direkt auf der Portalseite läuft. Beides braucht Zugangsdaten oder die Zustimmung der Schule.
+Weitere Hinweise:
 
-Praktisch fällt es kaum ins Gewicht: Der Plan gilt ein halbes Jahr. Nur Vertretungen musst du im Portal nachsehen — und die trägst du mit zwei Tipps als *Fällt aus* oder *Vertretung* ein.
-
-Die Ferientermine kommen dagegen automatisch, weil [openholidaysapi.org](https://openholidaysapi.org) den Zugriff erlaubt.
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [DEPLOYMENT.md](DEPLOYMENT.md)
+- [SECURITY.md](SECURITY.md)
+- [CHANGELOG.md](CHANGELOG.md)
 
 ---
 
 ## Datenschutz
 
-Nichts verlässt dein Gerät. Es gibt keinen Server, keine Anmeldung, kein Tracking, keine Werbung, keine Analyse. Die einzige Verbindung nach außen ist der freiwillige Abruf der Ferientermine.
+Die App sammelt keine Nutzungsstatistiken und betreibt kein eigenes Backend für persönliche Stundenplandaten.
 
-Siehe [PRIVACY.md](PRIVACY.md).
+Wichtige Details, einschließlich lokaler Speicherung, Ferien-API und Bildern in Merkblättern, stehen in [PRIVACY.md](PRIVACY.md).
 
 ## Lizenz
 
-[MIT](LICENSE) — Weiterverwendung, Veränderung und Weitergabe sind erlaubt, solange der Urheberhinweis erhalten bleibt.
-
-Entwickelt von **DjKamma420**, mit KI-Unterstützung (Claude).
+Veröffentlicht unter der [MIT License](LICENSE).
