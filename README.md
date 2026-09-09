@@ -114,7 +114,7 @@ Wechseln durch Antippen, durch Antippen der vier Punkte oder durch **Wischen in 
 
 - **Kurz antippen** öffnet die Schnellauswahl: Hausaufgabe für die nächste Stunde dieses Fachs, Notiz, Klausur, Fehlzeit, *Fällt aus*, *Vertretung*, ein sonstiges Ereignis — oder die Fach-Info.
 - **Gedrückt halten** öffnet die Fach-Info: ausgeschriebener Name, Lehrkraft, Raum, Wochenstunden, nächster Termin (antippbar → springt in den Kalender), Notenschnitt, Fehlzeiten, Merkblätter, Offenes.
-- **Mit ✎ oben** ändert Antippen dauerhaft Fach, Raum und Lehrkraft.
+- **Mit ✎ oben** ändert Antippen dauerhaft Fach, Raum und Lehrkraft. Der Stift sitzt in jeder Ansicht an derselben Stelle: im Reiter **Einträge** sortiert er die Kacheln um.
 
 *Fällt aus*, *Vertretung* und Ereignisse gelten **nur an diesem einen Tag**. Der Regelplan bleibt unangetastet.
 
@@ -219,6 +219,8 @@ CH = Chemie
 ```
 
 Der Plan zeigt weiter die Kürzel — sonst passt er nicht auf den Bildschirm. Die vollen Namen erscheinen in der Fach-Info und im Zeugnis.
+
+**Dasselbe Fach bei zwei Lehrkräften?** Dann setz im selben Abschnitt den Haken *Fächer nach Lehrkraft trennen*. Danach sucht die Schnellauswahl die nächste Stunde desselben Fachs **bei derselben Lehrkraft**, Einträge und Noten bekommen ein Feld dafür, und Zeugnis wie Notizen zeigen Unterpunkte je Lehrkraft. Ohne den Haken bleibt alles wie bisher.
 
 **Anderes Importformat?** Der Ausdruck steht in `app.js` in der Funktion `parseZelle`.
 

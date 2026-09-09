@@ -89,7 +89,8 @@ const STANDARD = {
   startProfil: "immer",         // Profilauswahl beim Öffnen: immer | mehrere | nie
   stdProTag: 8,                 // Stunden je Schultag, für die Umrechnung in Fehltage
   reiheEin: null,               // Reihenfolge im Einträge-Menü
-  reiheFach: null               // Reihenfolge der Fächer im Zeugnis
+  reiheFach: null,              // Reihenfolge der Fächer im Zeugnis
+  nachLehrer: false             // Fächer zusätzlich nach Lehrkraft trennen
 };
 const REIHE_STANDARD = ["H","K","N","E","G","M","F","archiv"];
 const VORLAGEN = {
@@ -358,21 +359,47 @@ function faecher(){
 }
 const alleFaecher = () => [...new Set([...faecher(), ...notenAktiv().map(n => n.fach),
   ...aktiv().map(e => e.fach)])].filter(Boolean).sort();
+/* Lehrkraft-Kürzel überall groß — sonst zählen „Mü" und „MÜ" als zwei. */
+const alsLk = v => String(v == null ? "" : v).trim().toUpperCase();
 const lehrerName = k => (cfg.lehrer && cfg.lehrer[k]) || k || "";
 const fachName   = k => (cfg.fachnamen && cfg.fachnamen[k]) || k || "";
+/* Die Lehrkraft engt Suchen nur ein, solange die Trennung eingeschaltet ist.
+   So bleibt jede Ansicht ohne die Einstellung genau die von vorher. */
+const lkFilter = lk => cfg.nachLehrer ? alsLk(lk) : "";
+/** Lehrkraft-Kürzel, die dieses Fach im Plan unterrichten. */
+function lehrerZuFach(fach){
+  const s = new Set();
+  ["A","B"].forEach(w => TAGE.forEach(t =>
+    ((plan[w] && plan[w][t]) || []).forEach(x => {
+      if(x && x.fach && x.fach.toUpperCase() === fach && x.lk) s.add(alsLk(x.lk));
+    })));
+  return [...s].sort();
+}
 const freiAm = d => { const s = iso(d); return ferien.find(f => s >= f.von && s <= f.bis) || null; };
-function hatFachAm(d, fach){
+/* Leeres lk heisst: Lehrkraft egal. Nur so bleibt die Suche die alte,
+   solange niemand nach Lehrkraft trennen will. */
+function hatFachAm(d, fach, lk){
   if(!fach) return false;
   const i = tagIndex(d); if(i === 5) return false;
   const woche = plan[wocheFuer(d)];
-  return ((woche && woche[TAGE[i]]) || []).some(x => x && x.fach && x.fach.toUpperCase() === fach);
+  return ((woche && woche[TAGE[i]]) || []).some(x => x && x.fach
+    && x.fach.toUpperCase() === fach && (!lk || alsLk(x.lk) === lk));
 }
-function naechsterTagMitFach(d, fach){
+function naechsterTagMitFach(d, fach, lk){
   for(let i = 1; i <= 120; i++){
     const x = plusTage(d, i);
-    if(hatFachAm(x, fach) && !freiAm(x)) return x;
+    if(hatFachAm(x, fach, lk) && !freiAm(x)) return x;
   }
   return null;
+}
+/** Letzter belegter Block eines Tages, -1 wenn gar nichts ansteht.
+    Der Schultag endet dort, wo der Unterricht endet — nicht am Rasterende. */
+function letzterBlock(d){
+  const i = tagIndex(d); if(i === 5) return -1;
+  const woche = plan[wocheFuer(d)], tag = TAGE[i];
+  let letzte = -1;
+  cfg.slots.forEach((s,k) => { if((woche && woche[tag] && woche[tag][k]) || sonderAn(d,k)) letzte = k; });
+  return letzte;
 }
 
 /* --- Noten --- */
@@ -381,9 +408,11 @@ const anteilFuer = fach => {
   return Math.max(0, Math.min(100, Number((e === undefined || e === null) ? cfg.anteilM : e) || 0));
 };
 const hatEigenenAnteil = f => cfg.anteile && cfg.anteile[f] !== undefined && cfg.anteile[f] !== null;
-function notenSchnitt(fach){
+/* lk undefiniert: alle Noten des Fachs. lk "" : nur die ohne Lehrkraft. */
+function notenSchnitt(fach, lk){
   const teil = art => {
-    const l = notenAktiv().filter(n => n.fach === fach && n.art === art);
+    const l = notenAktiv().filter(n => n.fach === fach && n.art === art
+      && (lk === undefined || alsLk(n.lk) === alsLk(lk)));
     return l.length ? l.reduce((s,n) => s + n.wert, 0) / l.length : null;
   };
   const m = teil("m"), sch = teil("s"), aM = anteilFuer(fach);
@@ -450,7 +479,10 @@ function zeichne(){
   $("#rKal").setAttribute("aria-pressed", ansicht === "kalender");
   $("#rEin").setAttribute("aria-pressed", ansicht === "eintraege");
   $("#rZeu").setAttribute("aria-pressed", ansicht === "zeugnis");
+  /* Beide Stifte sitzen im selben Platz im Kopf — hier entscheidet sich,
+     welcher davon zu sehen ist. Nie beide. */
   $("#btnEdit").classList.toggle("hidden", ansicht !== "tag");
+  $("#btnSort").classList.toggle("hidden", !(ansicht === "eintraege" && einSub === null));
   const punkte = $("#wischPunkte");
   if(punkte) [...punkte.children].forEach((p,i) => p.classList.toggle("an", ANSICHTEN[i] === ansicht));
   try{
@@ -514,8 +546,7 @@ function zeichneTag(){
     const tag = TAGE[idx];
     /* Leere Stunden am Ende des Tages werden abgeschnitten — der Tag endet
        dort, wo der Unterricht endet. Freistunden mittendrin bleiben stehen. */
-    let letzte = -1;
-    cfg.slots.forEach((s,i) => { if(plan[woche][tag][i] || sonderAn(gewaehlt,i)) letzte = i; });
+    const letzte = letzterBlock(gewaehlt);
     const bis = letzte < 0 ? cfg.slots.length : letzte + 1;
     const linie = jetztLinie(bis);
 
@@ -629,13 +660,17 @@ function jetztLinie(bis){
 }
 function zeichneFortschritt(){
   const box = $("#fortschritt");
-  if(!istHeuteSchultag()){ box.classList.add("hidden"); return; }
+  /* Der Balken zeigt den eigenen Schultag. Steht an diesem Tag nichts im
+     Plan, gibt es auch nichts anzuzeigen — früher lief er bis zum Ende des
+     Rasters weiter und meldete Freistunden, die niemand hat. */
+  const letzter = letzterBlock(gewaehlt);
+  if(!istHeuteSchultag() || letzter < 0){ box.classList.add("hidden"); return; }
   box.classList.remove("hidden");
   const j = jetztMin(), tag = TAGE[tagIndex(gewaehlt)], woche = wocheFuer(gewaehlt);
   const inhalt = i => sonderAn(gewaehlt,i) || plan[woche][tag][i];
-  const ersteVon = minuten(cfg.slots[0].von), letzteBis = minuten(cfg.slots.at(-1).bis);
+  const ersteVon = minuten(cfg.slots[0].von), letzteBis = minuten(cfg.slots[letzter].bis);
   let anteil = 0, links = "", rechts = "";
-  const i = cfg.slots.findIndex((s,k) => istAktuellerSlot(k));
+  const i = cfg.slots.findIndex((s,k) => k <= letzter && istAktuellerSlot(k));
   if(i >= 0){
     const s = cfg.slots[i], von = minuten(s.von), bis = minuten(s.bis);
     anteil = (j - von)/(bis - von);
@@ -647,8 +682,8 @@ function zeichneFortschritt(){
   } else if(j >= letzteBis){
     anteil = 1; links = "Schule aus"; rechts = "";
   } else {
-    let vor = cfg.slots[0], nach = cfg.slots.at(-1);
-    for(let k = 0; k < cfg.slots.length-1; k++)
+    let vor = cfg.slots[0], nach = cfg.slots[letzter];
+    for(let k = 0; k < letzter; k++)
       if(j >= minuten(cfg.slots[k].bis) && j < minuten(cfg.slots[k+1].von)){ vor = cfg.slots[k]; nach = cfg.slots[k+1]; }
     const von = minuten(vor.bis), bis = minuten(nach.von);
     anteil = (j - von)/(bis - von);
@@ -662,8 +697,9 @@ function zeichneFortschritt(){
 }
 function countdownText(){
   const heute = new Date();
-  if(istHeuteSchultag()){
-    const j = jetztMin(), ende = minuten(cfg.slots.at(-1).bis);
+  const letzter = letzterBlock(gewaehlt);
+  if(istHeuteSchultag() && letzter >= 0){
+    const j = jetztMin(), ende = minuten(cfg.slots[letzter].bis);
     if(j < ende){
       const rest = ende - j;
       return `Schulschluss in ${Math.floor(rest/60)} h ${zwei(rest%60)} min`;
@@ -678,11 +714,10 @@ function countdownText(){
   return "";
 }
 
-function zeichneListe(sel, nixSel, liste, mitNotiz = true){
-  $(sel).innerHTML = liste.map(e => {
-    const d = new Date(e.datum + "T12:00");
-    const abhakbar = e.typ === "H" || e.typ === "K" || e.typ === "N";
-    return `<li class="${e.erledigt ? "weg" : ""}">
+function listeZeile(e, mitNotiz = true){
+  const d = new Date(e.datum + "T12:00");
+  const abhakbar = e.typ === "H" || e.typ === "K" || e.typ === "N";
+  return `<li class="${e.erledigt ? "weg" : ""}">
       ${abhakbar ? `<input type="checkbox" class="hak" data-hak="${e.id}" ${e.erledigt ? "checked" : ""} aria-label="Erledigt">`
                  : `<span style="width:18px;flex:none"></span>`}
       <div class="wachs" data-bearbeite="${e.id}">
@@ -691,7 +726,29 @@ function zeichneListe(sel, nixSel, liste, mitNotiz = true){
         ${mitNotiz && e.notiz ? `<div class="notiz">${esc(e.notiz)}</div>` : ""}
         <div class="wann">${d.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}</div>
       </div></li>`;
-  }).join("");
+}
+function zeichneListe(sel, nixSel, liste, mitNotiz = true){
+  $(sel).innerHTML = liste.map(e => listeZeile(e, mitNotiz)).join("");
+  $(nixSel).hidden = liste.length > 0;
+}
+/** Dieselbe Liste, aber mit einer Zwischenüberschrift je Lehrkraft.
+    Bei nur einer Gruppe wäre die Überschrift eine leere Geste — dann
+    bleibt es bei der schlichten Liste. */
+function zeichneListeNachLehrer(sel, nixSel, liste){
+  const gruppen = new Map();
+  liste.forEach(e => {
+    const k = alsLk(e.lk);
+    if(!gruppen.has(k)) gruppen.set(k, []);
+    gruppen.get(k).push(e);
+  });
+  if(gruppen.size < 2){ zeichneListe(sel, nixSel, liste); return; }
+  /* „Ohne Lehrkraft" ganz nach unten: dort steht, was noch zuzuordnen ist. */
+  const reihe = [...gruppen.keys()].sort((a,b) =>
+    (a ? 0 : 1) - (b ? 0 : 1) || lehrerName(a).localeCompare(lehrerName(b)));
+  $(sel).innerHTML = reihe.map(k =>
+    `<li style="display:block;padding:0;border:0"><div class="eyebrow mitte" style="margin-top:18px">
+       ${esc(k ? lehrerName(k) : "Ohne Lehrkraft")}</div></li>`
+    + gruppen.get(k).map(e => listeZeile(e)).join("")).join("");
   $(nixSel).hidden = liste.length > 0;
 }
 
@@ -740,9 +797,9 @@ function kachelnZeichnen(){
     if(!sortModus) return knopf;
     /* Im Sortiermodus zählt der Kachelklick nicht — sonst öffnet sich beim
        Umsortieren dauernd eine Liste. */
-    return `<div style="display:flex;gap:8px;align-items:stretch">
-      <div style="flex:1;pointer-events:none;opacity:.75">${knopf}</div>
-      <div style="display:flex;flex-direction:column;gap:6px;justify-content:center">
+    return `<div class="kachelreihe">
+      <div>${knopf}</div>
+      <div class="pfeile">
         <button type="button" class="mini" data-khoch="${i}" ${i === 0 ? "disabled style=opacity:.3" : ""}>↑</button>
         <button type="button" class="mini" data-krunter="${i}" ${i === liste.length-1 ? "disabled style=opacity:.3" : ""}>↓</button>
       </div></div>`;
@@ -787,6 +844,8 @@ const archivFinden = (art,id) => art === "eintrag" ? eintraege.find(x => x.id ==
 function zeichneEintraege(){
   $("#einMenu").classList.toggle("hidden", einSub !== null);
   $("#einDetail").classList.toggle("hidden", einSub === null);
+  $("#btnSort").setAttribute("aria-pressed", sortModus);
+  $("#sortHinweis").classList.toggle("hidden", !sortModus);
   $("#einSubHinweis").textContent = "";
   $("#einSubHinweis").style.color = "";
 
@@ -855,7 +914,8 @@ function zeichneEintraege(){
   if(einSub === "F"){ zeichneFehlzeiten(); return; }
 
   const liste = listeVonTyp(einSub);
-  zeichneListe("#einListe", "#einNix", liste);
+  if(cfg.nachLehrer && einSub === "N") zeichneListeNachLehrer("#einListe", "#einNix", liste);
+  else zeichneListe("#einListe", "#einNix", liste);
   $("#einNix").textContent = {H:"Keine offenen Hausaufgaben.",K:"Keine Klausuren eingetragen.",
                               N:"Keine Notizen."}[einSub] || "Nichts vorhanden.";
 }
@@ -941,6 +1001,16 @@ function fachReihenfolge(){
   const wunsch = Array.isArray(cfg.reiheFach) ? cfg.reiheFach : [];
   return [...wunsch.filter(f => alle.includes(f)), ...alle.filter(f => !wunsch.includes(f))];
 }
+/** Unterpunkte eines Fachs — leer, wo es nur eine Lehrkraft gibt: dann
+    wiederholte die Zeile bloss den Schnitt darüber. */
+function lehrerTeileZuFach(f){
+  if(!cfg.nachLehrer) return [];
+  const s = new Set(lehrerZuFach(f));
+  notenAktiv().forEach(n => { if(n.fach === f && n.lk) s.add(alsLk(n.lk)); });
+  const teile = [...s].sort().map(k => ({lk:k, name:lehrerName(k)}));
+  if(notenAktiv().some(n => n.fach === f && !n.lk)) teile.push({lk:"", name:"ohne Lehrkraft"});
+  return teile.length > 1 ? teile : [];
+}
 function zeichneZeugnis(){
   const liste = fachReihenfolge();
   const schnitte = liste.map(f => notenSchnitt(f).gesamt).filter(w => w !== null);
@@ -954,11 +1024,17 @@ function zeichneZeugnis(){
   $("#zeuListe").innerHTML = liste.map(f => {
     const sch = notenSchnitt(f), ganz = zeugnisNote(sch.gesamt);
     const anzahl = notenAktiv().filter(n => n.fach === f).length;
+    const unter = lehrerTeileZuFach(f).map(t => {
+      const ts = notenSchnitt(f, t.lk), tg = zeugnisNote(ts.gesamt);
+      return `<div class="zeuUnter"><span class="wer">${esc(t.name)}</span>
+        <span class="roh">${notenText(ts.gesamt)}</span>
+        <span class="note">${tg === null ? "—" : tg}</span></div>`;
+    }).join("");
     return `<button type="button" class="zeuZeile" data-zeufach="${esc(f)}">
       <div class="fachn">${esc(fachName(f))}
         <small>${anzahl ? zahl(anzahl,"Note","Noten") : "keine Noten"} · ${anteilFuer(f)} % mündlich</small></div>
       <div class="roh">${notenText(sch.gesamt)}</div>
-      <div class="note">${ganz === null ? "—" : ganz}</div></button>`;
+      <div class="note">${ganz === null ? "—" : ganz}</div></button>${unter}`;
   }).join("");
   $("#zeuNix").hidden = liste.length > 0;
 }
@@ -1188,27 +1264,30 @@ $("#bBlockLeeren").onclick = () => {
   sichern(); dlgBlock.close(); zeichne();
 };
 
-const schnellFach = () => {
-  const f = plan[wocheFuer(gewaehlt)][TAGE[tagIndex(gewaehlt)]][offenerBlock];
-  return f ? f.fach : "";
-};
+const schnellBlock = () => plan[wocheFuer(gewaehlt)][TAGE[tagIndex(gewaehlt)]][offenerBlock];
+const schnellFach = () => { const f = schnellBlock(); return f ? f.fach : ""; };
+/* Dieselbe Stunde meint dieselbe Lehrkraft — sonst landet die Hausaufgabe
+   beim Parallelkurs desselben Fachs. */
+const schnellLk = () => { const f = schnellBlock(); return f ? lkFilter(f.lk) : ""; };
 function schnellDialog(){
   const fach = schnellFach();
   if(!fach){ eintragOeffnen(null, gewaehlt, "E", "", offenerBlock); return; }
   const s = cfg.slots[offenerBlock];
-  $("#schnellTitel").textContent = fachName(fach);
+  $("#schnellTitel").textContent = fachName(fach)
+    + (schnellLk() ? " · " + lehrerName(schnellLk()) : "");
   $("#schnellZeit").textContent = `${s.von} – ${s.bis}`;
-  const naechste = naechsterTagMitFach(gewaehlt, fach.toUpperCase());
+  const naechste = naechsterTagMitFach(gewaehlt, fach.toUpperCase(), schnellLk());
   $("#bSchnellHAZiel").textContent = naechste
     ? "fällig " + naechste.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})
     : "kein weiterer Termin";
   dlgSchnell.showModal();
 }
 const schnell = (typ, datum, extra) => { dlgSchnell.close();
-  eintragOeffnen(null, datum, typ, schnellFach(), offenerBlock, extra); };
+  eintragOeffnen(null, datum, typ, schnellFach(), offenerBlock,
+                 Object.assign({lk:schnellLk()}, extra)); };
 $("#bSchnellHA").onclick = () => {
   const fach = schnellFach();
-  schnell("H", naechsterTagMitFach(gewaehlt, fach.toUpperCase()) || plusTage(gewaehlt,1));
+  schnell("H", naechsterTagMitFach(gewaehlt, fach.toUpperCase(), schnellLk()) || plusTage(gewaehlt,1));
 };
 $("#bSchnellNotiz").onclick   = () => schnell("N", gewaehlt);
 $("#bSchnellKlausur").onclick = () => schnell("K", gewaehlt);
@@ -1238,13 +1317,17 @@ $("#bSchnellInfo").onclick = () => { dlgSchnell.close(); fachInfo(offenerBlock);
 function fachInfo(i){
   const f = plan[wocheFuer(gewaehlt)][TAGE[tagIndex(gewaehlt)]][i];
   if(!f) return;
-  const k = f.fach.toUpperCase();
+  const k = f.fach.toUpperCase(), lk = lkFilter(f.lk);
   fachInfoFach = k;
+  /* Mit Trennung zählen nur die Stunden bei dieser Lehrkraft — sonst wäre
+     die Zahl die des ganzen Fachs und passte nicht zum Rest der Karte. */
   let stunden = 0;
   ["A","B"].forEach(w => TAGE.forEach(t =>
-    (plan[w][t]||[]).forEach(x => { if(x && x.fach.toUpperCase() === k) stunden++; })));
+    (plan[w][t]||[]).forEach(x => {
+      if(x && x.fach.toUpperCase() === k && (!lk || alsLk(x.lk) === lk)) stunden++;
+    })));
   const proWoche = cfg.zweiWochen ? stunden/2 : stunden;
-  const naechste = naechsterTagMitFach(gewaehlt, k);
+  const naechste = naechsterTagMitFach(gewaehlt, k, lk);
   const sch = notenSchnitt(k);
   const offen = aktiv().filter(e => !e.erledigt && e.fach === k && (e.typ === "H" || e.typ === "K"));
   const mb = aktiv().filter(e => e.fach === k && e.typ === "M").length;
@@ -1279,6 +1362,10 @@ $("#bFachMerk").onclick = () => { dlgFach.close(); ansicht = "eintraege"; einSub
    Eintragsdialog — eine Oberfläche für alle Arten
    ===================================================================== */
 let bearbeiteId = null, ereignisId = null, noteId = null, bilder = [], ereignisArt = "ereignis";
+/* Die zuletzt geöffnete Lehrkraft. Ist die Trennung aus, ist das Feld
+   unsichtbar — dann darf ein Speichern eine früher gesetzte Zuordnung
+   trotzdem nicht wegwerfen. */
+let eintragLk = "";
 
 function fachAuswahlFuellen(wert){
   const liste = alleFaecher();
@@ -1291,11 +1378,32 @@ function fachAuswahlFuellen(wert){
 }
 const freiUmschalten = () => $("#eFachFreiWrap").classList.toggle("hidden", eFach.value !== "__frei");
 const aktuellesFach = () => (eFach.value === "__frei" ? eFachFrei.value : eFach.value).trim().toUpperCase();
+/* Zur Auswahl stehen die Lehrkräfte, die dieses Fach im Plan unterrichten.
+   Ohne Fach die aus dem ganzen Plan — sonst bliebe das Feld leer. */
+function lkAuswahlFuellen(wert){
+  const fach = aktuellesFach(), w = alsLk(wert);
+  const liste = [...new Set([...(fach ? lehrerZuFach(fach) : alleLehrer()), ...(w ? [w] : [])])].sort();
+  eLk.innerHTML = `<option value="">— alle —</option>` + liste.map(k =>
+    `<option value="${esc(k)}" ${k === w ? "selected" : ""}>${esc(lehrerName(k))}</option>`).join("");
+  eLk.value = liste.includes(w) ? w : "";
+  lkUmschalten();
+}
+function lkUmschalten(){
+  const aus = !cfg.nachLehrer || eTyp.value === "E" || eTyp.value === "F" || eLk.options.length < 2;
+  $("#eLkWrap").classList.toggle("hidden", aus);
+}
+/* Bei ausgeschalteter Trennung bleibt stehen, was schon gespeichert war. */
+const aktuelleLk = () => cfg.nachLehrer ? alsLk(eLk.value) : eintragLk;
 eFach.onchange = () => {
   freiUmschalten();
+  lkAuswahlFuellen(eLk.value);
   if(!$("#eDatumWahl").classList.contains("hidden")) zeichneDatumWahl();
 };
-eFachFrei.oninput = () => { if(!$("#eDatumWahl").classList.contains("hidden")) zeichneDatumWahl(); };
+eLk.onchange = () => { if(!$("#eDatumWahl").classList.contains("hidden")) zeichneDatumWahl(); };
+eFachFrei.oninput = () => {
+  lkAuswahlFuellen(eLk.value);
+  if(!$("#eDatumWahl").classList.contains("hidden")) zeichneDatumWahl();
+};
 eTyp.onchange = artUmschalten;
 
 function stundenAuswahlFuellen(slot){
@@ -1317,6 +1425,7 @@ function artUmschalten(){
   eNotiz.style.minHeight = merk ? "220px" : "";
   $("#eWertLabel").textContent = cfg.notenSystem === "punkte15" ? "Punkte 0–15" : "Note 1–6";
   if(ev) $("#eFachFreiWrap").classList.add("hidden"); else freiUmschalten();
+  lkUmschalten();
   bilderZeichnen();
 }
 
@@ -1329,7 +1438,7 @@ function datumFeldText(){
     : "—";
 }
 function zeichneDatumWahl(){
-  const fach = aktuellesFach();
+  const fach = aktuellesFach(), lk = cfg.nachLehrer ? alsLk(eLk.value) : "";
   $("#eMonatLabel").textContent = eMonat.toLocaleDateString("de-DE",{month:"long",year:"numeric"});
   const start = montagVon(new Date(eMonat.getFullYear(), eMonat.getMonth(), 1));
   let html = ["Mo","Di","Mi","Do","Fr","Sa","So"].map(t => `<div class="wt">${t}</div>`).join("");
@@ -1338,11 +1447,11 @@ function zeichneDatumWahl(){
     html += `<button type="button" class="tagfeld ${d.getMonth() !== eMonat.getMonth() ? "fremd" : ""}
        ${gleich(d,new Date()) ? "heute" : ""} ${freiAm(d) ? "ferien" : ""}"
        aria-pressed="${eDatum.value === iso(d)}" data-wahl="${iso(d)}">
-       ${d.getDate()}${hatFachAm(d,fach) ? '<span class="punktfach"></span>' : ""}</button>`;
+       ${d.getDate()}${hatFachAm(d,fach,lk) ? '<span class="punktfach"></span>' : ""}</button>`;
   }
   $("#eGitter").innerHTML = html;
   $("#eGitterHinweis").textContent = fach
-    ? `Roter Punkt: ${fach} steht an diesem Tag im Plan.`
+    ? `Roter Punkt: ${fach}${lk ? " bei " + lehrerName(lk) : ""} steht an diesem Tag im Plan.`
     : "Wähle oben ein Fach, dann werden die passenden Tage markiert.";
 }
 function datumWahlOeffnen(auf){
@@ -1424,6 +1533,8 @@ function eintragOeffnen(e, datum, typ, fach, slot, extra){
   stundenAuswahlFuellen(vorhanden ? vorhanden.slot : (slot === undefined ? null : slot));
   /* Nie ein Fach vorbelegen, außer es kommt eindeutig aus der angetippten Stunde. */
   fachAuswahlFuellen(e ? e.fach : (fach || ""));
+  eintragLk = alsLk(e ? e.lk : (extra && extra.lk));
+  lkAuswahlFuellen(eintragLk);
   datumFeldText(); datumWahlOeffnen(false); artUmschalten();
   $("#bEintragWeg").classList.toggle("hidden", !(e || vorhanden));
   speichernSperreAus();
@@ -1438,6 +1549,7 @@ function ereignisOeffnen(id){
   eText.value = o.titel; eNotiz.value = o.notiz || ""; eOrt.value = o.raum || "";
   stundenAuswahlFuellen(o.slot);
   fachAuswahlFuellen("");
+  eintragLk = ""; lkAuswahlFuellen("");
   datumFeldText(); datumWahlOeffnen(false); artUmschalten();
   $("#bEintragWeg").classList.remove("hidden");
   speichernSperreAus();
@@ -1451,6 +1563,7 @@ function noteOeffnen(n){
   eText.value = n.titel || ""; eNotiz.value = n.notiz || "";
   eWert.value = String(n.wert).replace(".", ","); eNArt.value = n.art;
   fachAuswahlFuellen(n.fach);
+  eintragLk = alsLk(n.lk); lkAuswahlFuellen(eintragLk);
   datumFeldText(); datumWahlOeffnen(false); artUmschalten();
   $("#bEintragWeg").classList.remove("hidden");
   speichernSperreAus();
@@ -1490,7 +1603,8 @@ $("#bEintragSpeichern").onclick = () => {
     if(isNaN(wert) || wert < grenze[0] || wert > grenze[1])
       return alert(`Bitte einen Wert zwischen ${grenze[0]} und ${grenze[1]} eingeben.`);
     if(!fach) return alert("Bitte ein Fach wählen.");
-    const nd = {fach, art:eNArt.value, wert, datum, titel:eText.value.trim(), notiz:eNotiz.value.trim()};
+    const nd = {fach, lk:aktuelleLk(), art:eNArt.value, wert, datum,
+                titel:eText.value.trim(), notiz:eNotiz.value.trim()};
     const alteNote = noteId && noten.find(x => x.id === noteId);
     if(alteNote) Object.assign(alteNote, nd);
     else noten.push(Object.assign({id:neueId(), geloescht:false}, nd));
@@ -1498,7 +1612,7 @@ $("#bEintragSpeichern").onclick = () => {
   }
   if(!fach && t === "M") return alert("Bitte ein Fach wählen.");
   const jetzt = new Date();
-  const daten = {typ:t, fach: t === "F" ? "" : fach, datum,
+  const daten = {typ:t, fach: t === "F" ? "" : fach, lk: t === "F" ? "" : aktuelleLk(), datum,
     titel: t === "F" ? eFehlArt.value : eText.value.trim(),
     notiz: eNotiz.value.trim()};
   if(t === "F") daten.stunden = Math.max(1, Number(eFehlStd.value) || 1);
@@ -1574,12 +1688,7 @@ $("#einListe").addEventListener("click", e => {
     sichern(); zeichne();
   }
 });
-$("#btnSort").onclick = () => {
-  sortModus = !sortModus;
-  $("#btnSort").setAttribute("aria-pressed", sortModus);
-  $("#sortHinweis").classList.toggle("hidden", !sortModus);
-  zeichne();
-};
+$("#btnSort").onclick = () => { sortModus = !sortModus; zeichne(); };
 $("#einMenu").onclick = e => {
   const h = e.target.closest("[data-khoch]"), r = e.target.closest("[data-krunter]");
   if(h || r){
@@ -1609,7 +1718,7 @@ function suchen(){
   if(!q){ ul.innerHTML = ""; return; }
   /* Kürzel und ausgeschriebener Name gelten als dasselbe: Wer „Chemie" sucht,
      findet auch Einträge, die nur „CH" tragen — sofern es in den Einstellungen steht. */
-  const suchtext = o => [o.fach, fachName(o.fach), lehrerName(o.fach), o.titel, o.notiz, o.raum]
+  const suchtext = o => [o.fach, fachName(o.fach), o.lk, lehrerName(o.lk), o.titel, o.notiz, o.raum]
     .filter(Boolean).join(" ").toLowerCase();
   const treffer = [
     ...aktiv().filter(e => suchtext(e).includes(q)),
@@ -2061,6 +2170,7 @@ function cfgSaeubern(roh){
     ? c.reiheEin.filter(x => REIHE_STANDARD.includes(x)) : null;
   c.reiheFach  = Array.isArray(c.reiheFach)
     ? c.reiheFach.map(alsKuerzel).filter(Boolean).slice(0, 200) : null;
+  c.nachLehrer = !!c.nachLehrer;
   return c;
 }
 const zelleSaeubern = z => (z && typeof z === "object" && alsKuerzel(z.fach))
@@ -2082,6 +2192,7 @@ function eintragSaeubern(e){
     id:     alsId(e.id),
     typ:    e.typ,
     fach:   e.typ === "F" ? "" : alsKuerzel(e.fach),
+    lk:     e.typ === "F" ? "" : alsKuerzel(e.lk),
     datum:  alsDatum(e.datum) || iso(new Date()),
     titel:  alsText(e.titel, 200),
     notiz:  alsText(e.notiz, 20000),
@@ -2121,7 +2232,7 @@ function noteSaeubern(g){
   if(!g || typeof g !== "object") return null;
   const fach = alsKuerzel(g.fach); if(!fach) return null;
   const wert = Number(g.wert); if(!Number.isFinite(wert)) return null;
-  return {id:alsId(g.id), fach, art: g.art === "m" ? "m" : "s",
+  return {id:alsId(g.id), fach, lk: alsKuerzel(g.lk), art: g.art === "m" ? "m" : "s",
           wert: Math.max(0, Math.min(15, wert)),
           datum: alsDatum(g.datum) || iso(new Date()),
           titel: alsText(g.titel, 200), notiz: alsText(g.notiz, 4000),
@@ -2326,12 +2437,12 @@ const HILFE = [
    der betroffenen Stunden.</p>`},
 
 {id:"handeintragen", teil:"Der Stundenplan", titel:"Plan von Hand eintragen", worte:"bearbeiten stift fach raum lehrer",
- text:`<p><b>✎ oben antippen</b> schaltet das Bearbeiten ein — ein Hinweis unter dem
-   Plan zeigt das an. Jetzt öffnet ein Tipp auf eine Stunde die Felder
-   <i>Fach</i>, <i>Raum</i>, <i>Lehrkraft</i>.</p>
+ text:`<p><b>✎ oben antippen</b> — links neben Profil und ⚙ — schaltet das
+   Bearbeiten ein; ein Hinweis unter dem Plan zeigt das an. Jetzt öffnet ein Tipp
+   auf eine Stunde die Felder <i>Fach</i>, <i>Raum</i>, <i>Lehrkraft</i>.</p>
   <p>Fächer werden immer <b>groß</b> gespeichert, egal wie du sie tippst. Sonst
    würden „Ch“ und „CH“ als zwei Fächer gelten und der Notenschnitt zerfiele.</p>
-  <p>Erneut auf ✎ tippen beendet das Bearbeiten. Für eine Woche brauchst du keine
+  <p>Erneut auf ✎ oben tippen beendet das Bearbeiten. Für eine Woche brauchst du keine
    fünf Minuten — <b>ein Stundenplan wiederholt sich</b>, eine Woche reicht,
    bei A/B-Wochen zwei.</p>`},
 
@@ -2373,6 +2484,25 @@ MA = Mathematik</pre>
   <p>Der Plan zeigt weiter die Kürzel — sonst passt er nicht auf den Bildschirm.
    Die vollen Namen erscheinen in der Fach-Info, im Zeugnis und in der Suche:
    Wer „Chemie“ sucht, findet auch Einträge, die nur „CH“ tragen.</p>`},
+
+{id:"nachlehrer", teil:"Der Stundenplan", titel:"Fächer nach Lehrkraft trennen", worte:"lehrer kurs parallelkurs trennen unterpunkte",
+ text:`<p>Hast du dasselbe Fach bei <b>zwei Lehrkräften</b> — etwa Sport bei zwei
+   Kursen oder Mathe im Wechsel —, setz unter ⚙ → <b>Lehrkräfte</b> den Haken
+   <i>Fächer nach Lehrkraft trennen</i>. Ohne den Haken ändert sich nichts.</p>
+  <ul>
+   <li><b>Als Nächstes</b> überspringt Stunden desselben Fachs bei einer anderen
+     Lehrkraft. Eine Hausaufgabe, die du am Montag bei Frau Müller aufbekommst,
+     wird auf deren nächste Stunde fällig — nicht auf den Dienstag bei Herrn Schmidt.</li>
+   <li>Der <b>Eintragsdialog</b> bekommt ein Feld <i>Lehrkraft</i>. Kommst du aus
+     einer angetippten Stunde, steht sie schon darin.</li>
+   <li>Das <b>Zeugnis</b> zeigt unter jedem betroffenen Fach je Lehrkraft einen
+     eigenen Schnitt. Die Zeile des Fachs bleibt und rechnet weiter über alles.</li>
+   <li>Die <b>Notizen</b> bekommen Zwischenüberschriften je Lehrkraft.</li>
+   <li>Auch die <b>roten Punkte</b> in der Datumsauswahl richten sich danach.</li>
+  </ul>
+  <p class="hHinweis">Der Haken lässt sich jederzeit wieder entfernen. Was schon
+   zugeordnet ist, bleibt gespeichert und taucht beim erneuten Setzen wieder auf.</p>`},
+
 {id:"reiter", teil:"Täglich benutzen", titel:"Die vier Reiter", worte:"navigation wischen ansicht tag kalender einträge zeugnis",
  text:`<table class="hTab">
    <tr><th>Reiter</th><th>Inhalt</th></tr>
@@ -2386,14 +2516,20 @@ MA = Mathematik</pre>
    der Seite, wenn dort nichts mehr steht. Steht eine Unterliste offen, führt der
    erste Wisch zurück ins Menü.</p>
   <p>In der Tagesansicht wischt man zusätzlich <b>tagweise</b> vor und zurück, im
-   Kalender <b>monatsweise</b>.</p>`},
+   Kalender <b>monatsweise</b>.</p>
+  <p>Links neben Profil und ⚙ liegt <b>ein Platz für den Stift ✎</b>. Was er tut,
+   richtet sich nach der Ansicht: im <b>Tag</b> bearbeitet er den Plan, im
+   <b>Einträge</b>-Menü sortiert er die Kacheln. In den übrigen Ansichten bleibt
+   er leer — der Platz selbst bleibt, damit die Reiterleiste nicht springt.</p>`},
 
 {id:"stundeantippen", teil:"Täglich benutzen", titel:"Eine Stunde antippen", worte:"schnellauswahl hausaufgabe fällt aus vertretung fachinfo",
  text:`<p><b>Kurz antippen</b> öffnet die Schnellauswahl für diese Stunde:</p>
   <ul>
    <li><b>Hausaufgabe</b> — das Fälligkeitsdatum ist schon auf die
      <i>nächste Stunde dieses Fachs</i> gesetzt. Steht Chemie am Dienstag und
-     Freitag, ergibt ein Tipp am Dienstag automatisch Freitag.</li>
+     Freitag, ergibt ein Tipp am Dienstag automatisch Freitag. Mit ⚙ →
+     <i>Fächer nach Lehrkraft trennen</i> zählt nur die nächste Stunde bei
+     derselben Lehrkraft.</li>
    <li><b>Notiz</b> — freier Text zu diesem Tag.</li>
    <li><b>Klausur</b> — Termin.</li>
    <li><b>Fehlzeit</b> — die Stundenzahl des Blocks ist schon eingetragen.</li>
@@ -2424,7 +2560,9 @@ MA = Mathematik</pre>
   <p>Ein <b>Fach ist nie vorausgewählt</b> — außer du kommst aus einer angetippten
    Stunde. Das verhindert, dass Einträge stillschweigend am falschen Fach landen.</p>
   <p>Bei der Datumsauswahl bekommt jeder Tag einen <b>roten Punkt</b>, an dem das
-   gewählte Fach im Plan steht. So findest du die nächste Stunde ohne Blättern.</p>`},
+   gewählte Fach im Plan steht. So findest du die nächste Stunde ohne Blättern.
+   Ist <i>Fächer nach Lehrkraft trennen</i> eingeschaltet, zählen nur die Tage
+   bei der gewählten Lehrkraft.</p>`},
 
 {id:"kalendermenue", teil:"Täglich benutzen", titel:"Im Kalender eintragen", worte:"doppeltippen gedrückt halten tagesmenü termin freier tag",
  text:`<p>Ein Kalenderfeld <b>doppelt antippen</b> oder <b>gedrückt halten</b>
@@ -2435,6 +2573,18 @@ MA = Mathematik</pre>
    dessen Bezeichnung.</p>
   <p>Einzelnes Antippen wählt weiterhin nur den Tag aus — darunter erscheint, was
    an ihm ansteht.</p>`},
+
+{id:"kacheln", teil:"Täglich benutzen", titel:"Das Einträge-Menü umsortieren", worte:"kacheln reihenfolge sortieren stift pfeile",
+ text:`<p>Im Reiter <b>Einträge</b> stehen alle Listen als Kacheln untereinander:
+   Hausaufgaben, Klausuren, Notizen, Ereignisse, Noten, Merkblätter, Fehlzeiten,
+   Archiv. Jede nennt unter dem Namen ihren Stand.</p>
+  <p><b>✎ oben antippen</b> schaltet das Sortieren ein — derselbe Platz im Kopf,
+   an dem in der Tagesansicht der Plan-Stift sitzt. Neben jeder Kachel erscheinen
+   <b>↑</b> und <b>↓</b>; solange sortiert wird, öffnet ein Tipp auf eine Kachel
+   keine Liste. Erneut auf ✎ tippen beendet es.</p>
+  <p>Die Reihenfolge gilt für dieses Profil und bleibt gespeichert. Die der
+   <i>Fächer</i> im Zeugnis stellst du getrennt davon unter ⚙ →
+   <b>Reihenfolge der Fächer</b> ein.</p>`},
 
 {id:"suchen", teil:"Täglich benutzen", titel:"Suchen", worte:"finden filter",
  text:`<p>Im Reiter <b>Einträge</b> ganz oben. Gesucht wird über Fach, Titel, Notiz
@@ -3032,6 +3182,7 @@ function einstellungenOeffnen(){
   reiheFachListe = fachReihenfolge().slice();
   reihenZeichnen();
   sMelden.checked = !!cfg.melden; meldeStand();
+  sNachLehrer.checked = !!cfg.nachLehrer;
   /* Alle im Plan vorkommenden Kürzel stehen schon da — eingetragen werden
      muss nur der Name dahinter. Vorhandene Zuordnungen bleiben erhalten. */
   sLehrer.value  = paareVorbelegt(cfg.lehrer, alleLehrer());
@@ -3263,6 +3414,7 @@ $("#bEinstSpeichern").onclick = () => {
   cfg.notenSystem = sNotenSystem.value;
   cfg.anteilM = Math.max(0, Math.min(100, Number(sAnteilM.value)||0));
   cfg.anteile = anteilFaecherLesen();
+  cfg.nachLehrer = sNachLehrer.checked;
   cfg.lehrer = textPaare(sLehrer.value);
   cfg.fachnamen = textPaare(sFaecher.value);
   if(/^#[0-9a-fA-F]{6}$/.test(sFarbeHex.value.trim())) cfg.akzent = sFarbeHex.value.trim();

@@ -61,9 +61,13 @@ button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;
 .reiter button[aria-pressed=true]{background:var(--text);color:var(--ink)}
 .ikon{border:1px solid var(--line);border-radius:10px;width:36px;height:36px;font-size:14px;color:var(--muted);flex:none}
 .ikon[aria-pressed=true]{border-color:var(--akzent);color:var(--akzent)}
-/* Der Stift gehört nur zur Tagesansicht. Verschwände er ganz, würde die
-   Reiterleiste bei jedem Ansichtswechsel um seine Breite springen. */
-#btnEdit.hidden{display:block !important;visibility:hidden;pointer-events:none}
+/* Beide Stifte teilen sich einen Platz im Kopf: der eine bearbeitet den Plan,
+   der andere sortiert die Kacheln im Einträge-Menü. Mehr als einer ist nie
+   sichtbar. Der Platz bleibt auch leer bestehen — verschwände er, spränge die
+   Reiterleiste bei jedem Ansichtswechsel um seine Breite. */
+.stift{position:relative;width:36px;height:36px;flex:none}
+.stift .ikon{position:absolute;inset:0}
+.stift .ikon.hidden{display:block !important;visibility:hidden;pointer-events:none}
 header h1{font-size:29px;line-height:1;letter-spacing:-.02em;margin:5px 0 0;font-weight:600}
 header h1 span{color:var(--muted);font-weight:400}
 .countdown{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;margin-top:8px}
@@ -196,6 +200,11 @@ section{margin-top:30px}
 .zeuZeile .fachn small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:3px}
 .zeuZeile .roh{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .zeuZeile .note{font-size:26px;font-weight:600;min-width:44px;text-align:right}
+.zeuUnter{display:flex;align-items:center;gap:12px;padding:7px 0 7px 16px}
+.zeuUnter .wer{flex:1;min-width:0;font-size:13px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zeuUnter .roh{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.zeuUnter .note{font-size:16px;font-weight:600;min-width:44px;text-align:right;color:var(--muted)}
 #zeuSchnitt{color:var(--akzent)}
 
 /* Merkblätter */
@@ -313,8 +322,18 @@ textarea{min-height:120px;font-family:var(--mono);font-size:16px}
 .reihe .haupt{background:var(--text);color:var(--ink);border-color:var(--text)}
 .reihe .weg{border-color:var(--akzent);color:var(--akzent);flex:0 0 54px}
 .stapel{display:flex;flex-direction:column;gap:9px;margin-top:18px}
-.stapel button{border:1px solid var(--line);border-radius:12px;padding:15px;text-align:left;font-size:15px}
+.stapel button{width:100%;border:1px solid var(--line);border-radius:12px;padding:15px;text-align:left;font-size:15px}
 .stapel button small{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px}
+/* Beim Umsortieren steht neben jeder Kachel ein Pfeilpaar. Ohne eigene Regeln
+   erben die Pfeile die Kachelform von „.stapel button" und werden selbst zu
+   Kacheln, während die echte Kachel daneben auf ihre Textbreite schrumpft.
+   Der Name ist bewusst nicht „.reihe" — das ist oben schon die Knopfzeile
+   der Dialoge, und die macht aus jeder Kachel eine Versalienschaltfläche. */
+.kachelreihe{display:flex;align-items:flex-start;gap:8px}
+.kachelreihe > :first-child{flex:1;min-width:0;pointer-events:none;opacity:.75}
+.kachelreihe .pfeile{display:flex;flex-direction:column;gap:6px;flex:none}
+.kachelreihe .pfeile button{width:42px;height:34px;padding:0;text-align:center;
+  border-radius:9px;font-size:13px}
 .hinweis{font-size:13px;color:var(--muted);margin:6px 0 0;line-height:1.5}
 .fangfokus{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 .datumfeld{width:100%;margin-top:6px;background:var(--ink);border:1px solid var(--line);
@@ -389,7 +408,10 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <button type="button" id="rEin" aria-pressed="false">Einträge</button>
     <button type="button" id="rZeu" aria-pressed="false">Zeugnis</button>
   </div>
-  <button class="ikon" id="btnEdit" aria-pressed="false" aria-label="Plan bearbeiten">✎</button>
+  <div class="stift">
+    <button class="ikon" id="btnEdit" aria-pressed="false" aria-label="Plan bearbeiten">✎</button>
+    <button class="ikon hidden" id="btnSort" aria-pressed="false" aria-label="Kacheln umsortieren">✎</button>
+  </div>
   <button class="ikon" id="btnProfil" aria-label="Profil wechseln">–</button>
   <button class="ikon" id="btnEinst" aria-label="Einstellungen">⚙</button>
 </div>
@@ -416,7 +438,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <div class="frei-banner hidden" id="sicherBanner"></div>
   <nav class="tage" id="tage" aria-label="Wochentag"></nav>
   <div id="plan"></div>
-  <p class="hinweis hidden" id="editHinweis">Bearbeiten ist an: Antippen ändert Fach, Raum und Lehrkraft.</p>
+  <p class="hinweis hidden" id="editHinweis">Bearbeiten ist an: Antippen ändert Fach, Raum und Lehrkraft.
+     Nochmal auf ✎ oben tippen, wenn du fertig bist.</p>
   <section>
     <div class="eyebrow">An diesem Tag</div>
     <ul class="liste" id="tagListe"></ul>
@@ -447,13 +470,10 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 <!-- EINTRÄGE -->
 <div id="ansichtEin" class="hidden">
   <div id="einMenu">
-    <div style="display:flex;align-items:flex-end;gap:10px">
-      <label style="margin-top:0;flex:1"><span>Suche</span>
-        <input type="text" id="suchFeld" placeholder="Fach, Aufgabe, Notiz …"></label>
-      <button class="ikon" id="btnSort" aria-pressed="false" aria-label="Reihenfolge ändern"
-        style="margin-bottom:1px">✎</button>
-    </div>
-    <p class="hinweis hidden" id="sortHinweis">Mit den Pfeilen umsortieren. Nochmal auf ✎ tippen, wenn du fertig bist.</p>
+    <label style="margin-top:0"><span>Suche</span>
+      <input type="text" id="suchFeld" placeholder="Fach, Aufgabe, Notiz …"></label>
+    <p class="hinweis hidden" id="sortHinweis">Sortieren ist an: Mit den Pfeilen umstellen.
+      Nochmal auf ✎ oben tippen, wenn du fertig bist.</p>
     <div class="stapel" id="einKacheln"></div>
     <ul class="liste" id="suchListe"></ul>
   </div>
@@ -546,6 +566,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
   <label class="hidden" id="eFachFreiWrap"><span>Fach eintippen</span>
     <input type="text" id="eFachFrei" autocapitalize="characters"></label>
+  <label class="hidden" id="eLkWrap"><span>Lehrkraft</span><select id="eLk"></select></label>
   <div class="zwei hidden" id="eNoteWrap">
     <label><span id="eWertLabel">Note</span><input type="text" id="eWert" inputmode="decimal" placeholder="2,3"></label>
     <label><span>Art</span>
@@ -826,7 +847,15 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <p class="hinweis" id="sFerienStand"></p>
 
   <div class="eyebrow" style="margin-top:22px">Lehrkräfte</div>
-  <p class="hinweis">Je Zeile ein Kürzel und der Name, getrennt durch ein Gleichheitszeichen.</p>
+  <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
+    <input type="checkbox" id="sNachLehrer" style="width:18px;flex:none;margin:0">
+    <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)">
+      Fächer nach Lehrkraft trennen</span>
+  </label>
+  <p class="hinweis">Dann sucht „Als Nächstes“ die nächste Stunde desselben Fachs
+     <i>bei derselben Lehrkraft</i>, Einträge bekommen ein Feld dafür, und Zeugnis
+     und Notizen zeigen Unterpunkte je Lehrkraft.</p>
+  <p class="hinweis" style="margin-top:12px">Je Zeile ein Kürzel und der Name, getrennt durch ein Gleichheitszeichen.</p>
   <textarea id="sLehrer" style="min-height:90px" placeholder="KÜRZEL = Name"></textarea>
   <div class="eyebrow" style="margin-top:22px">Fachnamen</div>
   <textarea id="sFaecher" style="min-height:90px" placeholder="KÜRZEL = Fachname"></textarea>
