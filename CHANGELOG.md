@@ -2,6 +2,54 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v44
+
+Fünf Lücken aus der Bestandsaufnahme nach v43. Der sechste Punkt von damals —
+Samstagsunterricht — bleibt bewusst offen.
+
+**Neu**
+- **Wochenansicht.** In der Tagesansicht neben der Kalenderwoche der Knopf
+  *Woche*: Zeilen sind Stunden, Spalten Montag bis Freitag. Heute
+  hervorgehoben, Ausfall durchgestrichen, Ferien schraffiert und benannt,
+  Marken für anstehende Klausuren und offene Hausaufgaben. ‹ › und die
+  Pfeiltasten blättern wochenweise, Antippen springt auf den Tag.
+  Bewusst ein Dialog und kein fünfter Reiter: bei 390px ist die Reiterleiste
+  mit vier Beschriftungen bereits randvoll (226px)
+- **Stundenplan als .ics.** Neben dem bisherigen Termine-Export ein zweiter
+  für den Unterricht selbst: je Stunde ein Serientermin über ein Jahr, Raum
+  als Ort, Lehrkraft in der Beschreibung, bei A/B-Wochen `INTERVAL=2`.
+  Ferien und freie Tage fallen als `EXDATE` heraus — sonst behauptete der
+  Kalender Unterricht in den Sommerferien. Zwei Dateien, weil daraus im
+  Handykalender zwei Kalender werden, die man einzeln ausblenden kann
+- **Wiederkehrende Einträge.** Bei Hausaufgabe, Klausur, Notiz und Ereignis
+  eine Wiederholung wöchentlich oder zweiwöchentlich mit Enddatum; darunter
+  steht, wie viele Termine daraus werden. Beim Speichern entstehen **echte
+  einzelne Einträge** mit gemeinsamer Reihen-Kennung, keine Regel, die
+  Termine erzeugt. Damit lässt sich jeder Termin einzeln abhaken — der
+  eigentliche Zweck — und Suche, Kalender, Archiv und Export brauchen keine
+  Sonderbehandlung. Löschen fragt: nur dieser oder die ganze Reihe
+- **Nur den Stundenplan teilen.** Der Knopf *Teilen* gab bisher immer die
+  vollständige Sicherung weiter — mit Noten, Fehlzeiten und Merkblattfotos.
+  Wer einem Mitschüler „seinen Stundenplan" schickte, verschenkte all das
+  mit. Jetzt gibt es daneben ein Paket, das nur Raster, Fächer, Räume und
+  Lehrkräfte enthält. Beim Einlesen erkennt die App es und ersetzt **nur**
+  den Plan; Einträge, Noten und sämtliche übrigen Einstellungen bleiben
+  stehen, fremde Fach- und Lehrernamen kommen dazu, eigene behalten Vorrang
+- **Fehlzeiten kennen ihr Fach.** Kommt die Fehlzeit aus einer angetippten
+  Stunde, steht das Fach schon da; die Liste zeigt es, und darüber steht die
+  Aufteilung je Fach. Am Zeugnis ändert das nichts — dort zählen weiterhin
+  nur Unterrichtsstunden
+- **Pfeiltasten am Rechner.** ← → blättern: Tagesansicht tageweise, Kalender
+  monatsweise, Wochenraster wochenweise. `/` springt in die Suche. Solange
+  ein Feld beschrieben wird oder die Profilauswahl offen ist, bleiben sie still
+- `werkzeug/pruefungen/v44.mjs` prüft alles davon fest nach (51 Prüfungen)
+
+**Aufgeräumt**
+- Der `.ics`-Maskierer stand zweimal wortgleich da; jetzt einmal als `icsRoh`
+- Teilen, Zwischenablage und Herunterladen liegen in `weitergeben()`, das
+  beide Wege bedient. Nur eine vollständige Sicherung setzt dabei die
+  Sicherungserinnerung zurück — ein geteilter Plan rettet nichts
+
 ## v43
 
 **Neu**

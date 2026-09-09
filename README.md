@@ -112,6 +112,7 @@ Wechseln durch Antippen, durch Antippen der vier Punkte oder durch **Wischen in 
 
 ### Eine Stunde antippen
 
+- **Woche** neben der Kalenderwoche öffnet das Wochenraster: alle fünf Tage nebeneinander, mit Ausfall, Ferien und Marken für Klausuren und Hausaufgaben.
 - **Kurz antippen** öffnet die Schnellauswahl: Hausaufgabe für die nächste Stunde dieses Fachs, Notiz, Klausur, Fehlzeit, *Fällt aus*, *Vertretung*, ein sonstiges Ereignis — oder die Fach-Info.
 - **Gedrückt halten** öffnet die Fach-Info: ausgeschriebener Name, Lehrkraft, Raum, Wochenstunden, nächster Termin (antippbar → springt in den Kalender), Notenschnitt, Fehlzeiten, Merkblätter, Offenes.
 - **Mit ✎ oben** ändert Antippen dauerhaft Fach, Raum und Lehrkraft. Der Stift sitzt in jeder Ansicht an derselben Stelle: im Reiter **Einträge** sortiert er die Kacheln um.

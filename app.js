@@ -402,6 +402,24 @@ function letzterBlock(d){
   return letzte;
 }
 
+/* Wiederkehrende Einträge entstehen als echte Einträge, einer je Termin,
+   mit gemeinsamer serie-Kennung. Das ist mehr Speicher als eine Regel, die
+   bei Bedarf Termine erzeugt — dafür funktionieren Abhaken, Suche, Kalender,
+   Archiv und der Kalender-Export ohne jede Sonderbehandlung, und jeder
+   einzelne Termin lässt sich abhaken, was das eigentliche Ziel ist. */
+const WDH_MAX = 60;
+function serienTermine(start, takt, bis){
+  const raus = [];
+  if(!takt) return [iso(start)];
+  const grenze = bis || iso(plusTage(start, 7 * takt * (WDH_MAX - 1)));
+  for(let i = 0; i < WDH_MAX; i++){
+    const d = plusTage(start, i * 7 * takt);
+    if(iso(d) > grenze) break;
+    raus.push(iso(d));
+  }
+  return raus;
+}
+
 /* --- Noten --- */
 const anteilFuer = fach => {
   const e = cfg.anteile && cfg.anteile[fach];
@@ -724,7 +742,8 @@ function listeZeile(e, mitNotiz = true){
         <div class="kopf"><span class="khn ${e.erledigt ? "aus" : ""}">${e.typ}</span>
           <span class="titel">${e.fach ? esc(e.fach)+" — " : ""}${esc(e.titel) || ART[e.typ]}</span></div>
         ${mitNotiz && e.notiz ? `<div class="notiz">${esc(e.notiz)}</div>` : ""}
-        <div class="wann">${d.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}</div>
+        <div class="wann">${d.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}${
+          e.serie ? " · Reihe" : ""}</div>
       </div></li>`;
 }
 function zeichneListe(sel, nixSel, liste, mitNotiz = true){
@@ -981,14 +1000,25 @@ function fehlText(){
   return `${zahl(g,"Stunde","Stunden")} = ${tageText(g)}`
        + (u ? ` · davon ${u} unentschuldigt` : "");
 }
+/** Versäumte Stunden je Fach — was ohne Fach erfasst wurde, bleibt aussen vor. */
+function fehlJeFach(){
+  const nach = new Map();
+  listeVonTyp("F").forEach(e => {
+    if(!e.fach) return;
+    nach.set(e.fach, (nach.get(e.fach) || 0) + (Number(e.stunden) || 1));
+  });
+  return [...nach.entries()].sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+}
 function zeichneFehlzeiten(){
   const liste = listeVonTyp("F");
-  $("#einSubHinweis").textContent = fehlText();
+  const jeFach = fehlJeFach();
+  $("#einSubHinweis").textContent = fehlText()
+    + (jeFach.length ? " · " + jeFach.map(([f,n]) => `${fachName(f)} ${n}`).join(", ") : "");
   $("#einListe").innerHTML = liste.map(e => `<li>
     <span style="width:18px;flex:none"></span>
     <div class="wachs" data-bearbeite="${e.id}">
       <div class="kopf"><span class="khn">F</span>
-        <span class="titel">${zahl(Number(e.stunden)||1,"Stunde","Stunden")} — ${esc(e.titel) || "Fehlzeit"}</span></div>
+        <span class="titel">${e.fach ? esc(e.fach)+" — " : ""}${zahl(Number(e.stunden)||1,"Stunde","Stunden")} ${esc(e.titel) || "Fehlzeit"}</span></div>
       ${e.notiz ? `<div class="notiz">${esc(e.notiz)}</div>` : ""}
       <div class="wann">${zeigDatum(e.datum)}</div></div></li>`).join("");
   $("#einNix").textContent = "Keine Fehlzeiten erfasst.";
@@ -1104,6 +1134,39 @@ const ansichtWisch = r => {
   const i = ANSICHTEN.indexOf(ansicht);
   zeigeAnsicht(ANSICHTEN[(i + r + ANSICHTEN.length) % ANSICHTEN.length]);
 };
+/* Am Rechner gibt es kein Wischen. Die Pfeiltasten tun dasselbe — aber nur,
+   wenn gerade nichts getippt wird und kein anderer Dialog offen ist, sonst
+   springt die Ansicht mitten in einer Eingabe weg. */
+document.addEventListener("keydown", e => {
+  if(e.altKey || e.ctrlKey || e.metaKey) return;
+  const ziel = e.target;
+  if(ziel && (ziel.isContentEditable
+    || ["INPUT","TEXTAREA","SELECT"].includes(ziel.tagName))) return;
+  /* Die Profilauswahl ist kein <dialog>, verdeckt aber alles. Ohne diese
+     Zeile blättert man hinter ihr durch eine Ansicht, die niemand sieht. */
+  if(!$("#profilStart").classList.contains("hidden")) return;
+  const offen = [...document.querySelectorAll("dialog[open]")];
+  if(offen.length){
+    /* Im Wochendialog blättern die Pfeile die Woche — überall sonst nichts. */
+    if(offen.length === 1 && offen[0] === dlgWoche && (e.key === "ArrowLeft" || e.key === "ArrowRight")){
+      wochenAnker = plusTage(wochenAnker, e.key === "ArrowLeft" ? -7 : 7);
+      zeichneWoche(); e.preventDefault();
+    }
+    return;
+  }
+  if(e.key === "/"){
+    e.preventDefault();
+    ansicht = "eintraege"; einSub = null; zeichne();
+    $("#suchFeld").focus();
+    return;
+  }
+  if(e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+  const r = e.key === "ArrowLeft" ? -1 : 1;
+  if(ansicht === "tag"){ gewaehlt = plusTage(gewaehlt, r); zeichne(); e.preventDefault(); }
+  else if(ansicht === "kalender"){
+    kalMonat = new Date(kalMonat.getFullYear(), kalMonat.getMonth()+r, 1); zeichne(); e.preventDefault();
+  }
+});
 wischen($("#fuss"), ansichtWisch);
 wischen($("#leerraum"), ansichtWisch);
 $("#wischPunkte").onclick = () => {
@@ -1294,7 +1357,11 @@ $("#bSchnellKlausur").onclick = () => schnell("K", gewaehlt);
 $("#bSchnellFehl").onclick = () => {
   const std = (cfg.slots[offenerBlock].std || "1").split(",").length;
   dlgSchnell.close();
-  eintragOeffnen(null, gewaehlt, "F", "", offenerBlock, {stunden:std});
+  /* Das Fach kommt aus der angetippten Stunde. Gezählt wird die Fehlzeit
+     weiter in Unterrichtsstunden — aber wer eine Entschuldigung schreibt
+     oder Stoff nachholt, will wissen, welche Stunden es waren. */
+  eintragOeffnen(null, gewaehlt, "F", schnellFach(), offenerBlock,
+                 {stunden:std, lk:schnellLk()});
 };
 $("#bSchnellAusfall").onclick = () => {
   dlgSchnell.close();
@@ -1359,6 +1426,80 @@ $("#fiInhalt").onclick = e => {
 $("#bFachMerk").onclick = () => { dlgFach.close(); ansicht = "eintraege"; einSub = "M"; zeichne(); };
 
 /* =====================================================================
+   Wochenansicht
+   Ein Dialog statt eines fünften Reiters: die Reiterleiste ist bei 390px
+   mit vier Beschriftungen schon randvoll, ein fünfter Knopf bräche sie.
+   Dialoge sind ausserdem die Art, wie diese App sonst Dichtes zeigt.
+   ===================================================================== */
+let wochenAnker = null;
+
+function wochenOeffnen(d){
+  wochenAnker = montagVon(d || gewaehlt);
+  zeichneWoche();
+  dlgWoche.showModal();
+}
+function zeichneWoche(){
+  const mo = wochenAnker, woche = wocheFuer(mo);
+  $("#wochenLabel").textContent = `KW ${kalenderwoche(mo)}`
+    + (cfg.zweiWochen ? ` · ${woche}-Woche` : "")
+    + ` · ${zwei(mo.getDate())}.${zwei(mo.getMonth()+1)}.`;
+
+  const tage = TAGE.map((t,i) => plusTage(mo, i));
+  const kopf = `<tr><th class="zeitspalte"></th>` + TAGE.map((t,i) =>
+    `<th class="${gleich(tage[i], new Date()) ? "heute" : ""}">${t}</th>`).join("") + `</tr>`;
+
+  /* Nur so viele Zeilen, wie in dieser Woche irgendwo Unterricht steht —
+     dieselbe Regel wie im Tagesplan, sonst stehen unten leere Reihen. */
+  let letzte = -1;
+  cfg.slots.forEach((s,i) => {
+    if(tage.some(d => (plan[wocheFuer(d)] && plan[wocheFuer(d)][TAGE[tagIndex(d)]] || [])[i]
+                   || sonderAn(d,i))) letzte = i;
+  });
+  const bis = letzte < 0 ? 0 : letzte + 1;
+
+  const zeilen = cfg.slots.slice(0, bis).map((s,i) => {
+    const spalten = tage.map((d,ti) => {
+      const frei = freiAm(d);
+      const regulaer = (plan[wocheFuer(d)] && plan[wocheFuer(d)][TAGE[ti]] || [])[i];
+      const o = sonderAn(d, i);
+      const ausfall = o && o.art === "ausfall";
+      const f = (o && !ausfall) ? null : regulaer;
+      const marken = [...new Set(eintraegeAm(d)
+        .filter(e => !e.erledigt && f && e.fach && e.fach.toUpperCase() === f.fach.toUpperCase())
+        .map(e => e.typ))].join("");
+      const text = ausfall ? esc(regulaer ? regulaer.fach : "—")
+                 : o ? esc(o.titel) : (f ? esc(f.fach) : "");
+      const raum = o ? o.raum : (f ? f.raum : "");
+      const klassen = [frei ? "ferien" : "", gleich(d, new Date()) ? "heute" : "",
+                       text ? "" : "frei"].filter(Boolean).join(" ");
+      return `<td class="${klassen}"><button type="button" class="zelle ${ausfall ? "aus" : ""}"
+          data-wochentag="${iso(d)}">${text || "·"}${
+          raum ? `<span class="wraum">${esc(raum)}</span>` : ""}${
+          marken ? `<span class="wmarke">${esc(marken)}</span>` : ""}</button></td>`;
+    }).join("");
+    return `<tr><td class="zeitspalte">${esc(s.von)}<br>${stdText(s)}</td>${spalten}</tr>`;
+  }).join("");
+
+  $("#wochenTab").innerHTML = bis ? kopf + zeilen : "";
+  const ferienDerWoche = [...new Set(tage.map(d => freiAm(d)).filter(Boolean).map(f => f.name))];
+  $("#wochenHinweis").textContent = !bis
+    ? "In dieser Woche steht nichts im Plan."
+    : (ferienDerWoche.length ? ferienDerWoche.join(" · ") + " · " : "")
+      + "Eine Stunde antippen springt auf den Tag.";
+}
+$("#btnWoche").onclick = () => wochenOeffnen(gewaehlt);
+$("#bWocheAb").onclick = () => dlgWoche.close();
+$("#bWocheHeute").onclick = () => { wochenAnker = montagVon(new Date()); zeichneWoche(); };
+$("#wochenMinus").onclick = () => { wochenAnker = plusTage(wochenAnker, -7); zeichneWoche(); };
+$("#wochenPlus").onclick  = () => { wochenAnker = plusTage(wochenAnker,  7); zeichneWoche(); };
+$("#wochenTab").onclick = e => {
+  const b = e.target.closest("[data-wochentag]"); if(!b) return;
+  dlgWoche.close();
+  gewaehlt = new Date(b.dataset.wochentag+"T12:00");
+  ansicht = "tag"; zeichne();
+};
+
+/* =====================================================================
    Eintragsdialog — eine Oberfläche für alle Arten
    ===================================================================== */
 let bearbeiteId = null, ereignisId = null, noteId = null, bilder = [], ereignisArt = "ereignis";
@@ -1389,7 +1530,7 @@ function lkAuswahlFuellen(wert){
   lkUmschalten();
 }
 function lkUmschalten(){
-  const aus = !cfg.nachLehrer || eTyp.value === "E" || eTyp.value === "F" || eLk.options.length < 2;
+  const aus = !cfg.nachLehrer || eTyp.value === "E" || eLk.options.length < 2;
   $("#eLkWrap").classList.toggle("hidden", aus);
 }
 /* Bei ausgeschalteter Trennung bleibt stehen, was schon gespeichert war. */
@@ -1411,10 +1552,39 @@ function stundenAuswahlFuellen(slot){
     cfg.slots.map((s,i) => `<option value="${i}" ${i === slot ? "selected" : ""}>${esc(stdText(s))} · ${esc(s.von)}</option>`).join("");
   if(slot === null || slot === undefined) eStunde.value = "";
 }
+/* Eine Reihe ergibt es bei Terminen: Hausaufgabe, Klausur, Notiz, Ereignis.
+   Eine Note wiederholt sich nicht, ein Merkblatt auch nicht, und eine
+   Fehlzeit trägt man nicht auf Vorrat ein. */
+const WDH_ARTEN = ["H","K","N","E"];
+function wdhUmschalten(){
+  const moeglich = WDH_ARTEN.includes(eTyp.value) && bearbeiteId === null && ereignisId === null;
+  $("#eWdhWrap").classList.toggle("hidden", !moeglich);
+  $("#eWdhBisWrap").classList.toggle("hidden", eWdh.value === "0");
+  wdhStand();
+}
+function wdhStand(){
+  const takt = Number(eWdh.value) || 0;
+  if(!takt){ $("#eWdhStand").textContent = ""; return; }
+  const start = new Date((eDatum.value || iso(new Date()))+"T12:00");
+  const tage = serienTermine(start, takt, eWdhBis.value || "");
+  const letzter = tage.at(-1);
+  $("#eWdhStand").textContent = tage.length >= WDH_MAX
+    ? `${WDH_MAX} Termine — mehr legt die App auf einmal nicht an. Letzter: ${zeigDatum(letzter)}.`
+    : `${zahl(tage.length,"Termin","Termine")}, jeweils ${LANG[TAGE[tagIndex(start)]] || "am selben Wochentag"}`
+      + `, letzter am ${zeigDatum(letzter)}.`;
+}
+eWdh.onchange = () => {
+  $("#eWdhBisWrap").classList.toggle("hidden", eWdh.value === "0");
+  if(eWdh.value !== "0" && !eWdhBis.value)
+    eWdhBis.value = iso(plusTage(new Date((eDatum.value || iso(new Date()))+"T12:00"), 90));
+  wdhStand();
+};
+eWdhBis.oninput = wdhStand;
+
 function artUmschalten(){
   const t = eTyp.value;
   const ev = t === "E", note = t === "G", merk = t === "M", fehl = t === "F";
-  $("#eFachWrap").classList.toggle("hidden", ev || fehl);
+  $("#eFachWrap").classList.toggle("hidden", ev);
   $("#eEreignisWrap").classList.toggle("hidden", !ev);
   $("#eNoteWrap").classList.toggle("hidden", !note);
   $("#eFehlWrap").classList.toggle("hidden", !fehl);
@@ -1426,6 +1596,7 @@ function artUmschalten(){
   $("#eWertLabel").textContent = cfg.notenSystem === "punkte15" ? "Punkte 0–15" : "Note 1–6";
   if(ev) $("#eFachFreiWrap").classList.add("hidden"); else freiUmschalten();
   lkUmschalten();
+  wdhUmschalten();
   bilderZeichnen();
 }
 
@@ -1464,7 +1635,7 @@ $("#eMonatMinus").onclick = () => { eMonat = new Date(eMonat.getFullYear(), eMon
 $("#eMonatPlus").onclick  = () => { eMonat = new Date(eMonat.getFullYear(), eMonat.getMonth()+1, 1); zeichneDatumWahl(); };
 $("#eGitter").onclick = e => {
   const b = e.target.closest("[data-wahl]"); if(!b) return;
-  eDatum.value = b.dataset.wahl; datumFeldText(); datumWahlOeffnen(false);
+  eDatum.value = b.dataset.wahl; datumFeldText(); datumWahlOeffnen(false); wdhStand();
 };
 
 /* --- Bilder: verkleinern, sonst platzt der Browserspeicher --- */
@@ -1517,6 +1688,7 @@ function eintragOeffnen(e, datum, typ, fach, slot, extra){
   ereignisArt = (extra && extra.art) || "ereignis";
   eWert.value = ""; eNArt.value = "s"; eOrt.value = ""; eFehlArt.value = "entschuldigt";
   eFehlStd.value = 1;
+  eWdh.value = "0"; eWdhBis.value = "";
   const d = datum || gewaehlt;
   const vorhanden = (typ === "E" && slot !== undefined && slot !== null) ? sonderAn(d, slot) : null;
   if(vorhanden){ ereignisId = vorhanden.id; ereignisArt = vorhanden.art || "ereignis"; }
@@ -1543,6 +1715,7 @@ function eintragOeffnen(e, datum, typ, fach, slot, extra){
 function ereignisOeffnen(id){
   const o = sonder.find(x => x.id === id); if(!o) return;
   bearbeiteId = null; noteId = null; ereignisId = id; bilder = [];
+  eWdh.value = "0"; eWdhBis.value = "";
   ereignisArt = o.art || "ereignis";
   $("#dlgEintragTitel").textContent = "Ereignis ändern";
   eTyp.value = "E"; eDatum.value = o.datum;
@@ -1558,6 +1731,7 @@ function ereignisOeffnen(id){
 function noteOeffnen(n){
   if(!n) return eintragOeffnen(null, new Date(), "G", "");
   bearbeiteId = null; ereignisId = null; noteId = n.id; bilder = [];
+  eWdh.value = "0"; eWdhBis.value = "";
   $("#dlgEintragTitel").textContent = "Note ändern";
   eTyp.value = "G"; eDatum.value = n.datum;
   eText.value = n.titel || ""; eNotiz.value = n.notiz || "";
@@ -1593,8 +1767,12 @@ $("#bEintragSpeichern").onclick = () => {
     const slot = eStunde.value === "" ? null : +eStunde.value;
     if(ereignisId) sonder = sonder.filter(x => x.id !== ereignisId);
     else if(slot !== null) sonder = sonder.filter(x => !(x.datum === datum && x.slot === slot));
-    if(titel) sonder.push({id:neueId(), datum, slot, art:ereignisArt, titel,
-                           raum:eOrt.value.trim(), notiz:eNotiz.value.trim(), geloescht:false});
+    if(titel){
+      const tage = serienDatumsListe(datum);
+      const serie = tage.length > 1 ? neueId() : null;
+      tage.forEach(d => sonder.push({id:neueId(), serie, datum:d, slot, art:ereignisArt, titel,
+                             raum:eOrt.value.trim(), notiz:eNotiz.value.trim(), geloescht:false}));
+    }
     sichern(); dlgEintrag.close(); zeichne(); return;
   }
   if(t === "G"){
@@ -1612,7 +1790,7 @@ $("#bEintragSpeichern").onclick = () => {
   }
   if(!fach && t === "M") return alert("Bitte ein Fach wählen.");
   const jetzt = new Date();
-  const daten = {typ:t, fach: t === "F" ? "" : fach, lk: t === "F" ? "" : aktuelleLk(), datum,
+  const daten = {typ:t, fach, lk: aktuelleLk(), datum,
     titel: t === "F" ? eFehlArt.value : eText.value.trim(),
     notiz: eNotiz.value.trim()};
   if(t === "F") daten.stunden = Math.max(1, Number(eFehlStd.value) || 1);
@@ -1623,14 +1801,36 @@ $("#bEintragSpeichern").onclick = () => {
   }
   const alter = bearbeiteId && eintraege.find(x => x.id === bearbeiteId);
   if(alter) Object.assign(alter, daten);
-  else eintraege.push(Object.assign({id:neueId(), erledigt:false, geloescht:false}, daten));
+  else {
+    const tage = serienDatumsListe(datum);
+    const serie = tage.length > 1 ? neueId() : null;
+    tage.forEach(d => eintraege.push(Object.assign(
+      {id:neueId(), serie, erledigt:false, geloescht:false}, daten, {datum:d})));
+  }
   sichern(); dlgEintrag.close(); zeichne();
 };
+/* Aus der Einstellung im Dialog werden die Datumsangaben. Ohne Wiederholung
+   ist es genau eines — dann läuft alles wie vorher. */
+function serienDatumsListe(datum){
+  const takt = WDH_ARTEN.includes(eTyp.value) && !$("#eWdhWrap").classList.contains("hidden")
+    ? (Number(eWdh.value) || 0) : 0;
+  return serienTermine(new Date(datum+"T12:00"), takt, eWdhBis.value || "");
+}
 $("#bEintragWeg").onclick = () => {
   const ziel = ereignisId ? sonder.find(x => x.id === ereignisId)
              : noteId     ? noten.find(x => x.id === noteId)
              :              eintraege.find(x => x.id === bearbeiteId);
-  if(ziel) insArchiv(ziel);
+  if(!ziel){ dlgEintrag.close(); return; }
+  /* Gehört der Eintrag zu einer Reihe, ist „löschen" zweideutig. Fragen ist
+     hier besser als raten — beide Antworten sind plausibel. */
+  const topf = ereignisId ? sonder : eintraege;
+  const geschwister = ziel.serie
+    ? topf.filter(x => x.serie === ziel.serie && !x.geloescht) : [ziel];
+  if(geschwister.length > 1
+     && confirm(`Dieser Eintrag gehört zu einer Reihe von ${geschwister.length}.\n\n`
+       + "OK löscht die ganze Reihe, Abbrechen nur diesen einen."))
+    geschwister.forEach(insArchiv);
+  else insArchiv(ziel);
   sichern(); dlgEintrag.close(); zeichne();
 };
 
@@ -2049,6 +2249,9 @@ const icsFolgetag = datum => icsTag(iso(plusTage(new Date(datum+"T12:00"), 1)));
 /* Ohne VTIMEZONE gilt eine Zeit ohne Z als „schwebend" und wird in der
    Zeitzone des Kalenders gelesen — für einen Stundenplan genau richtig. */
 const icsZeit = (datum, uhr) => icsTag(datum) + "T" + uhr.replace(":","") + "00";
+/* Backslash, Semikolon und Komma trennen in .ics die Felder — im Text müssen
+   sie maskiert sein, sonst bricht ein Fachname die Datei auf. */
+const icsRoh = t => String(t == null ? "" : t).replace(/[\\;,]/g, m => "\\"+m).replace(/\r?\n/g, "\\n");
 /* RFC 5545: höchstens 75 Oktette je Zeile, Fortsetzung mit führendem
    Leerzeichen. Ohne das brechen strenge Kalender an langen Notizen ab. */
 function icsFalten(zeile){
@@ -2061,7 +2264,7 @@ function icsFalten(zeile){
   return teile.map((t,i) => i ? " " + t : t);
 }
 function icsBauen(){
-  const roh = t => String(t == null ? "" : t).replace(/[\\;,]/g, m => "\\"+m).replace(/\r?\n/g, "\\n");
+  const roh = icsRoh;
   const stempel = new Date().toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
   const zeilen = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Stundenplan//DE","CALSCALE:GREGORIAN",
     "METHOD:PUBLISH", `X-WR-CALNAME:${roh("Stundenplan " + (cfg.klasse || profilName()))}`];
@@ -2092,6 +2295,57 @@ function icsBauen(){
   zeilen.push("END:VCALENDAR");
   return zeilen.filter(Boolean).flatMap(icsFalten).join("\r\n") + "\r\n";
 }
+
+/* Der Stundenplan selbst als Serientermine. Bewusst eine eigene Datei: im
+   Handykalender wird daraus ein eigener Kalender, den man ausblenden oder
+   löschen kann, ohne die Klausurerinnerungen mitzunehmen. */
+function icsPlanBauen(){
+  const roh = icsRoh;
+  const stempel = new Date().toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
+  const zeilen = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Stundenplan//DE","CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH", `X-WR-CALNAME:${roh("Unterricht " + (cfg.klasse || profilName()))}`];
+  const heute = new Date();
+  const ende = plusTage(heute, 365);
+  /* Ferien und Feiertage fallen als EXDATE heraus. Ohne das behauptet der
+     Kalender Unterricht in den Sommerferien — und man glaubt ihm nicht mehr. */
+  const freieTage = [];
+  for(let i = 0; i <= 365; i++){
+    const d = plusTage(heute, i);
+    if(tagIndex(d) !== 5 && freiAm(d)) freieTage.push(d);
+  }
+  ["A","B"].forEach(w => {
+    if(w === "B" && !cfg.zweiWochen) return;
+    TAGE.forEach((t, ti) => {
+      (plan[w] && plan[w][t] || []).forEach((x, i) => {
+        const s = cfg.slots[i];
+        if(!x || !x.fach || !s) return;
+        /* Erster Termin: der nächste passende Wochentag, bei A/B zusätzlich
+           in der passenden Woche. Ohne diesen Anker läge die Serie falsch. */
+        let start = null;
+        for(let k = 0; k <= 20; k++){
+          const d = plusTage(montagVon(heute), k*7 + ti);
+          if(iso(d) < iso(heute)) continue;
+          if(!cfg.zweiWochen || wocheFuer(d) === w){ start = d; break; }
+        }
+        if(!start) return;
+        const raus = freieTage.filter(d => iso(d) >= iso(start) && tagIndex(d) === ti
+          && (!cfg.zweiWochen || wocheFuer(d) === w));
+        zeilen.push("BEGIN:VEVENT",
+          `UID:plan-${w}-${t}-${i}@stundenplan`, `DTSTAMP:${stempel}`,
+          `DTSTART:${icsZeit(iso(start), s.von)}`,
+          `DTEND:${icsZeit(iso(start), s.bis)}`,
+          `RRULE:FREQ=WEEKLY${cfg.zweiWochen ? ";INTERVAL=2" : ""};UNTIL=${icsZeit(iso(ende), s.bis)}`,
+          `SUMMARY:${roh(fachName(x.fach) + (x.raum ? " · " + x.raum : ""))}`);
+        if(x.lk) zeilen.push(`DESCRIPTION:${roh(lehrerName(x.lk))}`);
+        if(x.raum) zeilen.push(`LOCATION:${roh(x.raum)}`);
+        if(raus.length) zeilen.push("EXDATE:" + raus.map(d => icsZeit(iso(d), s.von)).join(","));
+        zeilen.push("END:VEVENT");
+      });
+    });
+  });
+  zeilen.push("END:VCALENDAR");
+  return zeilen.filter(Boolean).flatMap(icsFalten).join("\r\n") + "\r\n";
+}
 function herunterladen(text, name, typ){
   const url = URL.createObjectURL(new Blob([text], {type:typ}));
   const a = document.createElement("a");
@@ -2100,6 +2354,10 @@ function herunterladen(text, name, typ){
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 $("#sIcs").onclick = () => herunterladen(icsBauen(), `stundenplan-termine-${iso(new Date())}.ics`, "text/calendar");
+$("#sIcsPlan").onclick = () => {
+  if(!faecher().length) return alert("Trag zuerst deinen Stundenplan ein.");
+  herunterladen(icsPlanBauen(), `stundenplan-unterricht-${iso(new Date())}.ics`, "text/calendar");
+};
 
 /* =====================================================================
    Sicherungen prüfen
@@ -2190,9 +2448,10 @@ function eintragSaeubern(e){
   if(!e || typeof e !== "object" || !ART[e.typ]) return null;
   const raus = {
     id:     alsId(e.id),
+    serie:  e.serie ? alsId(e.serie) : null,
     typ:    e.typ,
-    fach:   e.typ === "F" ? "" : alsKuerzel(e.fach),
-    lk:     e.typ === "F" ? "" : alsKuerzel(e.lk),
+    fach:   alsKuerzel(e.fach),
+    lk:     alsKuerzel(e.lk),
     datum:  alsDatum(e.datum) || iso(new Date()),
     titel:  alsText(e.titel, 200),
     notiz:  alsText(e.notiz, 20000),
@@ -2221,7 +2480,7 @@ function freiSaeubern(f){
 function sonderSaeubern(o){
   if(!o || typeof o !== "object") return null;
   const datum = alsDatum(o.datum); if(!datum) return null;
-  return {id:alsId(o.id), datum,
+  return {id:alsId(o.id), serie: o.serie ? alsId(o.serie) : null, datum,
           slot: (o.slot === null || o.slot === undefined) ? null : alsZahl(o.slot, 0, 23, null),
           art:  EREIGNISARTEN.includes(o.art) ? o.art : "ereignis",
           titel:alsText(o.titel, 200) || "Ereignis",
@@ -2517,10 +2776,33 @@ MA = Mathematik</pre>
    erste Wisch zurück ins Menü.</p>
   <p>In der Tagesansicht wischt man zusätzlich <b>tagweise</b> vor und zurück, im
    Kalender <b>monatsweise</b>.</p>
+  <p>Am Rechner gibt es kein Wischen — dort tun es die <b>Pfeiltasten ← →</b>:
+   in der Tagesansicht tageweise, im Kalender monatsweise, im Wochenraster
+   wochenweise. <b>/</b> springt in die Suche. Solange ein Feld beschrieben wird,
+   bleiben die Tasten still.</p>
   <p>Links neben Profil und ⚙ liegt <b>ein Platz für den Stift ✎</b>. Was er tut,
    richtet sich nach der Ansicht: im <b>Tag</b> bearbeitet er den Plan, im
    <b>Einträge</b>-Menü sortiert er die Kacheln. In den übrigen Ansichten bleibt
    er leer — der Platz selbst bleibt, damit die Reiterleiste nicht springt.</p>`},
+
+{id:"woche", teil:"Täglich benutzen", titel:"Die ganze Woche auf einmal", worte:"wochenansicht übersicht raster woche",
+ text:`<p>In der Tagesansicht neben der Kalenderwoche steht <b>Woche</b>. Das öffnet
+   das Raster: Zeilen sind die Stunden, Spalten Montag bis Freitag.</p>
+  <ul>
+   <li>Der <b>heutige Tag</b> ist hervorgehoben.</li>
+   <li>Was <b>ausfällt</b>, steht durchgestrichen; Vertretungen stehen mit ihrem
+     eigenen Titel da.</li>
+   <li><b>Ferien und freie Tage</b> sind schraffiert und stehen unter dem Raster
+     beim Namen.</li>
+   <li>Ein kleines <b>K</b> oder <b>H</b> in einer Zelle heisst: dort steht eine
+     Klausur oder eine offene Hausaufgabe an.</li>
+   <li>Leere Stunden am Ende des Tages fehlen, genau wie im Tagesplan.</li>
+  </ul>
+  <p>‹ und › blättern wochenweise, am Rechner auch die <b>Pfeiltasten</b>.
+   Eine Stunde antippen springt auf ihren Tag.</p>
+  <p class="hHinweis">Warum kein eigener Reiter: bei schmalen Handys ist die
+   Reiterleiste mit vier Beschriftungen bereits randvoll. Ein fünfter Knopf
+   würde sie umbrechen.</p>`},
 
 {id:"stundeantippen", teil:"Täglich benutzen", titel:"Eine Stunde antippen", worte:"schnellauswahl hausaufgabe fällt aus vertretung fachinfo",
  text:`<p><b>Kurz antippen</b> öffnet die Schnellauswahl für diese Stunde:</p>
@@ -2573,6 +2855,21 @@ MA = Mathematik</pre>
    dessen Bezeichnung.</p>
   <p>Einzelnes Antippen wählt weiterhin nur den Tag aus — darunter erscheint, was
    an ihm ansteht.</p>`},
+
+{id:"reihe", teil:"Täglich benutzen", titel:"Etwas jede Woche eintragen", worte:"wiederholen serie reihe wöchentlich ag vokabeltest",
+ text:`<p>Bei <b>Hausaufgabe</b>, <b>Klausur</b>, <b>Notiz</b> und <b>Ereignis</b>
+   steht im Eintragsdialog <i>Wiederholen</i>: einmalig, jede Woche oder alle zwei
+   Wochen, dazu ein Datum, bis wann. Darunter steht, wie viele Termine daraus
+   werden und wann der letzte liegt.</p>
+  <p>Beim Speichern entstehen <b>echte einzelne Einträge</b>, einer je Termin —
+   keine Regel, die im Hintergrund Termine erzeugt. Das kostet etwas Speicher und
+   bringt dafür genau das, worum es geht: du kannst <b>jeden Termin einzeln
+   abhaken</b>, verschieben oder löschen, und Suche, Kalender, Archiv und der
+   Kalender-Export behandeln sie wie alles andere.</p>
+  <p>Beim <b>Löschen</b> fragt die App, ob nur dieser Termin oder die ganze Reihe
+   verschwinden soll. In den Listen steht bei solchen Einträgen <i>Reihe</i>.</p>
+  <p class="hHinweis">Höchstens 60 Termine auf einmal. Ohne Enddatum schlägt die
+   App drei Monate vor — eine Zahl, die man beim Eintragen noch überblickt.</p>`},
 
 {id:"kacheln", teil:"Täglich benutzen", titel:"Das Einträge-Menü umsortieren", worte:"kacheln reihenfolge sortieren stift pfeile",
  text:`<p>Im Reiter <b>Einträge</b> stehen alle Listen als Kacheln untereinander:
@@ -2654,9 +2951,14 @@ MA = Mathematik</pre>
   <p class="hHinweis">Bedenke, was du fotografierst — Aufnahmen von Mitschülerinnen
    und Mitschülern gehören nur mit deren Einverständnis dorthin.</p>`},
 
-{id:"fehlzeiten", teil:"Merkblätter, Fehlzeiten, Ferien", titel:"Fehlzeiten", worte:"fehlstunden versäumt entschuldigt unentschuldigt verspätet",
- text:`<p>Gezählt wird in <b>Unterrichtsstunden</b>, nicht je Fach — so steht es auch
-   auf dem Zeugnis. Drei Arten: entschuldigt, unentschuldigt, verspätet.</p>
+{id:"fehlzeiten", teil:"Merkblätter, Fehlzeiten, Ferien", titel:"Fehlzeiten", worte:"fehlstunden versäumt entschuldigt unentschuldigt verspätet fach",
+ text:`<p>Gezählt wird in <b>Unterrichtsstunden</b> — so steht es auch auf dem
+   Zeugnis. Drei Arten: entschuldigt, unentschuldigt, verspätet.</p>
+  <p>Dazu merkt sich jede Fehlzeit ihr <b>Fach</b>. Kommst du über eine angetippte
+   Stunde, steht es schon da. Die Liste zeigt es je Eintrag, und über der Liste
+   steht, wie viele Stunden auf welches Fach entfallen — für die Entschuldigung
+   und für die Frage, wo du Stoff nachholen musst. Am Zeugnis ändert das nichts:
+   dort zählen weiterhin nur die Stunden.</p>
   <p>Unter ⚙ → <b>Fehlzeiten</b> stellst du ein, wie viele Stunden ein Schultag hat.
    Daraus rechnet das Zeugnis die Fehltage aus.</p>
   <p><b>Beispiel.</b> 8 Stunden je Schultag, 20 versäumte Stunden ergeben
@@ -2740,18 +3042,41 @@ MA = Mathematik</pre>
   <p class="hHinweis">Auf dem iPhone gibt es Benachrichtigungen nur, wenn die App
    auf dem Startbildschirm liegt.</p>`},
 
-{id:"ics", teil:"Erinnerungen", titel:"Kalender-Export (.ics)", worte:"google apple outlook termine wecker",
- text:`<p>⚙ → Erinnerungen → <b>Kalender-Export</b>. Die Datei importierst du in
-   Google Kalender, Apple Kalender oder Outlook. Dort bekommst du <b>echte
-   Erinnerungen</b>, auch wenn die App geschlossen ist.</p>
+{id:"ics", teil:"Erinnerungen", titel:"Kalender-Export (.ics)", worte:"google apple outlook termine wecker stundenplan serie",
+ text:`<p>⚙ → Erinnerungen. Dort liegen <b>zwei</b> Knöpfe, und sie erzeugen zwei
+   verschiedene Dateien. Beide importierst du in Google Kalender, Apple Kalender
+   oder Outlook; dort bekommst du <b>echte Erinnerungen</b>, auch wenn die App
+   geschlossen ist.</p>
+  <p><b>Termine als .ics</b> — was ansteht:</p>
   <ul>
    <li>Hausaufgaben und Klausuren: ganztags, Erinnerung <b>15 Stunden vorher</b> —
      also am Vorabend gegen neun.</li>
    <li>Ereignisse mit fester Stunde: als Termin von/bis, <b>30 Minuten vorher</b>.</li>
    <li>„Fällt aus“ wird nicht exportiert, das würde den Kalender zumüllen.</li>
   </ul>
+  <p><b>Stundenplan als .ics</b> — der Unterricht selbst, je Stunde ein
+   Serientermin über <b>ein Jahr</b>, mit Raum als Ort und Lehrkraft in der
+   Beschreibung. Bei A/B-Wochen läuft die Serie zweiwöchentlich. <b>Ferien und
+   freie Tage sind ausgenommen</b> — sonst behauptete der Kalender Unterricht in
+   den Sommerferien, und dann glaubt man ihm nicht mehr. Ohne Wecker: dreissig
+   Erinnerungen die Woche will niemand.</p>
+  <p class="hHinweis">Zwei Dateien statt einer, weil daraus im Handykalender
+   zwei Kalender werden. Den Unterricht kannst du ausblenden oder löschen, ohne
+   die Klausurerinnerungen zu verlieren.</p>
   <p>Bei einem erneuten Import werden dieselben Termine aktualisiert statt
    verdoppelt — jeder trägt eine feste Kennung.</p>`},
+{id:"planteilen", teil:"Sicherung", titel:"Den Plan an Mitschüler geben", worte:"teilen weitergeben klasse mitschüler datenschutz",
+ text:`<p>⚙ → <b>Stundenplan weitergeben</b> → <i>Nur den Plan teilen</i>. Die Datei
+   enthält Stundenraster, Fächer, Räume, Lehrkräfte und deren ausgeschriebene
+   Namen — sonst nichts.</p>
+  <p class="hWarn">Der Knopf <b>Teilen</b> weiter oben ist etwas anderes: er gibt
+   die <b>vollständige Sicherung</b> weiter, also auch Noten, Fehlzeiten und
+   Merkblattfotos. Für Mitschüler ist immer der Plan-Knopf gemeint.</p>
+  <p>Beim Einlesen erkennt die App eine solche Datei und ersetzt <b>nur den
+   Stundenplan</b>. Einträge, Noten, Fehlzeiten und Merkblätter bleiben stehen,
+   ebenso Farbe, Notensystem und alle übrigen Einstellungen. Fremde Fach- und
+   Lehrernamen kommen dazu, deine eigenen behalten Vorrang.</p>`},
+
 {id:"aufbau", teil:"Technik: wie es funktioniert", titel:"Aufbau — drei Dateien, kein Server", worte:"architektur html js quelltext",
  text:`<p>Die ganze App besteht aus drei Textdateien und zwei Bildern:</p>
   <table class="hTab">
@@ -3270,6 +3595,15 @@ const dateiName = () => (profilName().replace(/[^A-Za-z0-9äöüÄÖÜß -]/g,""
 const sicherungsText = () => JSON.stringify(
   {fassung:2, art:"profil", erstellt:new Date().toISOString(), profil:profilName(),
    cfg, plan, eintraege, ferien, sonder, noten}, null, 2);
+/* Nur der Stundenplan, für Mitschüler. Eine volle Sicherung enthält Noten,
+   Fehlzeiten und Merkblattfotos — die verschickt man nicht versehentlich,
+   nur weil jemand nach dem Plan gefragt hat. Namen von Fächern und
+   Lehrkräften gehören dagegen dazu, sonst stehen dort nur Kürzel. */
+const planText = () => JSON.stringify(
+  {fassung:2, art:"plan", erstellt:new Date().toISOString(),
+   cfg:{slots:cfg.slots, zweiWochen:cfg.zweiWochen,
+        fachnamen:cfg.fachnamen, lehrer:cfg.lehrer},
+   plan}, null, 2);
 /* Die Sicherung eines Profils enthält nur dieses eine. Wer mehrere führt,
    hätte auf einem neuen Gerät sonst jedes einzeln nachbauen müssen. */
 function sicherungAlleText(){
@@ -3310,27 +3644,35 @@ sDateiLesen.onchange = () => {
   leser.readAsText(f); sDateiLesen.value = "";
 };
 $("#sTeilen").onclick = async () => {
-  const text = profile.length > 1 ? sicherungAlleText() : sicherungsText();
-  const name = `stundenplan-${profile.length > 1 ? "alle" : dateiName()}-${iso(new Date())}.json`;
+  await weitergeben(profile.length > 1 ? sicherungAlleText() : sicherungsText(),
+    `stundenplan-${profile.length > 1 ? "alle" : dateiName()}-${iso(new Date())}.json`,
+    "Stundenplan-Sicherung", true);
+};
+/* Teilen, Zwischenablage, Herunterladen — in dieser Reihenfolge, je nachdem
+   was das Gerät kann. „istSicherung" sagt, ob der Vorgang als Sicherung
+   zählt: ein geteilter Plan ohne Noten ist keine. */
+async function weitergeben(text, name, titel, istSicherung){
   try{
     /* Mit einer leeren Dateiliste antwortet canShare auch dort „nein", wo
        Dateien sehr wohl gehen — deshalb erst die Datei bauen, dann fragen. */
     const datei = typeof File === "function" ? new File([text], name, {type:"application/json"}) : null;
     if(datei && navigator.canShare && navigator.canShare({files:[datei]})){
-      await navigator.share({files:[datei], title:"Stundenplan-Sicherung"});
+      await navigator.share({files:[datei], title:titel});
     } else if(navigator.clipboard && navigator.clipboard.writeText){
       await navigator.clipboard.writeText(text);
-      alert("Dein Gerät kann keine Dateien teilen. Die Sicherung liegt jetzt in der "
-        + "Zwischenablage — füge sie irgendwo ein, wo sie bleibt.");
+      alert(`Dein Gerät kann keine Dateien teilen. ${istSicherung ? "Die Sicherung" : "Der Plan"} `
+        + "liegt jetzt in der Zwischenablage — füge sie irgendwo ein, wo sie bleibt.");
     } else {
       herunterladen(text, name, "application/json");
     }
-    sicherungNotiert();
+    /* Nur eine vollständige Sicherung setzt die Erinnerung zurück. Ein
+       geteilter Plan enthält weder Noten noch Einträge und rettet nichts. */
+    if(istSicherung) sicherungNotiert();
   }catch(e){
     if(e && e.name === "AbortError") return;      // abgebrochen ist keine Sicherung
     zeigeFehler("Teilen fehlgeschlagen: " + ((e && e.message) || e));
   }
-};
+}
 /* Ersetzt sämtliche Profile des Geräts durch die aus der Datei. */
 function alleProfileUebernehmen(liste){
   if(!confirm("Diese Sicherung enthält alle Profile. Sämtliche Profile auf diesem "
@@ -3361,6 +3703,7 @@ $("#sLaden").onclick = () => {
   try{ d = JSON.parse(sDaten.value); }
   catch(e){ return alert("Der Text lässt sich nicht lesen. Ist es wirklich eine Sicherungsdatei?"); }
   if(d && Array.isArray(d.profile)) return alleProfileUebernehmen(d.profile);
+  if(d && d.art === "plan") return planUebernehmen(d);
   const teil = paketSaeubern(d);
   if(!Object.keys(teil).length) return alert("In der Datei steckt kein erkennbarer Stundenplan.");
   /* Einlesen ersetzt, es ergänzt nicht. Wer das übersieht, verliert einen
@@ -3380,6 +3723,31 @@ $("#sLaden").onclick = () => {
   if(teil.sonder)    sonder    = teil.sonder;
   if(teil.noten)     noten     = teil.noten;
   normalisiere(); sichern(); dlgEinst.close(); zeichne();
+};
+/* Ein Plan-Paket ersetzt nur den Stundenplan. Liefe es durch den normalen
+   Weg, würde seine abgespeckte cfg die ganzen Einstellungen überschreiben —
+   Notensystem, Farbe, Verhältnisse, alles. */
+function planUebernehmen(d){
+  const teil = paketSaeubern(d);
+  if(!teil.plan) return alert("In der Datei steckt kein erkennbarer Stundenplan.");
+  const belegt = Object.values(teil.plan)
+    .flatMap(w => Object.values(w)).flat().filter(Boolean).length;
+  if(!confirm(`Das ersetzt den Stundenplan durch ${zahl(belegt,"belegte Stunde","belegte Stunden")}.\n`
+    + "Einträge, Noten, Fehlzeiten und Merkblätter bleiben unberührt.\n\nFortfahren?")) return;
+  const roh = (d.cfg && typeof d.cfg === "object") ? d.cfg : {};
+  const c = cfgSaeubern(Object.assign({}, cfg, {
+    slots: roh.slots, zweiWochen: roh.zweiWochen,
+    /* Zusammenführen statt ersetzen: eigene Namen sind mehr wert als fremde. */
+    fachnamen: Object.assign({}, paareSaeubern(roh.fachnamen), cfg.fachnamen),
+    lehrer:    Object.assign({}, paareSaeubern(roh.lehrer),    cfg.lehrer)
+  }));
+  cfg = c; plan = teil.plan;
+  normalisiere(); sichern(); dlgEinst.close(); zeichne();
+  kurzHinweis("Stundenplan übernommen. Deine Einträge und Noten sind unverändert.");
+}
+$("#sTeilenPlan").onclick = async () => {
+  await weitergeben(planText(), `stundenplan-nur-plan-${iso(new Date())}.json`,
+                    "Stundenplan", false);
 };
 $("#sReset").onclick = () => {
   if(!confirm("Plan, Einträge, Noten, Merkblätter und Archiv dieses Profils löschen?")) return;

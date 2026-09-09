@@ -1,105 +1,103 @@
-# Aufgabe: Trennung nach Lehrkraft + Schulende nach echtem Stundenplan
+# v44 — die fünf Lücken schliessen (ohne Samstag)
 
-## Plan
+Ausgangspunkt ist die Bestandsaufnahme am Ende von v43. Punkt 6 (Samstag im
+Plan) bleibt bewusst liegen.
 
-- [x] 1. Einstellung `cfg.nachLehrer` (aus als Voreinstellung) anlegen,
-      säubern, laden, speichern. Ist sie aus, verhält sich alles wie bisher.
-- [x] 2. Optionales Feld `lk` an Einträgen und Noten: säubern, im
-      Eintragsdialog wählbar, aus der angetippten Stunde vorbelegt.
-- [x] 3. „Als Nächstes" nach Fach **und** Lehrkraft suchen
-      (`hatFachAm`, `naechsterTagMitFach`, Punkte in der Datumsauswahl,
-      Schnelldialog, Fachinfo).
-- [x] 4. Zeugnis: Unterpunkte je Lehrkraft, wenn ein Fach mehrere hat.
-- [x] 5. Notizen: Zwischenüberschriften je Lehrkraft.
-- [x] 6. Schulende an den tatsächlichen Tag binden: letzter belegter Block
-      statt Rasterende — Fortschrittsbalken und Countdown.
-- [x] 7. Anleitung ergänzen, Versionsnummer in `sw.js` hochzählen, prüfen.
+## Reihenfolge
 
-## Ergebnis
+Klein und gut prüfbar zuerst, damit jeder Schritt einzeln nachweisbar ist.
 
-**Einstellung** `cfg.nachLehrer`, Voreinstellung aus. Ohne den Haken ist jede
-Ansicht Zeichen für Zeichen die von v42 — das war die Leitplanke bei jeder
-einzelnen Änderung.
+- [x] **1. Fehlzeit weiss, welche Stunde gefehlt hat**
+      `eintragSaeubern` erlaubt `fach`/`lk` auch bei Typ `F`; der Schnelldialog
+      gibt das Fach der angetippten Stunde mit; der Eintragsdialog zeigt das
+      Feld; Liste und Hinweis zeigen es. Das Zeugnis zählt weiter in Stunden —
+      daran ändert sich nichts.
 
-**Neuer Weg durch den Code**
+- [x] **2. Nur den Stundenplan teilen**
+      Heute schickt „Teilen" die vollständige Sicherung: Noten, Fehlzeiten,
+      Merkblattfotos. Neuer Knopf, der ein Paket `art:"plan"` baut — nur
+      `slots`, `zweiWochen`, `fachnamen`, `lehrer` und `plan`.
+      Beim Einlesen ein eigener Weg: nur diese Felder übernehmen, alles andere
+      stehen lassen, und eine andere Rückfrage stellen. Ohne das ersetzt ein
+      Plan-Paket über `paketSaeubern` die ganze `cfg`.
 
-| Stelle | vorher | jetzt |
-|---|---|---|
-| `hatFachAm(d, fach)` | nur Fach | `(d, fach, lk)`, leeres `lk` = egal |
-| `naechsterTagMitFach` | dito | reicht `lk` durch |
-| `notenSchnitt(fach)` | alle Noten | `(fach, lk)`; `undefined` = alle, `""` = ohne Zuordnung |
-| Einträge und Noten | `fach` | zusätzlich `lk`, gesäubert wie jedes Kürzel |
-| `letzterBlock(d)` | — | neu; ersetzt `cfg.slots.at(-1)` in Balken und Countdown |
+- [x] **3. Stundenplan als .ics**
+      `icsBauen()` bleibt wie es ist (Termine). Daneben `icsPlanBauen()`:
+      je belegter Stunde ein `VEVENT` mit `RRULE:FREQ=WEEKLY`, bei A/B-Wochen
+      `INTERVAL=2` ab der passenden Woche. Ferien und Feiertage als `EXDATE`,
+      sonst behauptet der Kalender Unterricht, den es nicht gibt.
+      Zwei Knöpfe statt einem: getrennte Dateien werden zu getrennten
+      Kalendern, die man einzeln ausblenden kann.
 
-**Schulende.** `zeichneTag` schnitt leere Stunden am Ende schon ab, der
-Fortschrittsbalken und „Schulschluss in …" rechneten aber weiter mit dem
-Rasterende. Beide benutzen jetzt denselben `letzterBlock`. An einem Tag ohne
-Unterricht verschwindet der Balken, statt Freistunden zu melden.
+- [x] **4. Wiederkehrende Einträge**
+      Bewusst **keine** virtuellen Vorkommen: beim Speichern entstehen echte
+      Einträge, einer je Termin, mit gemeinsamer `serie`-Kennung. Damit
+      funktionieren Abhaken, Suche, Kalender, Archiv und der ICS-Export ohne
+      eine einzige Änderung an ihren Lesewegen, und jeder Termin lässt sich
+      einzeln abhaken — was bei einem virtuellen Modell das eigentliche
+      Problem wäre. Löschen fragt „nur diesen oder die ganze Reihe?".
+      Deckel bei 60 Terminen, Zahl vorher anzeigen.
 
-**Nebenbefund.** Die Suche prüfte `lehrerName(o.fach)` — das Fachkürzel gegen
-die Lehrertabelle, was nie etwas traf. Jetzt `o.lk` und `lehrerName(o.lk)`.
+- [x] **5. Wochenansicht**
+      Kein fünfter Reiter: bei 390px ist die Leiste mit vier Beschriftungen
+      schon randvoll (226px), ein fünfter Knopf bricht sie. Stattdessen ein
+      Dialog, geöffnet über einen Knopf in der KW-Zeile der Tagesansicht —
+      dieselbe Art, wie die App sonst Dichtes zeigt (Fach-Info, Merkblatt).
+      Raster: Zeilen = Stunden, Spalten = MO–FR, heute hervorgehoben,
+      Ausfall/Vertretung/Ferien sichtbar, Marken für Klausuren und
+      Hausaufgaben. Antippen springt auf den Tag. Querlauf **im Dialog**,
+      nie auf der Seite.
 
-**Nachweis.** `werkzeug/pruefungen/lehrer.mjs`, 21 Prüfungen: die
-Nächste-Stunde-Suche mit und ohne Haken, Schnelldialog, Unterpunkte im
-Zeugnis, Überschriften in den Notizen, `letzterBlock` an drei Tagen,
-`countdownText` bei angehaltener Uhr, der ganze Weg vom Antippen bis zum
-gespeicherten `lk`, und die Einstellung durch Dialog und Säuberung.
-Die übrigen sechs Prüfdateien laufen unverändert durch (121 Prüfungen
-insgesamt, 0 Fehler). `sw.js` steht auf v43.
+- [x] **6. Pfeiltasten am Rechner**
+      ← → blättern: Tagesansicht tageweise, Kalender monatsweise, Wochendialog
+      wochenweise. Nicht, während ein Feld den Fokus hat oder ein anderer
+      Dialog offen ist. `/` springt in die Suche.
 
-
----
-
-# Nachtrag: Stift in den Kopf, Einheitlichkeit prüfen
-
-## Plan
-
-- [x] 1. `#btnSort` aus der Suchzeile in den Kopf, in denselben Platz wie
-      `#btnEdit`. Nie beide sichtbar, Platz bleibt reserviert.
-- [x] 2. Beide Stifte gleich verdrahten: Stand beim Zeichnen setzen, Klick
-      nur noch umschalten.
-- [x] 3. Die App auf weitere Unterschiede absuchen.
-- [x] 4. Anleitung nachziehen.
-- [x] 5. `werkzeug/pruefungen/kopf.mjs` als feste Prüfung.
+- [x] **7. Anleitung, CHANGELOG, README, `sw.js` auf v44, alle Prüfungen**
 
 ## Ergebnis
 
-**Ein Platz, zwei Stifte.** `.stift` im Kopf ist 36×36 gross und hält beide
-Knöpfe übereinander (`position:absolute`). `zeichne()` entscheidet, welcher
-sichtbar ist: `#btnEdit` in der Tagesansicht, `#btnSort` im Einträge-Menü,
-sonst keiner. Die alte Regel `#btnEdit.hidden{visibility:hidden}` galt nur
-dem einen Stift; jetzt gilt sie beiden, damit die Reiterleiste in keiner
-Ansicht springt (nachgemessen: 226px in allen vier).
+Alle sechs Punkte umgesetzt, `sw.js` auf v44.
 
-**Beim Prüfen gefunden — drei echte Unterschiede**
+**Die Entscheidung, auf die es ankam** — wiederkehrende Einträge. Der
+naheliegende Weg wäre eine Regel am Eintrag gewesen, aus der die Ansichten
+bei Bedarf Termine erzeugen. Daran scheitert aber genau das, wofür man die
+Wiederholung will: `erledigt` ist ein Feld am Datensatz, also hätte das
+Abhaken eines Freitags alle Freitage abgehakt. Ausserdem hätte jeder
+Leseweg — Tagesplan, Kalenderpunkte, Listen, Suche, Archiv, ICS — die
+virtuellen Vorkommen selbst auffalten müssen. Stattdessen entstehen beim
+Speichern echte Einträge mit gemeinsamer `serie`-Kennung: mehr Speicher
+(60 Termine ≈ 9 kB), dafür null Änderungen an den Lesewegen und ein
+Abhaken, das sich richtig verhält. Die Kennung braucht es nur für die
+Rückfrage beim Löschen.
 
-1. `#btnSort` setzte `aria-pressed` und den Hinweis im Klick, `#btnEdit`
-   beim Zeichnen. Jetzt beide beim Zeichnen; der Klick ist in beiden Fällen
-   ein Einzeiler.
-2. Die Hinweistexte endeten verschieden — der eine sagte, wie man wieder
-   herauskommt, der andere nicht. Jetzt derselbe Schlusssatz.
-3. **Layoutfehler im Sortiermodus:** die Pfeile erbten von `.stapel button`
-   die Kachelform und wurden selbst zu Kacheln, die echte Kachel daneben
-   schrumpfte auf ihre Textbreite — bei jeder Zeile auf eine andere, was wie
-   eine Treppe aussah. Beim Beheben trat der zweite Fehler zutage: der
-   naheliegende Klassenname `.reihe` ist im Projekt schon die Knopfzeile der
-   Dialoge (`text-transform:uppercase`, `flex:1`), was die Kacheln zu
-   Versalienschaltflächen machte und die Pfeile auseinanderzog. Jetzt
-   `.kachelreihe` mit eigenen Regeln.
+**Die Entscheidung, die Arbeit gespart hat** — die Wochenansicht ist ein
+Dialog. Ein fünfter Reiter hätte die Leiste gesprengt (226px, vier
+Beschriftungen, „EINTRÄGE" allein misst schon rund 50px) und hätte
+Wischgesten, Wischpunkte und `ANSICHTEN` mitgezogen. Als Dialog kostet sie
+einen Knopf in der KW-Zeile und nichts sonst.
 
-**Anleitung.** Neuer Abschnitt *Das Einträge-Menü umsortieren* — das
-Sortieren war nirgends beschrieben. Dazu der gemeinsame Stiftplatz bei *Die
-vier Reiter* und der Zusatz „links neben Profil und ⚙" bei *Plan von Hand
-eintragen*.
+**Beim Bauen aufgefallen und mitgenommen**
 
-**Nicht angefasst, aber aufgefallen:** Es gibt zwei Arten, Reihenfolgen zu
-ändern — die Kacheln über den Stift in der Ansicht selbst, die Fächer des
-Zeugnisses über eine Liste in den Einstellungen. Das eine zu dem anderen zu
-machen wäre eine Umgestaltung, keine Angleichung; deshalb steht es hier und
-nicht im Code.
+| Fund | Behandlung |
+|---|---|
+| `.ics`-Maskierer stand zweimal wortgleich da | einmal als `icsRoh` |
+| Teilen-Ablauf war an die Sicherung genagelt | `weitergeben()` bedient beide Wege; nur die volle Sicherung setzt die Erinnerung zurück |
+| Ein Plan-Paket wäre über `paketSaeubern` gelaufen und hätte die ganze `cfg` ersetzt — Farbe, Notensystem, Verhältnisse | eigener Weg `planUebernehmen()` mit eigener Rückfrage |
+| Die Profilauswahl ist kein `<dialog>`, verdeckt aber alles | Pfeiltasten prüfen sie ausdrücklich |
+| Die Freitagsspalte lief im Wochenraster aus dem Dialog | kein `min-width`, schmalere Zeitspalte — passt bei 390px |
+| „jede zweite Woche" wurde in der Auswahl abgeschnitten | die zwei Felder stehen untereinander statt nebeneinander |
 
-**Nachweis.** `werkzeug/pruefungen/kopf.mjs`, 27 Prüfungen: gemeinsamer
-Platz, je Ansicht höchstens ein Stift, Reiterleiste in allen vier Ansichten
-und in einer Unterliste gleich breit, beide Schalter an und aus, gleicher
-Schlusssatz in beiden Hinweisen, und die Kachelmasse im Sortiermodus.
-Alle acht Prüfdateien zusammen: 148 Prüfungen, 0 Fehler.
+**Zwei Fehlschläge in der eigenen Prüfdatei** waren die Prüfung, nicht die
+App: die Ferien lagen an einem festen Datum in der Vergangenheit, der
+Export blickt aber vom heutigen Tag ein Jahr voraus. Die Testdaten rechnen
+jetzt relativ zu heute.
+
+**Nachweis.** `werkzeug/pruefungen/v44.mjs`, 51 Prüfungen: Fach an der
+Fehlzeit vom Antippen bis in den Speicher, Inhalt des Plan-Pakets (dass
+Noten und Einträge *nicht* darin sind) und sein Einlesen ohne Kollateral-
+schaden, Aufbau des Plan-ICS samt `EXDATE` in der Ferienspanne und
+`INTERVAL=2` bei A/B, Anlegen und einzelnes Abhaken einer Reihe, das
+Löschen der ganzen Reihe, Aufbau des Wochenrasters mit Ferien und
+Blättern, sowie die Pfeiltasten inklusive der Stille im Eingabefeld.
+Alle neun Prüfdateien: 199 Prüfungen, 0 Fehler.
