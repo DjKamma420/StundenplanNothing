@@ -1,0 +1,188 @@
+name: v47 Patch anwenden
+
+on:
+  push:
+    branches: [fix/plan-teilen-v47]
+    paths: [.github/workflows/v47-patch.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/plan-teilen-v47
+          fetch-depth: 2
+
+      - name: v47 anwenden
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def ersetze(pfad, alt, neu, anzahl=1):
+              p = Path(pfad)
+              s = p.read_text()
+              if s.count(alt) < anzahl:
+                  raise SystemExit(f"{pfad}: erwarteter Text nicht gefunden: {alt[:80]!r}")
+              p.write_text(s.replace(alt, neu, anzahl))
+
+          # app.js: kaputten Share-Fallback reparieren und zwei gefundene Alttexte bereinigen.
+          ersetze("app.js",
+              "Aufbau siehe ARCHITEKTUR.md. Kurz: kein Framework, ein Datensatz je",
+              "Aufbau siehe CLAUDE.md. Kurz: kein Framework, ein Datensatz je")
+
+          ersetze("app.js",
+              '<tr><td>Fehlzeit</td><td>in Unterrichtsstunden, ohne Fach</td><td>2 Stunden entschuldigt</td></tr>',
+              '<tr><td>Fehlzeit</td><td>in Unterrichtsstunden; Fach optional, aus einer Stunde vorbelegt</td><td>2 Stunden entschuldigt</td></tr>')
+
+          alt = '''/* Teilen, Zwischenablage, Herunterladen — in dieser Reihenfolge, je nachdem
+             was das Gerät kann. „istSicherung" sagt, ob der Vorgang als Sicherung
+             zählt: ein geteilter Plan ohne Noten ist keine. */
+          async function weitergeben(text, name, titel, istSicherung){
+            try{
+              /* Mit einer leeren Dateiliste antwortet canShare auch dort „nein", wo
+                 Dateien sehr wohl gehen — deshalb erst die Datei bauen, dann fragen. */
+              const datei = typeof File === "function" ? new File([text], name, {type:"application/json"}) : null;
+              if(datei && navigator.canShare && navigator.canShare({files:[datei]})){
+                await navigator.share({files:[datei], title:titel});
+              } else if(navigator.clipboard && navigator.clipboard.writeText){
+                await navigator.clipboard.writeText(text);
+                alert(`Dein Gerät kann keine Dateien teilen. ${istSicherung ? "Die Sicherung" : "Der Plan"} `
+                  + "liegt jetzt in der Zwischenablage — füge sie irgendwo ein, wo sie bleibt.");
+              } else {
+                herunterladen(text, name, "application/json");
+              }
+              /* Nur eine vollständige Sicherung setzt die Erinnerung zurück. Ein
+                 geteilter Plan enthält weder Noten noch Einträge und rettet nichts. */
+              if(istSicherung) sicherungNotiert();
+            }catch(e){
+              if(e && e.name === "AbortError") return;      // abgebrochen ist keine Sicherung
+              zeigeFehler("Teilen fehlgeschlagen: " + ((e && e.message) || e));
+            }
+          }
+          '''
+          neu = '''/* Teilen oder als Datei speichern. Ein Plan muss am Ende immer als echte
+             .json-Datei herauskommen: Text in der Zwischenablage ist für Mitschüler
+             praktisch nicht importierbar und wirkte auf Geräten ohne Datei-Share wie
+             ein kaputter Knopf. „istSicherung" sagt, ob der Vorgang als Sicherung zählt. */
+          async function weitergeben(text, name, titel, istSicherung){
+            const datei = typeof File === "function"
+              ? new File([text], name, {type:"application/json"}) : null;
+            if(datei && typeof navigator.share === "function" && typeof navigator.canShare === "function"){
+              let kannDatei = false;
+              try{ kannDatei = navigator.canShare({files:[datei]}); }catch(e){}
+              if(kannDatei){
+                try{
+                  await navigator.share({files:[datei], title:titel});
+                  if(istSicherung) sicherungNotiert();
+                  return;
+                }catch(e){
+                  if(e && e.name === "AbortError") return;  // bewusst abgebrochen
+                  /* Einige Browser melden canShare=true und lehnen denselben Dateityp
+                     erst beim eigentlichen Teilen ab. Dann nicht im Fehlerkasten enden,
+                     sondern zuverlässig auf einen normalen Download zurückfallen. */
+                }
+              }
+            }
+            try{
+              herunterladen(text, name, "application/json");
+              if(istSicherung) sicherungNotiert();
+              else kurzHinweis("Teilen ist hier nicht verfügbar — Plan-Datei heruntergeladen.");
+            }catch(e){
+              zeigeFehler("Datei konnte nicht ausgegeben werden: " + ((e && e.message) || e));
+            }
+          }
+          '''
+          ersetze("app.js", alt, neu)
+
+          alt = '''  const belegt = Object.values(teil.plan)
+              .flatMap(w => Object.values(w)).flat().filter(Boolean).length;
+          '''
+          neu = '''  const roh = (d.cfg && typeof d.cfg === "object") ? d.cfg : {};
+            const wochen = roh.zweiWochen ? ["A","B"] : ["A"];
+            const belegt = wochen.flatMap(w => Object.values(teil.plan[w] || {}))
+              .flat().filter(Boolean).length;
+          '''
+          ersetze("app.js", alt, neu)
+          ersetze("app.js",
+              '''  const roh = (d.cfg && typeof d.cfg === "object") ? d.cfg : {};
+            const c = cfgSaeubern(Object.assign({}, cfg, {''',
+              '''  const c = cfgSaeubern(Object.assign({}, cfg, {''')
+
+          ersetze("app.js",
+              '''$("#sTeilenPlan").onclick = async () => {
+            await weitergeben(planText(), `stundenplan-nur-plan-${iso(new Date())}.json`,
+                              "Stundenplan", false);
+          };''',
+              '''$("#sTeilenPlan").onclick = async () => {
+            if(!faecher().length) return alert("Trag zuerst deinen Stundenplan ein.");
+            await weitergeben(planText(), `stundenplan-nur-plan-${iso(new Date())}.json`,
+                              "Stundenplan", false);
+          };''')
+
+          # README: Verhalten der Fehlzeit an den aktuellen Code angleichen.
+          ersetze("README.md",
+              '| Fehlzeit | in Unterrichtsstunden, entschuldigt/unentschuldigt/verspätet — ohne Fach |',
+              '| Fehlzeit | in Unterrichtsstunden, entschuldigt/unentschuldigt/verspätet; Fach optional |')
+          ersetze("README.md",
+              'Tippst du eine Stunde im Plan an und wählst *Fehlzeit*, ist die Stundenzahl des Blocks schon eingetragen.',
+              'Tippst du eine Stunde im Plan an und wählst *Fehlzeit*, ist die Stundenzahl des Blocks schon eingetragen. Das Fach wird ebenfalls übernommen; bei einer manuell angelegten Fehlzeit ist es optional.')
+
+          # CHANGELOG: v47 dokumentieren.
+          p = Path("CHANGELOG.md")
+          s = p.read_text()
+          marker = 'Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.\n\n'
+          if marker not in s:
+              raise SystemExit("CHANGELOG.md: Kopf nicht gefunden")
+          eintrag = '''## v47\n\n**Behoben**\n- **„Nur den Plan teilen“ funktioniert wieder zuverlässig.** Wenn das Gerät JSON-Dateien nativ teilen kann, öffnet sich weiterhin das Teilen-Menü. Unterstützt der Browser Datei-Share nicht oder lehnt ihn trotz vorheriger Zusage ab, wird jetzt eine echte `.json`-Datei heruntergeladen. Der frühere Zwischenablage-Fallback ist entfallen — Text in der Zwischenablage war für Empfänger praktisch nicht als Plan importierbar und wirkte wie ein kaputter Knopf.\n- Ein leerer Plan lässt sich nicht mehr scheinbar teilen; die App fordert zuerst zum Eintragen auf.\n- Beim Einlesen eines normalen Ein-Wochen-Plans zählt die Rückfrage nur die A-Woche statt eine vorhandene B-Kopie doppelt mit.\n- Anleitung und README beschreiben Fehlzeiten wieder korrekt: Das Fach ist optional und wird aus einer angetippten Stunde übernommen.\n\n**Aufgeräumt**\n- `app.js` verweist nicht mehr auf die nicht vorhandene `ARCHITEKTUR.md`, sondern auf `CLAUDE.md`.\n- `LICENSE` ist wieder unverändertes Standard-MIT, damit Lizenztext, README und GitHub-Lizenzanzeige dasselbe aussagen.\n\n'''
+          p.write_text(s.replace(marker, marker + eintrag, 1))
+
+          # Echte Standard-MIT-Lizenz; die zusätzliche Namensklausel machte sie zu einer abgewandelten Lizenz.
+          Path("LICENSE").write_text('''MIT License\n\nCopyright (c) 2026 DjKamma420\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the "Software"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n''')
+
+          # App-Code geändert: Service-Worker-Version zwingend hochzählen.
+          ersetze("sw.js", 'const VERSION = "v46";', 'const VERSION = "v47";')
+
+          # Regressionstest: der Plan muss auf Geräten ohne Datei-Share als Datei herauskommen.
+          p = Path("werkzeug/pruefungen/v44.mjs")
+          s = p.read_text()
+          marker = '''pruef("Plan-Paket enthält keine Bewertungseinstellungen",
+            !("anteile" in paket.cfg) && !("notenSystem" in paket.cfg) && !("akzent" in paket.cfg),
+            Object.keys(paket.cfg).join(","));
+          '''
+          if marker not in s:
+              raise SystemExit("v44.mjs: Plan-Paket-Marker nicht gefunden")
+          test = '''\n/* Der Knopf muss auch ohne Web-Share eine echte Datei ausgeben. */
+          const shareFallback = await page.evaluate(async () => {
+            let ausgabe = null;
+            herunterladen = (text, name, typ) => { ausgabe = {art:JSON.parse(text).art, name, typ}; };
+            Object.defineProperty(navigator, "share", {configurable:true, value:undefined});
+            Object.defineProperty(navigator, "canShare", {configurable:true, value:undefined});
+            await weitergeben(planText(), "test-plan.json", "Stundenplan", false);
+            return ausgabe;
+          });
+          pruef("Plan-Teilen fällt ohne Web-Share auf Datei zurück",
+            shareFallback?.art === "plan" && shareFallback?.name === "test-plan.json"
+              && shareFallback?.typ === "application/json",
+            JSON.stringify(shareFallback));
+          '''
+          p.write_text(s.replace(marker, marker + test, 1))
+          PY
+
+          rm .github/workflows/v47-patch.yml
+
+      - name: Statisch prüfen
+        run: |
+          node --check app.js
+          node werkzeug/pruefen.mjs --basis origin/main
+
+      - name: Änderungen committen
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "v47: Plan-Teilen reparieren und Freigabe bereinigen"
+          git push origin HEAD:fix/plan-teilen-v47
