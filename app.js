@@ -3903,12 +3903,16 @@ async function weitergeben(text, name, titel, istSicherung){
 }
 /* Ersetzt sämtliche Profile des Geräts durch die aus der Datei. */
 function alleProfileUebernehmen(liste){
-  const neuerStand = Math.max(0, ...liste.map(paketDatenstand));
+  /* Es werden höchstens 20 Profile übernommen. Auch die Prüfung bleibt auf
+     diese Grenze beschränkt: ein riesiges manipuliertes Array darf weder
+     unnötig komplett durchlaufen noch über Spread-Argumente den Stack sprengen. */
+  const begrenzt = liste.slice(0, 20);
+  const neuerStand = begrenzt.reduce((m,p) => Math.max(m, paketDatenstand(p)), 0);
   if(neuerStand > SCHEMA) return alert(neuereDatenText(neuerStand));
   if(!confirm("Diese Sicherung enthält alle Profile. Sämtliche Profile auf diesem "
     + "Gerät werden dadurch ersetzt. Fortfahren?")) return;
   const vorher = profile.map(p => p.id), neu = [];
-  liste.slice(0, 20).forEach((p, i) => {
+  begrenzt.forEach((p, i) => {
     const id = alsId(p && p.id);
     if(neu.some(x => x.id === id)) return;
     const rein = paketSaeubern(p);
