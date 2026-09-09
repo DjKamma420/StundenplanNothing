@@ -54,6 +54,20 @@ pruef("Plan-Paket enthält keine Bewertungseinstellungen",
   !("anteile" in paket.cfg) && !("notenSystem" in paket.cfg) && !("akzent" in paket.cfg),
   Object.keys(paket.cfg).join(","));
 
+/* Der Knopf muss auch ohne Web-Share eine echte Datei ausgeben. */
+const shareFallback = await page.evaluate(async () => {
+  let ausgabe = null;
+  herunterladen = (text, name, typ) => { ausgabe = {art:JSON.parse(text).art, name, typ}; };
+  Object.defineProperty(navigator, "share", {configurable:true, value:undefined});
+  Object.defineProperty(navigator, "canShare", {configurable:true, value:undefined});
+  await weitergeben(planText(), "test-plan.json", "Stundenplan", false);
+  return ausgabe;
+});
+pruef("Plan-Teilen fällt ohne Web-Share auf Datei zurück",
+  shareFallback?.art === "plan" && shareFallback?.name === "test-plan.json"
+    && shareFallback?.typ === "application/json",
+  JSON.stringify(shareFallback));
+
 /* Einlesen ersetzt nur den Plan. Der Rest muss unberührt bleiben. */
 const fremd = JSON.stringify({fassung:2, art:"plan",
   cfg:{slots:[{std:"1",von:"07:30",bis:"08:15"}], zweiWochen:false, fachnamen:{PH:"Physik"}, lehrer:{}},

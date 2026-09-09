@@ -133,7 +133,7 @@ Ein Knopf für alles. Die Art richtet sich danach, wo du gerade bist — bist du
 | Ereignis | einmalig, ganzer Tag oder eine bestimmte Stunde |
 | Note | mit mündlich/schriftlich, Wofür und Notizen |
 | Merkblatt | Formeln, Regeln, Vokabeln — mit Bildern |
-| Fehlzeit | in Unterrichtsstunden, entschuldigt/unentschuldigt/verspätet — ohne Fach |
+| Fehlzeit | in Unterrichtsstunden, entschuldigt/unentschuldigt/verspätet; Fach optional |
 
 Ein **Fach ist nie vorausgewählt** — außer du kommst aus einer angetippten Stunde.
 
@@ -149,7 +149,7 @@ Beliebig viele je Fach, jedes mit Datum und Uhrzeit. Zeilenumbrüche und Einrüc
 
 Werden in **Unterrichtsstunden** gezählt, nicht je Fach — so steht es auch auf dem Zeugnis. Unter ⚙ → Fehlzeiten stellst du ein, wie viele Stunden ein Schultag hat; daraus rechnet das Zeugnis die Fehltage aus.
 
-Tippst du eine Stunde im Plan an und wählst *Fehlzeit*, ist die Stundenzahl des Blocks schon eingetragen.
+Tippst du eine Stunde im Plan an und wählst *Fehlzeit*, ist die Stundenzahl des Blocks schon eingetragen. Das Fach wird ebenfalls übernommen; bei einer manuell angelegten Fehlzeit ist es optional.
 
 ### Im Kalender eintragen
 

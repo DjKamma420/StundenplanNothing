@@ -1,6 +1,6 @@
 /* =====================================================================
    Stundenplan — gesamte Logik.
-   Aufbau siehe ARCHITEKTUR.md. Kurz: kein Framework, ein Datensatz je
+   Aufbau siehe CLAUDE.md. Kurz: kein Framework, ein Datensatz je
    Profil im localStorage, bei jeder Änderung wird die sichtbare Ansicht
    neu gezeichnet.
    ===================================================================== */
@@ -2925,7 +2925,7 @@ MA = Mathematik</pre>
    <tr><td>Ereignis</td><td>einmalig, ganzer Tag oder eine Stunde</td><td>Zahnarzt, 3./4. Std.</td></tr>
    <tr><td>Note</td><td>mündlich/schriftlich, Wofür, Notizen</td><td>2,3 schriftlich</td></tr>
    <tr><td>Merkblatt</td><td>Formeln, Regeln, Vokabeln, mit Bildern</td><td>pq-Formel</td></tr>
-   <tr><td>Fehlzeit</td><td>in Unterrichtsstunden, ohne Fach</td><td>2 Stunden entschuldigt</td></tr>
+   <tr><td>Fehlzeit</td><td>in Unterrichtsstunden; Fach optional, aus einer Stunde vorbelegt</td><td>2 Stunden entschuldigt</td></tr>
   </table>
   <p>Ein <b>Fach ist nie vorausgewählt</b> — außer du kommst aus einer angetippten
    Stunde. Das verhindert, dass Einträge stillschweigend am falschen Fach landen.</p>
@@ -3845,29 +3845,35 @@ $("#sTeilen").onclick = async () => {
     `stundenplan-${profile.length > 1 ? "alle" : dateiName()}-${iso(new Date())}.json`,
     "Stundenplan-Sicherung", true);
 };
-/* Teilen, Zwischenablage, Herunterladen — in dieser Reihenfolge, je nachdem
-   was das Gerät kann. „istSicherung" sagt, ob der Vorgang als Sicherung
-   zählt: ein geteilter Plan ohne Noten ist keine. */
+/* Teilen oder als Datei speichern. Ein Plan muss am Ende immer als echte
+   .json-Datei herauskommen: Text in der Zwischenablage ist für Mitschüler
+   praktisch nicht importierbar und wirkte auf Geräten ohne Datei-Share wie
+   ein kaputter Knopf. „istSicherung" sagt, ob der Vorgang als Sicherung zählt. */
 async function weitergeben(text, name, titel, istSicherung){
-  try{
-    /* Mit einer leeren Dateiliste antwortet canShare auch dort „nein", wo
-       Dateien sehr wohl gehen — deshalb erst die Datei bauen, dann fragen. */
-    const datei = typeof File === "function" ? new File([text], name, {type:"application/json"}) : null;
-    if(datei && navigator.canShare && navigator.canShare({files:[datei]})){
-      await navigator.share({files:[datei], title:titel});
-    } else if(navigator.clipboard && navigator.clipboard.writeText){
-      await navigator.clipboard.writeText(text);
-      alert(`Dein Gerät kann keine Dateien teilen. ${istSicherung ? "Die Sicherung" : "Der Plan"} `
-        + "liegt jetzt in der Zwischenablage — füge sie irgendwo ein, wo sie bleibt.");
-    } else {
-      herunterladen(text, name, "application/json");
+  const datei = typeof File === "function"
+    ? new File([text], name, {type:"application/json"}) : null;
+  if(datei && typeof navigator.share === "function" && typeof navigator.canShare === "function"){
+    let kannDatei = false;
+    try{ kannDatei = navigator.canShare({files:[datei]}); }catch(e){}
+    if(kannDatei){
+      try{
+        await navigator.share({files:[datei], title:titel});
+        if(istSicherung) sicherungNotiert();
+        return;
+      }catch(e){
+        if(e && e.name === "AbortError") return;  // bewusst abgebrochen
+        /* Einige Browser melden canShare=true und lehnen denselben Dateityp
+           erst beim eigentlichen Teilen ab. Dann nicht im Fehlerkasten enden,
+           sondern zuverlässig auf einen normalen Download zurückfallen. */
+      }
     }
-    /* Nur eine vollständige Sicherung setzt die Erinnerung zurück. Ein
-       geteilter Plan enthält weder Noten noch Einträge und rettet nichts. */
+  }
+  try{
+    herunterladen(text, name, "application/json");
     if(istSicherung) sicherungNotiert();
+    else kurzHinweis("Teilen ist hier nicht verfügbar — Plan-Datei heruntergeladen.");
   }catch(e){
-    if(e && e.name === "AbortError") return;      // abgebrochen ist keine Sicherung
-    zeigeFehler("Teilen fehlgeschlagen: " + ((e && e.message) || e));
+    zeigeFehler("Datei konnte nicht ausgegeben werden: " + ((e && e.message) || e));
   }
 }
 /* Ersetzt sämtliche Profile des Geräts durch die aus der Datei. */
@@ -3927,11 +3933,12 @@ $("#sLaden").onclick = () => {
 function planUebernehmen(d){
   const teil = paketSaeubern(d);
   if(!teil.plan) return alert("In der Datei steckt kein erkennbarer Stundenplan.");
-  const belegt = Object.values(teil.plan)
-    .flatMap(w => Object.values(w)).flat().filter(Boolean).length;
+  const roh = (d.cfg && typeof d.cfg === "object") ? d.cfg : {};
+  const wochen = roh.zweiWochen ? ["A","B"] : ["A"];
+  const belegt = wochen.flatMap(w => Object.values(teil.plan[w] || {}))
+    .flat().filter(Boolean).length;
   if(!confirm(`Das ersetzt den Stundenplan durch ${zahl(belegt,"belegte Stunde","belegte Stunden")}.\n`
     + "Einträge, Noten, Fehlzeiten und Merkblätter bleiben unberührt.\n\nFortfahren?")) return;
-  const roh = (d.cfg && typeof d.cfg === "object") ? d.cfg : {};
   const c = cfgSaeubern(Object.assign({}, cfg, {
     slots: roh.slots, zweiWochen: roh.zweiWochen,
     /* Zusammenführen statt ersetzen: eigene Namen sind mehr wert als fremde. */
@@ -3943,6 +3950,7 @@ function planUebernehmen(d){
   kurzHinweis("Stundenplan übernommen. Deine Einträge und Noten sind unverändert.");
 }
 $("#sTeilenPlan").onclick = async () => {
+  if(!faecher().length) return alert("Trag zuerst deinen Stundenplan ein.");
   await weitergeben(planText(), `stundenplan-nur-plan-${iso(new Date())}.json`,
                     "Stundenplan", false);
 };

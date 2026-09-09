@@ -2,6 +2,18 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v47
+
+**Behoben**
+- **„Nur den Plan teilen“ funktioniert wieder zuverlässig.** Wenn das Gerät JSON-Dateien nativ teilen kann, öffnet sich weiterhin das Teilen-Menü. Unterstützt der Browser Datei-Share nicht oder lehnt ihn trotz vorheriger Zusage ab, wird jetzt eine echte `.json`-Datei heruntergeladen. Der frühere Zwischenablage-Fallback ist entfallen — Text in der Zwischenablage war für Empfänger praktisch nicht als Plan importierbar und wirkte wie ein kaputter Knopf.
+- Ein leerer Plan lässt sich nicht mehr scheinbar teilen; die App fordert zuerst zum Eintragen auf.
+- Beim Einlesen eines normalen Ein-Wochen-Plans zählt die Rückfrage nur die A-Woche statt eine vorhandene B-Kopie doppelt mit.
+- Anleitung und README beschreiben Fehlzeiten wieder korrekt: Das Fach ist optional und wird aus einer angetippten Stunde übernommen.
+
+**Aufgeräumt**
+- `app.js` verweist nicht mehr auf die nicht vorhandene `ARCHITEKTUR.md`, sondern auf `CLAUDE.md`.
+- `LICENSE` ist wieder unverändertes Standard-MIT, damit Lizenztext, README und GitHub-Lizenzanzeige dasselbe aussagen.
+
 ## v46
 
 Die Einstellungen waren über die letzten Fassungen auf **achtzehn
