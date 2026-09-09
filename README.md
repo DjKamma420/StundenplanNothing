@@ -115,7 +115,9 @@ Wechseln durch Antippen, durch Antippen der vier Punkte oder durch **Wischen in 
 - **Woche** neben der Kalenderwoche öffnet das Wochenraster: alle fünf Tage nebeneinander, mit Ausfall, Ferien und Marken für Klausuren und Hausaufgaben.
 - **Kurz antippen** öffnet die Schnellauswahl: Hausaufgabe für die nächste Stunde dieses Fachs, Notiz, Klausur, Fehlzeit, *Fällt aus*, *Vertretung*, ein sonstiges Ereignis — oder die Fach-Info.
 - **Gedrückt halten** öffnet die Fach-Info: ausgeschriebener Name, Lehrkraft, Raum, Wochenstunden, nächster Termin (antippbar → springt in den Kalender), Notenschnitt, Fehlzeiten, Merkblätter, Offenes.
-- **Mit ✎ oben** ändert Antippen dauerhaft Fach, Raum und Lehrkraft. Der Stift sitzt in jeder Ansicht an derselben Stelle: im Reiter **Einträge** sortiert er die Kacheln um.
+- **Mit ✎ oben** ändert Antippen dauerhaft Fach, Raum und Lehrkraft.
+
+Hinter **⚙** liegen acht Bereiche — Darstellung, Schule und Stundenraster, Noten und Zeugnis, Fehlzeiten und Archiv, Erinnerungen und Kalender, Ferien und Feiertage, Fächer und Lehrkräfte, Sicherung und Speicher. Das Menü nennt unter jedem Namen seinen jetzigen Stand; *Speichern* gilt für alle Bereiche zusammen. Der Stift sitzt in jeder Ansicht an derselben Stelle: im Reiter **Einträge** sortiert er die Kacheln um.
 
 *Fällt aus*, *Vertretung* und Ereignisse gelten **nur an diesem einen Tag**. Der Regelplan bleibt unangetastet.
 

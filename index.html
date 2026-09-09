@@ -788,11 +788,16 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 <!-- Einstellungen -->
 <dialog id="dlgEinst"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <h2>Einstellungen</h2>
-  <div class="chips">
+  <div class="chips" id="einstHilfeZeile">
     <button type="button" id="btnHilfe" style="border-color:var(--akzent);color:var(--akzent)">
       Anleitung und Technik</button>
   </div>
+  <div class="chips hidden" id="einstZurueckZeile">
+    <button type="button" id="bEinstZurueck">‹ Alle Einstellungen</button></div>
+  <div class="eyebrow mitte hidden" id="einstTeilTitel" style="margin-top:14px"></div>
+  <div class="stapel hidden" id="einstMenu"></div>
 
+  <section class="einstTeil" data-einst="darstellung">
   <div class="eyebrow" style="margin-top:18px">Darstellung</div>
   <div class="zwei">
     <label><span>Akzentfarbe</span><input type="color" id="sFarbe"></label>
@@ -817,6 +822,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
       <option value="nie">gleich in den Plan</option>
     </select></label>
 
+  </section>
+  <section class="einstTeil" data-einst="schule">
   <div class="eyebrow" style="margin-top:22px">Schule</div>
   <label><span>Klasse</span><input type="text" id="sKlasse" placeholder="Deine Klasse"></label>
   <div class="chips"><button type="button" id="sImport">Plan einfügen</button></div>
@@ -845,6 +852,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
   <p class="hinweis" id="sWocheStand"></p>
 
+  </section>
+  <section class="einstTeil" data-einst="noten">
   <div class="eyebrow" style="margin-top:22px">Noten</div>
   <div class="zwei">
     <label><span>System</span>
@@ -863,6 +872,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <p class="hinweis">Gilt für das Zeugnis und die Liste darüber.</p>
   <div id="sReiheFach"></div>
 
+  </section>
+  <section class="einstTeil" data-einst="fehlzeiten">
   <div class="eyebrow" style="margin-top:22px">Fehlzeiten</div>
   <label><span>Stunden je Schultag</span><input type="number" id="sStdProTag" min="1" max="16" step="1"></label>
   <p class="hinweis">Damit rechnet das Zeugnis versäumte Stunden in Tage um.</p>
@@ -878,6 +889,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     </select></label>
   <p class="hinweis" id="sArchivHinweis"></p>
 
+  </section>
+  <section class="einstTeil" data-einst="erinnerungen">
   <div class="eyebrow" style="margin-top:22px">Erinnerungen</div>
   <p class="hinweis">Die App kann sich nicht selbst wecken. Sie meldet sich beim Öffnen —
      für echte Wecker nutze den Kalender-Export.</p>
@@ -897,6 +910,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
      entstehen, die du einzeln ausblenden kannst.</p>
   <p class="hinweis" id="sMeldeStand"></p>
 
+  </section>
+  <section class="einstTeil" data-einst="ferien">
   <div class="eyebrow" style="margin-top:22px">Ferien und Feiertage</div>
   <label><span>Bundesland</span><select id="sLand"></select></label>
   <div class="chips">
@@ -905,6 +920,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
   <p class="hinweis" id="sFerienStand"></p>
 
+  </section>
+  <section class="einstTeil" data-einst="namen">
   <div class="eyebrow" style="margin-top:22px">Lehrkräfte</div>
   <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
     <input type="checkbox" id="sNachLehrer" style="width:18px;flex:none;margin:0">
@@ -919,6 +936,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <div class="eyebrow" style="margin-top:22px">Fachnamen</div>
   <textarea id="sFaecher" style="min-height:90px" placeholder="KÜRZEL = Fachname"></textarea>
 
+  </section>
+  <section class="einstTeil" data-einst="sicherung">
   <div class="eyebrow" style="margin-top:22px">Sicherung</div>
   <p class="hinweis" id="sSicherStand"></p>
   <div class="chips">
@@ -992,6 +1011,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <div class="eyebrow" style="margin-top:22px">Speicher</div>
   <p class="hinweis" id="sSpeicher"></p>
 
+  </section>
   <div class="reihe">
     <button type="button" id="sUpdate">Nach Update suchen</button>
     <button type="button" class="haupt" id="bEinstSpeichern">Speichern</button>

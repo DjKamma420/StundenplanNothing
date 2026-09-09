@@ -147,3 +147,40 @@ Verhältnis mit dazu. Sie liest jetzt den ersten Textknoten.
 
 **Nachweis.** `werkzeug/pruefungen/lehreroptionen.mjs`, 25 Prüfungen.
 Alle zehn Prüfdateien: 224 Prüfungen, 0 Fehler.
+
+
+---
+
+# v46 — Struktur für die Einstellungen
+
+## Ergebnis
+
+**Der Befund:** 18 Überschriften, 46 Bedienelemente, 220 Zeilen Markup in
+einer Rolle. Gewachsen ist das über v43 bis v45.
+
+**Die Form ist nicht neu erfunden**, sondern aus dem Reiter *Einträge*
+übernommen: Menü mit Stand je Kachel, dann der Bereich, dazu ein Weg
+zurück. Wer die eine Stelle kennt, kennt die andere.
+
+**Die Falle, die es zu umgehen galt** — die Bereiche in `index.html` mit
+`hidden` zu markieren wäre naheliegend gewesen und hätte genau den Absturz
+aus v32 wiederholt: nach einer Aktualisierung trifft kurzzeitig neues
+`index.html` auf altes `app.js`, und das kennt `einstZeigen` nicht. Die
+Einstellungen wären in diesem Moment leer gewesen. Sie stehen deshalb
+sichtbar in der Vorgabe; versteckt wird erst zur Laufzeit. Eine Prüfung
+liest `index.html` roh und hält das fest.
+
+**Beim Prüfen aufgefallen:** fünf bestehende Prüfdateien fielen aus, weil
+sie `#sDaten`, `#sNachLehrer` oder `#sReset` direkt nach dem Öffnen
+befüllten — Felder, die jetzt in einem geschlossenen Bereich liegen. Das
+war kein Testproblem, sondern der Beweis, dass sich der Weg für einen
+Menschen geändert hat: die Prüfungen gehen jetzt erst in den Bereich. Aus
+demselben Fund entstand die Rückkehr in den Ausgangsbereich nach *Plan
+einfügen* — vorher wäre man dort im Menü gelandet.
+
+**Nachweis.** `werkzeug/pruefungen/einstellungen.mjs`, 34 Prüfungen: dass
+kein Bedienelement ausserhalb eines Bereichs liegt, dass die Vorgabe
+sichtbar ist, Menü und Stand je Kachel, jeder Bereich einzeln offen und
+nicht leer, Speichern über zwei Bereiche hinweg, die Rückkehr aus dem
+Import und der Rückfall bei unbekanntem Bereichsnamen.
+Alle elf Prüfdateien: 255 Prüfungen, 0 Fehler.

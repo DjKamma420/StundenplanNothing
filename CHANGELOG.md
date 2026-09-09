@@ -2,6 +2,39 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v46
+
+Die Einstellungen waren über die letzten Fassungen auf **achtzehn
+Überschriften und sechsundvierzig Bedienelemente in einer einzigen Rolle**
+gewachsen. Sie sind jetzt zweistufig — dieselbe Form wie im Reiter
+*Einträge*: erst ein Menü, dann ein Bereich.
+
+**Neu**
+- **Acht Bereiche** statt einer Liste: Darstellung · Schule und Stundenraster ·
+  Noten und Zeugnis · Fehlzeiten und Archiv · Erinnerungen und Kalender ·
+  Ferien und Feiertage · Fächer und Lehrkräfte · Sicherung und Speicher
+- Jede Menükachel nennt darunter **ihren jetzigen Stand** („10b · 4 Stunden",
+  „Archiv 90 Tage", „zuletzt vor 3 Tagen"). Das Meiste beantwortet sich damit,
+  ohne den Bereich zu öffnen
+- **‹ Alle Einstellungen** führt zurück. **Speichern** gilt weiterhin für
+  alles zusammen, egal in welchem Bereich man steht — die Felder der anderen
+  Bereiche bleiben im Dokument und werden mitgelesen
+- Wer aus einem Bereich heraus *Plan einfügen* öffnet, landet beim Zurück
+  wieder in **diesem** Bereich, nicht im Menü
+- Wiederholt sich die erste innere Überschrift im Bereichstitel („Noten und
+  Zeugnis" über „Noten"), entfällt sie beim Anzeigen
+- Neuer Anleitungs-Abschnitt *Wie die Einstellungen aufgebaut sind*, und
+  *Einrichten in zehn Minuten* führt jetzt durch die Bereiche
+- `werkzeug/pruefungen/einstellungen.mjs` prüft die Struktur fest nach
+  (34 Prüfungen)
+
+**Wichtig für die Aktualisierung**
+- Die Bereiche stehen in `index.html` **ohne** `hidden`; versteckt werden sie
+  erst durch `app.js`. Nach einer Aktualisierung trifft kurzzeitig neues
+  `index.html` auf altes `app.js` — wären sie in der Vorgabe versteckt,
+  stünden die Einstellungen in diesem Moment leer da. So sieht man dort
+  weiterhin die alte lange Liste. Eine Prüfung hält das fest
+
 ## v45
 
 Nachtrag zu v43: die Trennung nach Lehrkraft war an mehreren Stellen nur

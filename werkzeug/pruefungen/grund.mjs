@@ -35,6 +35,9 @@ const boese = JSON.stringify({
 });
 await page.evaluate(() => einstellungenOeffnen());
 await page.waitForTimeout(300);
+/* Seit v46 sind die Einstellungen zweistufig — erst in den Bereich. */
+await page.evaluate(() => einstZeigen("sicherung"));
+await page.waitForTimeout(150);
 await page.fill("#sDaten", boese);
 await page.click("#sLaden");
 await page.waitForTimeout(500);
