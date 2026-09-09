@@ -58,6 +58,9 @@ window.addEventListener("unhandledrejection", e =>
    sich die Form der gespeicherten Daten ändert, und gibt späteren
    Umstellungen einen Anker. Ohne sie weiß niemand, was da liegt. */
 const SCHEMA = 3;
+const datenstandVon = roh => Number(roh && roh.fassung) || 0;
+const neuereDatenText = stand => "Diese Daten stammen aus einer neueren Fassung der App "
+  + `(Datenstand ${stand}, diese App kennt ${SCHEMA}). Aktualisiere die App, bevor du weiterarbeitest.`;
 
 /* --- Voreinstellungen. Nichts davon ist auf eine Schule zugeschnitten. --- */
 const STANDARD = {
@@ -121,6 +124,9 @@ const ARTLANG = {H:"Hausaufgaben",K:"Klausuren",N:"Notizen",E:"Ereignisse",
 /* Date.now() allein kollidiert, sobald zwei Einträge in derselben
    Millisekunde entstehen — beim Einlesen einer Sicherung passiert genau das. */
 const neueId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+/* Eine ältere App darf Daten einer neueren Datenform weder migrieren noch
+   speichern. Der Schalter wird beim Laden des aktiven Profils gesetzt. */
+let datenZuNeu = false;
 
 /* --- Speicher, an das aktive Profil gebunden --- */
 const Speicher = {
@@ -131,11 +137,13 @@ const Speicher = {
     catch(e){ return k in this.puffer ? this.puffer[k] : standard; }
   },
   schreib(k, v){
+    if(datenZuNeu) return;
     this.puffer[k] = v;
     try{ localStorage.setItem(this.pfad(k), JSON.stringify(v)); }
     catch(e){ zeigeFehler("Speicher voll. Lösche Bilder aus Merkblättern oder lege eine Sicherung an."); }
   },
   entferne(k){
+    if(datenZuNeu) return;
     delete this.puffer[k];
     try{ localStorage.removeItem(this.pfad(k)); }catch(e){}
   }
@@ -150,6 +158,7 @@ function profilSchluessel(id){
 const DATEN = ["cfg","plan","eintraege","ferien","sonder","noten","merkblatt"];
 let profile = [], profilId = "1";
 function profileSichern(){
+  if(datenZuNeu) return;
   try{
     localStorage.setItem("profile", JSON.stringify(profile));
     localStorage.setItem("profilAktiv", profilId);
@@ -178,13 +187,17 @@ const profilName = () => (profile.find(x => x.id === profilId) || {}).name || "P
 let cfg, plan, eintraege, ferien, sonder, noten;
 function zustandLaden(){
   Speicher.puffer = {};
-  cfg       = Object.assign({}, STANDARD, Speicher.lies("cfg", {}));
+  const rohCfg = Speicher.lies("cfg", {});
+  datenZuNeu = datenstandVon(rohCfg) > SCHEMA;
+  cfg       = Object.assign({}, STANDARD, rohCfg);
   plan      = Speicher.lies("plan", {});
   eintraege = Speicher.lies("eintraege", []);
   ferien    = Speicher.lies("ferien", []);
   sonder    = Speicher.lies("sonder", []);
   noten     = Speicher.lies("noten", []);
-  merkblattUmziehen();
+  /* Schon die alte Merkblattmigration schreibt Daten. Bei einem neueren
+     Datenstand muss deshalb vor jeder Migration abgebrochen werden. */
+  if(!datenZuNeu) merkblattUmziehen();
   datenMigrieren();
 }
 /* Bis Fassung 3 erledigen normalisiere() und merkblattUmziehen() die
@@ -192,12 +205,16 @@ function zustandLaden(){
    spätere Schritte aufsetzen. Wichtig ist der umgekehrte Fall: Daten aus
    einer neueren App-Fassung dürfen nicht stillschweigend beschnitten werden. */
 function datenMigrieren(){
-  const war = Number(cfg.fassung) || 0;
+  const war = datenstandVon(cfg);
   if(war === SCHEMA) return;
   if(war > SCHEMA){
-    zeigeFehler("Diese Daten stammen aus einer neueren Fassung der App "
-      + `(Datenstand ${war}, diese App kennt ${SCHEMA}). `
-      + "Aktualisiere die App, bevor du weiterarbeitest.");
+    datenZuNeu = true;
+    zeigeFehler(neuereDatenText(war));
+    /* Nicht nur warnen: die Oberfläche vollständig sperren. Sonst könnte
+       eine Tastenkombination oder ein Klick unter dem Fehlerkasten doch noch
+       eine Schreiboperation auslösen. Der Neuladen-Knopf bleibt erreichbar. */
+    const k = document.getElementById("fehlerkasten");
+    if(k){ k.style.bottom = "0"; k.style.maxHeight = "none"; }
     return;
   }
   cfg.fassung = SCHEMA;
@@ -245,6 +262,7 @@ const jetztMin = () => { const n = new Date(); return n.getHours()*60 + n.getMin
 
 /* --- Daten pflegen --- */
 function normalisiere(){
+  if(datenZuNeu) return;
   ["A","B"].forEach(w => {
     if(!plan[w]) plan[w] = {};
     TAGE.forEach(t => {
@@ -331,6 +349,7 @@ function archivAufraeumen(){
   }
 }
 function sichern(){
+  if(datenZuNeu) return;
   Speicher.schreib("cfg", cfg); Speicher.schreib("plan", plan);
   Speicher.schreib("eintraege", eintraege); Speicher.schreib("ferien", ferien);
   Speicher.schreib("sonder", sonder); Speicher.schreib("noten", noten);
@@ -483,8 +502,11 @@ function themaAnwenden(){
      Akzent den besseren Kontrast? Bei Gelb oder Türkis gewinnt Schwarz. */
   const L = helligkeit(akzent);
   const gegenWeiss = 1.05 / (L + 0.05);
-  const gegenSchwarz = (L + 0.05) / (helligkeit("#111111") + 0.05);
-  document.documentElement.style.setProperty("--aufAkzent", gegenSchwarz > gegenWeiss ? "#111" : "#fff");
+  /* Reines Schwarz statt #111: bei der Standardfarbe lag #111 mit 4,435:1
+     knapp unter WCAG 4,5:1. Schwarz/Weiß garantiert für jede Hex-Farbe die
+     kontrastreichere der beiden Extremfarben. */
+  const gegenSchwarz = (L + 0.05) / 0.05;
+  document.documentElement.style.setProperty("--aufAkzent", gegenSchwarz > gegenWeiss ? "#000" : "#fff");
   document.body.classList.toggle("hell", cfg.modus === "hell");
   document.body.classList.remove("schrift-mono","schrift-serif");
   if(cfg.schrift === "mono") document.body.classList.add("schrift-mono");
@@ -497,6 +519,7 @@ function themaAnwenden(){
    Zeichnen
    ===================================================================== */
 function zeichne(){
+  if(datenZuNeu) return;
   normalisiere();
   themaAnwenden();
   $("#ansichtTag").classList.toggle("hidden", ansicht !== "tag");
@@ -2476,7 +2499,8 @@ function cfgSaeubern(roh){
   c.sicherHalten = alsZahl(c.sicherHalten, 0, 60, 3);
   c.archivTage = alsZahl(c.archivTage, 0, 3650, 0);
   c.startProfil = ["immer","mehrere","nie"].includes(c.startProfil) ? c.startProfil : "immer";
-  c.fassung = alsZahl(c.fassung, 0, 999, 0);
+  /* Nach erfolgreicher Prüfung liegt das Paket in der aktuellen Form vor. */
+  c.fassung = SCHEMA;
   c.stdProTag  = alsZahl(c.stdProTag, 1, 16, 8);
   c.reiheEin   = Array.isArray(c.reiheEin)
     ? c.reiheEin.filter(x => REIHE_STANDARD.includes(x)) : null;
@@ -2551,6 +2575,8 @@ function noteSaeubern(g){
           titel: alsText(g.titel, 200), notiz: alsText(g.notiz, 4000),
           geloescht: !!g.geloescht, geloeschtAm: alsDatum(g.geloeschtAm) || null};
 }
+const paketDatenstand = d => datenstandVon(d && d.cfg);
+const paketZuNeu = d => paketDatenstand(d) > SCHEMA;
 /* Aus beliebigem JSON wird ein Datensatz — oder ein leeres Ergebnis. */
 function paketSaeubern(d){
   const p = {};
@@ -3877,6 +3903,8 @@ async function weitergeben(text, name, titel, istSicherung){
 }
 /* Ersetzt sämtliche Profile des Geräts durch die aus der Datei. */
 function alleProfileUebernehmen(liste){
+  const neuerStand = Math.max(0, ...liste.map(paketDatenstand));
+  if(neuerStand > SCHEMA) return alert(neuereDatenText(neuerStand));
   if(!confirm("Diese Sicherung enthält alle Profile. Sämtliche Profile auf diesem "
     + "Gerät werden dadurch ersetzt. Fortfahren?")) return;
   const vorher = profile.map(p => p.id), neu = [];
@@ -3884,6 +3912,9 @@ function alleProfileUebernehmen(liste){
     const id = alsId(p && p.id);
     if(neu.some(x => x.id === id)) return;
     const rein = paketSaeubern(p);
+    /* Auch Profile mit derselben ID werden wirklich ersetzt. Alte Nebenwerte
+       wie gemeldet_... oder sicherSpaeter dürfen nicht in den Restore hineinragen. */
+    profilSchluessel(id).forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
     DATEN.filter(k => k !== "merkblatt").forEach(k => {
       const wert = rein[k] !== undefined ? rein[k]
                  : (k === "cfg" || k === "plan") ? {} : [];
@@ -3906,6 +3937,7 @@ $("#sLaden").onclick = () => {
   catch(e){ return alert("Der Text lässt sich nicht lesen. Ist es wirklich eine Sicherungsdatei?"); }
   if(d && Array.isArray(d.profile)) return alleProfileUebernehmen(d.profile);
   if(d && d.art === "plan") return planUebernehmen(d);
+  if(paketZuNeu(d)) return alert(neuereDatenText(paketDatenstand(d)));
   const teil = paketSaeubern(d);
   if(!Object.keys(teil).length) return alert("In der Datei steckt kein erkennbarer Stundenplan.");
   /* Einlesen ersetzt, es ergänzt nicht. Wer das übersieht, verliert einen
@@ -4095,6 +4127,7 @@ function browserPruefen(){
 }
 
 function starten(){
+  if(datenZuNeu){ browserPruefen(); return; }
   if(!cfg || !Array.isArray(cfg.slots) || !cfg.slots.length){
     cfg = Object.assign({}, STANDARD, cfg || {});
     cfg.slots = STANDARD.slots.slice();
