@@ -196,6 +196,11 @@ section{margin-top:30px}
 .zeuZeile .fachn small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:3px}
 .zeuZeile .roh{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .zeuZeile .note{font-size:26px;font-weight:600;min-width:44px;text-align:right}
+.zeuUnter{display:flex;align-items:center;gap:12px;padding:7px 0 7px 16px}
+.zeuUnter .wer{flex:1;min-width:0;font-size:13px;color:var(--muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.zeuUnter .roh{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.zeuUnter .note{font-size:16px;font-weight:600;min-width:44px;text-align:right;color:var(--muted)}
 #zeuSchnitt{color:var(--akzent)}
 
 /* Merkblätter */
@@ -546,6 +551,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
   <label class="hidden" id="eFachFreiWrap"><span>Fach eintippen</span>
     <input type="text" id="eFachFrei" autocapitalize="characters"></label>
+  <label class="hidden" id="eLkWrap"><span>Lehrkraft</span><select id="eLk"></select></label>
   <div class="zwei hidden" id="eNoteWrap">
     <label><span id="eWertLabel">Note</span><input type="text" id="eWert" inputmode="decimal" placeholder="2,3"></label>
     <label><span>Art</span>
@@ -826,7 +832,15 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <p class="hinweis" id="sFerienStand"></p>
 
   <div class="eyebrow" style="margin-top:22px">Lehrkräfte</div>
-  <p class="hinweis">Je Zeile ein Kürzel und der Name, getrennt durch ein Gleichheitszeichen.</p>
+  <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
+    <input type="checkbox" id="sNachLehrer" style="width:18px;flex:none;margin:0">
+    <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)">
+      Fächer nach Lehrkraft trennen</span>
+  </label>
+  <p class="hinweis">Dann sucht „Als Nächstes“ die nächste Stunde desselben Fachs
+     <i>bei derselben Lehrkraft</i>, Einträge bekommen ein Feld dafür, und Zeugnis
+     und Notizen zeigen Unterpunkte je Lehrkraft.</p>
+  <p class="hinweis" style="margin-top:12px">Je Zeile ein Kürzel und der Name, getrennt durch ein Gleichheitszeichen.</p>
   <textarea id="sLehrer" style="min-height:90px" placeholder="KÜRZEL = Name"></textarea>
   <div class="eyebrow" style="margin-top:22px">Fachnamen</div>
   <textarea id="sFaecher" style="min-height:90px" placeholder="KÜRZEL = Fachname"></textarea>

@@ -2,6 +2,35 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v43
+
+**Neu**
+- **Fächer nach Lehrkraft trennen** (⚙ → Lehrkräfte, standardmäßig aus).
+  Wer dasselbe Fach bei zwei Lehrkräften hat, arbeitete bisher mit einem
+  Topf für beide Kurse. Mit dem Haken:
+  - „Als Nächstes" sucht die nächste Stunde desselben Fachs **bei derselben
+    Lehrkraft** — im Schnelldialog, in der Fach-Info und bei den roten
+    Punkten der Datumsauswahl
+  - Einträge und Noten bekommen ein Feld *Lehrkraft*, aus der angetippten
+    Stunde vorbelegt
+  - Das Zeugnis zeigt unter betroffenen Fächern je Lehrkraft einen eigenen
+    Schnitt; die Zeile des Fachs bleibt und rechnet weiter über alles
+  - Die Notizen bekommen Zwischenüberschriften je Lehrkraft
+  - Die Fach-Info zählt die Wochenstunden nur noch für diese Lehrkraft
+- `werkzeug/pruefungen/lehrer.mjs` prüft beides fest nach
+
+**Behoben**
+- Der Schultag endete rechnerisch immer am Ende des **Stundenrasters**,
+  nicht am Ende des eigenen Unterrichts. „Schulschluss in …" nannte damit
+  an einem kurzen Tag eine Zeit, zu der man längst zu Hause war, und der
+  Fortschrittsbalken meldete danach „Freistunde" statt „Schule aus". Der
+  Tagesplan schnitt leere Stunden am Ende schon richtig ab — jetzt rechnen
+  Balken und Countdown mit demselben letzten belegten Block. An einem Tag
+  ganz ohne Unterricht verschwindet der Balken
+- Die Suche prüfte das **Fachkürzel** gegen die Tabelle der Lehrkräfte
+  (`lehrerName(o.fach)`) — dabei kam nie etwas heraus. Jetzt wird die
+  Lehrkraft des Eintrags gesucht, mit Kürzel und ausgeschriebenem Namen
+
 ## v42
 
 Gefunden durch einen Backtest über den ganzen Code (Angriffsflächen und

@@ -220,6 +220,8 @@ CH = Chemie
 
 Der Plan zeigt weiter die Kürzel — sonst passt er nicht auf den Bildschirm. Die vollen Namen erscheinen in der Fach-Info und im Zeugnis.
 
+**Dasselbe Fach bei zwei Lehrkräften?** Dann setz im selben Abschnitt den Haken *Fächer nach Lehrkraft trennen*. Danach sucht die Schnellauswahl die nächste Stunde desselben Fachs **bei derselben Lehrkraft**, Einträge und Noten bekommen ein Feld dafür, und Zeugnis wie Notizen zeigen Unterpunkte je Lehrkraft. Ohne den Haken bleibt alles wie bisher.
+
 **Anderes Importformat?** Der Ausdruck steht in `app.js` in der Funktion `parseZelle`.
 
 ---
