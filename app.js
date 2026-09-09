@@ -479,7 +479,10 @@ function zeichne(){
   $("#rKal").setAttribute("aria-pressed", ansicht === "kalender");
   $("#rEin").setAttribute("aria-pressed", ansicht === "eintraege");
   $("#rZeu").setAttribute("aria-pressed", ansicht === "zeugnis");
+  /* Beide Stifte sitzen im selben Platz im Kopf — hier entscheidet sich,
+     welcher davon zu sehen ist. Nie beide. */
   $("#btnEdit").classList.toggle("hidden", ansicht !== "tag");
+  $("#btnSort").classList.toggle("hidden", !(ansicht === "eintraege" && einSub === null));
   const punkte = $("#wischPunkte");
   if(punkte) [...punkte.children].forEach((p,i) => p.classList.toggle("an", ANSICHTEN[i] === ansicht));
   try{
@@ -794,9 +797,9 @@ function kachelnZeichnen(){
     if(!sortModus) return knopf;
     /* Im Sortiermodus zählt der Kachelklick nicht — sonst öffnet sich beim
        Umsortieren dauernd eine Liste. */
-    return `<div style="display:flex;gap:8px;align-items:stretch">
-      <div style="flex:1;pointer-events:none;opacity:.75">${knopf}</div>
-      <div style="display:flex;flex-direction:column;gap:6px;justify-content:center">
+    return `<div class="kachelreihe">
+      <div>${knopf}</div>
+      <div class="pfeile">
         <button type="button" class="mini" data-khoch="${i}" ${i === 0 ? "disabled style=opacity:.3" : ""}>↑</button>
         <button type="button" class="mini" data-krunter="${i}" ${i === liste.length-1 ? "disabled style=opacity:.3" : ""}>↓</button>
       </div></div>`;
@@ -841,6 +844,8 @@ const archivFinden = (art,id) => art === "eintrag" ? eintraege.find(x => x.id ==
 function zeichneEintraege(){
   $("#einMenu").classList.toggle("hidden", einSub !== null);
   $("#einDetail").classList.toggle("hidden", einSub === null);
+  $("#btnSort").setAttribute("aria-pressed", sortModus);
+  $("#sortHinweis").classList.toggle("hidden", !sortModus);
   $("#einSubHinweis").textContent = "";
   $("#einSubHinweis").style.color = "";
 
@@ -1683,12 +1688,7 @@ $("#einListe").addEventListener("click", e => {
     sichern(); zeichne();
   }
 });
-$("#btnSort").onclick = () => {
-  sortModus = !sortModus;
-  $("#btnSort").setAttribute("aria-pressed", sortModus);
-  $("#sortHinweis").classList.toggle("hidden", !sortModus);
-  zeichne();
-};
+$("#btnSort").onclick = () => { sortModus = !sortModus; zeichne(); };
 $("#einMenu").onclick = e => {
   const h = e.target.closest("[data-khoch]"), r = e.target.closest("[data-krunter]");
   if(h || r){
@@ -2437,12 +2437,12 @@ const HILFE = [
    der betroffenen Stunden.</p>`},
 
 {id:"handeintragen", teil:"Der Stundenplan", titel:"Plan von Hand eintragen", worte:"bearbeiten stift fach raum lehrer",
- text:`<p><b>✎ oben antippen</b> schaltet das Bearbeiten ein — ein Hinweis unter dem
-   Plan zeigt das an. Jetzt öffnet ein Tipp auf eine Stunde die Felder
-   <i>Fach</i>, <i>Raum</i>, <i>Lehrkraft</i>.</p>
+ text:`<p><b>✎ oben antippen</b> — links neben Profil und ⚙ — schaltet das
+   Bearbeiten ein; ein Hinweis unter dem Plan zeigt das an. Jetzt öffnet ein Tipp
+   auf eine Stunde die Felder <i>Fach</i>, <i>Raum</i>, <i>Lehrkraft</i>.</p>
   <p>Fächer werden immer <b>groß</b> gespeichert, egal wie du sie tippst. Sonst
    würden „Ch“ und „CH“ als zwei Fächer gelten und der Notenschnitt zerfiele.</p>
-  <p>Erneut auf ✎ tippen beendet das Bearbeiten. Für eine Woche brauchst du keine
+  <p>Erneut auf ✎ oben tippen beendet das Bearbeiten. Für eine Woche brauchst du keine
    fünf Minuten — <b>ein Stundenplan wiederholt sich</b>, eine Woche reicht,
    bei A/B-Wochen zwei.</p>`},
 
@@ -2516,7 +2516,11 @@ MA = Mathematik</pre>
    der Seite, wenn dort nichts mehr steht. Steht eine Unterliste offen, führt der
    erste Wisch zurück ins Menü.</p>
   <p>In der Tagesansicht wischt man zusätzlich <b>tagweise</b> vor und zurück, im
-   Kalender <b>monatsweise</b>.</p>`},
+   Kalender <b>monatsweise</b>.</p>
+  <p>Links neben Profil und ⚙ liegt <b>ein Platz für den Stift ✎</b>. Was er tut,
+   richtet sich nach der Ansicht: im <b>Tag</b> bearbeitet er den Plan, im
+   <b>Einträge</b>-Menü sortiert er die Kacheln. In den übrigen Ansichten bleibt
+   er leer — der Platz selbst bleibt, damit die Reiterleiste nicht springt.</p>`},
 
 {id:"stundeantippen", teil:"Täglich benutzen", titel:"Eine Stunde antippen", worte:"schnellauswahl hausaufgabe fällt aus vertretung fachinfo",
  text:`<p><b>Kurz antippen</b> öffnet die Schnellauswahl für diese Stunde:</p>
@@ -2569,6 +2573,18 @@ MA = Mathematik</pre>
    dessen Bezeichnung.</p>
   <p>Einzelnes Antippen wählt weiterhin nur den Tag aus — darunter erscheint, was
    an ihm ansteht.</p>`},
+
+{id:"kacheln", teil:"Täglich benutzen", titel:"Das Einträge-Menü umsortieren", worte:"kacheln reihenfolge sortieren stift pfeile",
+ text:`<p>Im Reiter <b>Einträge</b> stehen alle Listen als Kacheln untereinander:
+   Hausaufgaben, Klausuren, Notizen, Ereignisse, Noten, Merkblätter, Fehlzeiten,
+   Archiv. Jede nennt unter dem Namen ihren Stand.</p>
+  <p><b>✎ oben antippen</b> schaltet das Sortieren ein — derselbe Platz im Kopf,
+   an dem in der Tagesansicht der Plan-Stift sitzt. Neben jeder Kachel erscheinen
+   <b>↑</b> und <b>↓</b>; solange sortiert wird, öffnet ein Tipp auf eine Kachel
+   keine Liste. Erneut auf ✎ tippen beendet es.</p>
+  <p>Die Reihenfolge gilt für dieses Profil und bleibt gespeichert. Die der
+   <i>Fächer</i> im Zeugnis stellst du getrennt davon unter ⚙ →
+   <b>Reihenfolge der Fächer</b> ein.</p>`},
 
 {id:"suchen", teil:"Täglich benutzen", titel:"Suchen", worte:"finden filter",
  text:`<p>Im Reiter <b>Einträge</b> ganz oben. Gesucht wird über Fach, Titel, Notiz

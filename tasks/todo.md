@@ -46,3 +46,60 @@ Zeugnis, Überschriften in den Notizen, `letzterBlock` an drei Tagen,
 gespeicherten `lk`, und die Einstellung durch Dialog und Säuberung.
 Die übrigen sechs Prüfdateien laufen unverändert durch (121 Prüfungen
 insgesamt, 0 Fehler). `sw.js` steht auf v43.
+
+
+---
+
+# Nachtrag: Stift in den Kopf, Einheitlichkeit prüfen
+
+## Plan
+
+- [x] 1. `#btnSort` aus der Suchzeile in den Kopf, in denselben Platz wie
+      `#btnEdit`. Nie beide sichtbar, Platz bleibt reserviert.
+- [x] 2. Beide Stifte gleich verdrahten: Stand beim Zeichnen setzen, Klick
+      nur noch umschalten.
+- [x] 3. Die App auf weitere Unterschiede absuchen.
+- [x] 4. Anleitung nachziehen.
+- [x] 5. `werkzeug/pruefungen/kopf.mjs` als feste Prüfung.
+
+## Ergebnis
+
+**Ein Platz, zwei Stifte.** `.stift` im Kopf ist 36×36 gross und hält beide
+Knöpfe übereinander (`position:absolute`). `zeichne()` entscheidet, welcher
+sichtbar ist: `#btnEdit` in der Tagesansicht, `#btnSort` im Einträge-Menü,
+sonst keiner. Die alte Regel `#btnEdit.hidden{visibility:hidden}` galt nur
+dem einen Stift; jetzt gilt sie beiden, damit die Reiterleiste in keiner
+Ansicht springt (nachgemessen: 226px in allen vier).
+
+**Beim Prüfen gefunden — drei echte Unterschiede**
+
+1. `#btnSort` setzte `aria-pressed` und den Hinweis im Klick, `#btnEdit`
+   beim Zeichnen. Jetzt beide beim Zeichnen; der Klick ist in beiden Fällen
+   ein Einzeiler.
+2. Die Hinweistexte endeten verschieden — der eine sagte, wie man wieder
+   herauskommt, der andere nicht. Jetzt derselbe Schlusssatz.
+3. **Layoutfehler im Sortiermodus:** die Pfeile erbten von `.stapel button`
+   die Kachelform und wurden selbst zu Kacheln, die echte Kachel daneben
+   schrumpfte auf ihre Textbreite — bei jeder Zeile auf eine andere, was wie
+   eine Treppe aussah. Beim Beheben trat der zweite Fehler zutage: der
+   naheliegende Klassenname `.reihe` ist im Projekt schon die Knopfzeile der
+   Dialoge (`text-transform:uppercase`, `flex:1`), was die Kacheln zu
+   Versalienschaltflächen machte und die Pfeile auseinanderzog. Jetzt
+   `.kachelreihe` mit eigenen Regeln.
+
+**Anleitung.** Neuer Abschnitt *Das Einträge-Menü umsortieren* — das
+Sortieren war nirgends beschrieben. Dazu der gemeinsame Stiftplatz bei *Die
+vier Reiter* und der Zusatz „links neben Profil und ⚙" bei *Plan von Hand
+eintragen*.
+
+**Nicht angefasst, aber aufgefallen:** Es gibt zwei Arten, Reihenfolgen zu
+ändern — die Kacheln über den Stift in der Ansicht selbst, die Fächer des
+Zeugnisses über eine Liste in den Einstellungen. Das eine zu dem anderen zu
+machen wäre eine Umgestaltung, keine Angleichung; deshalb steht es hier und
+nicht im Code.
+
+**Nachweis.** `werkzeug/pruefungen/kopf.mjs`, 27 Prüfungen: gemeinsamer
+Platz, je Ansicht höchstens ein Stift, Reiterleiste in allen vier Ansichten
+und in einer Unterliste gleich breit, beide Schalter an und aus, gleicher
+Schlusssatz in beiden Hinweisen, und die Kachelmasse im Sortiermodus.
+Alle acht Prüfdateien zusammen: 148 Prüfungen, 0 Fehler.

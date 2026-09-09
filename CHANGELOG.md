@@ -19,6 +19,20 @@ Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepfl
   - Die Fach-Info zählt die Wochenstunden nur noch für diese Lehrkraft
 - `werkzeug/pruefungen/lehrer.mjs` prüft beides fest nach
 
+**Einheitlich**
+- Der **Stift ✎ steht jetzt in jeder Ansicht an derselben Stelle** im Kopf,
+  links neben Profil und ⚙. Bisher saß der Plan-Stift oben, der Sortier-Stift
+  der Einträge dagegen neben dem Suchfeld. Beide teilen sich denselben Platz;
+  sichtbar ist nie mehr als einer, und der Platz bleibt auch leer bestehen,
+  damit die Reiterleiste nicht springt
+- Beide Stifte verhalten sich gleich: `aria-pressed` und der Hinweis werden
+  beim Zeichnen gesetzt statt im Klick, und beide Hinweise enden mit
+  demselben Satz („Nochmal auf ✎ oben tippen, wenn du fertig bist.")
+- Neuer Anleitungs-Abschnitt *Das Einträge-Menü umsortieren* — das Sortieren
+  der Kacheln war bisher nirgends beschrieben. Der Stiftplatz steht jetzt
+  auch bei *Die vier Reiter*
+- `werkzeug/pruefungen/kopf.mjs` prüft den Kopf fest nach
+
 **Behoben**
 - Der Schultag endete rechnerisch immer am Ende des **Stundenrasters**,
   nicht am Ende des eigenen Unterrichts. „Schulschluss in …" nannte damit
@@ -30,6 +44,12 @@ Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepfl
 - Die Suche prüfte das **Fachkürzel** gegen die Tabelle der Lehrkräfte
   (`lehrerName(o.fach)`) — dabei kam nie etwas heraus. Jetzt wird die
   Lehrkraft des Eintrags gesucht, mit Kürzel und ausgeschriebenem Namen
+- Im **Sortiermodus** der Einträge-Kacheln zerfiel das Layout: die Pfeile
+  erbten von `.stapel button` die Kachelform und wurden selbst zu Kacheln,
+  während die echte Kachel daneben auf ihre Textbreite schrumpfte — bei
+  jeder Zeile auf eine andere. Die Reihe heißt jetzt `.kachelreihe` mit
+  eigenen Regeln; `.reihe` war schon die Knopfzeile der Dialoge und machte
+  aus jeder Kachel zusätzlich eine Versalienschaltfläche
 
 ## v42
 
