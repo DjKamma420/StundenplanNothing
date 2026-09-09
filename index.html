@@ -200,6 +200,27 @@ section{margin-top:30px}
 .zeuZeile .fachn small{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:3px}
 .zeuZeile .roh{font-family:var(--mono);font-size:12px;color:var(--muted)}
 .zeuZeile .note{font-size:26px;font-weight:600;min-width:44px;text-align:right}
+/* Wochenraster. Die Spalten sind schmal, aber lesbar; wird es zu eng,
+   scrollt der Kasten und nicht die Seite. */
+.wochenlauf{overflow-x:auto;margin-top:12px;-webkit-overflow-scrolling:touch}
+/* Kein min-width: die fünf Tage sollen auf ein Handy passen, statt dass
+   der Freitag hinter dem Rand verschwindet. Der Querlauf bleibt nur als
+   Rückfalllinie für sehr schmale Geräte. */
+.wochentab{border-collapse:collapse;width:100%;table-layout:fixed}
+.wochentab th,.wochentab td{border:1px solid var(--line);padding:0;vertical-align:top}
+.wochentab th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--muted);font-weight:400;padding:6px 2px;text-align:center}
+.wochentab th.heute{color:var(--akzent);border-color:var(--akzent)}
+.wochentab td.zeitspalte,.wochentab th.zeitspalte{width:34px;font-family:var(--mono);font-size:9px;
+  color:var(--dim);text-align:center;padding:6px 1px;border-color:var(--line2)}
+.wochentab .zelle{display:block;width:100%;min-height:44px;padding:5px 3px;text-align:left;
+  font-size:12px;line-height:1.25;color:var(--text);overflow-wrap:anywhere}
+.wochentab .zelle .wraum{display:block;font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:2px}
+.wochentab .zelle .wmarke{display:block;font-family:var(--mono);font-size:9px;color:var(--akzent);margin-top:2px}
+.wochentab td.frei .zelle{color:var(--dim)}
+.wochentab td.heute{background:rgba(127,127,127,.09)}
+.wochentab td.ferien{background:repeating-linear-gradient(45deg,transparent,transparent 4px,var(--line2) 4px,var(--line2) 5px)}
+.wochentab .zelle.aus{text-decoration:line-through;color:var(--dim)}
 .zeuUnter{display:flex;align-items:center;gap:12px;padding:7px 0 7px 16px}
 .zeuUnter .wer{flex:1;min-width:0;font-size:13px;color:var(--muted);
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -427,7 +448,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
       <button type="button" id="wocheVor" aria-label="Woche vor">›</button>
       <span class="label" id="kwLabel"></span>
       <span class="ab hidden" id="abLabel">A</span>
-      <button type="button" id="btnHeute" style="margin-left:auto;width:auto;padding:0 12px">Heute</button>
+      <button type="button" id="btnWoche" style="margin-left:auto;width:auto;padding:0 12px">Woche</button>
+      <button type="button" id="btnHeute" style="width:auto;padding:0 12px">Heute</button>
     </div>
   </header>
   <div class="fortschritt hidden" id="fortschritt">
@@ -598,6 +620,16 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <div class="gitter" id="eGitter"></div>
     <p class="hinweis" id="eGitterHinweis"></p>
   </div>
+  <div class="hidden" id="eWdhWrap">
+    <label><span>Wiederholen</span>
+      <select id="eWdh">
+        <option value="0">einmalig</option>
+        <option value="1">jede Woche</option>
+        <option value="2">alle zwei Wochen</option>
+      </select></label>
+    <label id="eWdhBisWrap"><span>Wiederholen bis</span><input type="date" id="eWdhBis"></label>
+    <p class="hinweis" id="eWdhStand"></p>
+  </div>
   <label id="eTextWrap"><span id="eTextLabel">Was</span><input type="text" id="eText" placeholder="Aufgabe"></label>
   <label><span id="eNotizLabel">Notizen</span><textarea id="eNotiz" placeholder="Details"></textarea></label>
   <div class="hidden" id="eBildWrap">
@@ -687,6 +719,21 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <div class="reihe">
     <button type="button" id="bFachMerk">Merkblätter</button>
     <button type="button" class="haupt" id="bFachAb">Zurück</button>
+  </div>
+</dialog>
+
+<dialog id="dlgWoche"><button class="fangfokus" autofocus aria-hidden="true"></button>
+  <h2 class="mitte">Woche</h2>
+  <div class="monat klein">
+    <div class="mLinks"><button type="button" class="ikon" id="wochenMinus" aria-label="Woche zurück">‹</button></div>
+    <b id="wochenLabel"></b>
+    <div class="mRechts"><button type="button" class="ikon" id="wochenPlus" aria-label="Woche vor">›</button></div>
+  </div>
+  <div class="wochenlauf"><table class="wochentab" id="wochenTab"></table></div>
+  <p class="hinweis mitte" id="wochenHinweis"></p>
+  <div class="reihe">
+    <button type="button" id="bWocheHeute">Diese Woche</button>
+    <button type="button" class="haupt" id="bWocheAb">Zurück</button>
   </div>
 </dialog>
 
@@ -834,8 +881,13 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </label>
   <div class="chips">
     <button type="button" id="sMeldeRecht">Benachrichtigungen erlauben</button>
-    <button type="button" id="sIcs">Kalender-Export (.ics)</button>
+    <button type="button" id="sIcs">Termine als .ics</button>
+    <button type="button" id="sIcsPlan">Stundenplan als .ics</button>
   </div>
+  <p class="hinweis"><b>Termine</b> sind offene Hausaufgaben, Klausuren und Ereignisse,
+     je mit Wecker. <b>Stundenplan</b> ist der Unterricht selbst als Serientermine für
+     ein Jahr, Ferien ausgenommen — zwei Dateien, damit im Handykalender zwei Kalender
+     entstehen, die du einzeln ausblenden kannst.</p>
   <p class="hinweis" id="sMeldeStand"></p>
 
   <div class="eyebrow" style="margin-top:22px">Ferien und Feiertage</div>
@@ -868,6 +920,16 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <button type="button" id="sDateiWahl">Datei einlesen</button>
     <button type="button" id="sTeilen">Teilen</button>
   </div>
+  <p class="hinweis">„Teilen" gibt <b>alles</b> weiter — auch Noten, Fehlzeiten und
+     Merkblätter. Für Mitschüler gibt es darunter den Plan allein.</p>
+
+  <div class="eyebrow" style="margin-top:20px">Stundenplan weitergeben</div>
+  <div class="chips">
+    <button type="button" id="sTeilenPlan">Nur den Plan teilen</button>
+  </div>
+  <p class="hinweis">Enthält Stundenraster, Fächer, Räume, Lehrkräfte und deren Namen —
+     sonst nichts. Beim Einlesen ersetzt eine solche Datei nur den Plan; Einträge,
+     Noten und Merkblätter bleiben stehen.</p>
 
   <div class="eyebrow" style="margin-top:20px">Erinnerung</div>
   <div class="zwei">
