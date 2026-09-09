@@ -2097,13 +2097,13 @@ $("#bImportText").onclick = () => {
   if(treffer){ importTabelle(werte); $("#iErgebnis").textContent = `${treffer} Zeilen übernommen. Prüfen und speichern.`; }
   else $("#iErgebnis").textContent = "Nichts erkannt. Die Stundennummern müssen mitkopiert sein.";
 };
-$("#bImportAb").onclick = () => { dlgImport.close(); if(zurueckZuEinst){ zurueckZuEinst = false; einstellungenOeffnen(); } };
+$("#bImportAb").onclick = () => { dlgImport.close(); if(zurueckZuEinst){ zurueckZuEinst = false; einstellungenOeffnen("schule"); } };
 $("#bImportSpeichern").onclick = () => {
   const woche = cfg.zweiWochen ? iWoche.value : "A", tag = TAGE[+iTag.value];
   importAuslesen().forEach((w,i) => {
     plan[woche][tag][i] = w.fach ? {fach:w.fach.toUpperCase(), raum:w.raum, lk:w.lk} : null; });
   sichern(); dlgImport.close();
-  if(zurueckZuEinst){ zurueckZuEinst = false; zeichne(); einstellungenOeffnen(); return; }
+  if(zurueckZuEinst){ zurueckZuEinst = false; zeichne(); einstellungenOeffnen("schule"); return; }
   ansicht = "tag"; gewaehlt = plusTage(montagVon(gewaehlt), +iTag.value); zeichne();
 };
 
@@ -2726,14 +2726,37 @@ const HILFE = [
 
 {id:"einrichten", teil:"Erste Schritte", titel:"Einrichten in zehn Minuten", worte:"anfang setup erste schritte klasse",
  text:`<ol>
-   <li><b>⚙ oben rechts</b> öffnen.</li>
-   <li><b>Klasse</b> eintragen — sie steht später klein über dem Wochentag.</li>
-   <li><b>Stundenraster</b> prüfen. Zwei Vorlagen zum Antippen, sonst Zeilen von Hand.</li>
-   <li>Hat deine Schule <b>A- und B-Wochen</b>: Haken setzen.</li>
-   <li><b>Bundesland</b> wählen und <b>Ferien laden</b>.</li>
-   <li>Optional <b>Akzentfarbe</b>, <b>heller Modus</b>, <b>Schrift</b>.</li>
+   <li><b>⚙ oben rechts</b> öffnen. Es erscheint ein Menü der Bereiche; jeder
+     nennt darunter seinen jetzigen Stand.</li>
+   <li><b>Schule und Stundenraster</b>: Klasse eintragen — sie steht später klein
+     über dem Wochentag. Raster prüfen; zwei Vorlagen zum Antippen, sonst Zeilen
+     von Hand. Hat deine Schule A- und B-Wochen: Haken setzen.</li>
+   <li><b>Ferien und Feiertage</b>: Bundesland wählen, <i>Ferien laden</i>.</li>
+   <li>Optional <b>Darstellung</b>: Akzentfarbe, heller Modus, Schrift.</li>
    <li><b>Speichern</b>, dann den Plan eintragen (siehe <i>Der Stundenplan</i>).</li>
-  </ol>`},
+  </ol>
+  <p class="hHinweis">Gespeichert wird alles auf einmal. Du kannst zwischen den
+   Bereichen hin und her gehen und erst am Ende auf <b>Speichern</b> tippen.</p>`},
+
+{id:"einstellungen", teil:"Erste Schritte", titel:"Wie die Einstellungen aufgebaut sind", worte:"einstellungen menü bereiche zahnrad struktur",
+ text:`<p>Hinter ⚙ liegen acht Bereiche. Statt einer langen Rolle steht dort erst
+   ein <b>Menü</b> — wie im Reiter <i>Einträge</i>. Unter jedem Namen steht in
+   kleiner Schrift, wie er gerade eingestellt ist, sodass man das Meiste
+   beantwortet bekommt, ohne ihn zu öffnen.</p>
+  <table class="hTab">
+   <tr><th>Bereich</th><th>Was drinsteht</th></tr>
+   <tr><td><b>Darstellung</b></td><td>Akzentfarbe, hell/dunkel, Schrift, Profilauswahl beim Start</td></tr>
+   <tr><td><b>Schule und Stundenraster</b></td><td>Klasse, Zeiten der Stunden, A/B-Wochen</td></tr>
+   <tr><td><b>Noten und Zeugnis</b></td><td>Notensystem, Verhältnis mündlich/schriftlich, Reihenfolge der Fächer</td></tr>
+   <tr><td><b>Fehlzeiten und Archiv</b></td><td>Stunden je Schultag, Aufbewahrungsfrist des Archivs</td></tr>
+   <tr><td><b>Erinnerungen und Kalender</b></td><td>Erinnerung beim Öffnen, Kalender-Export</td></tr>
+   <tr><td><b>Ferien und Feiertage</b></td><td>Bundesland und geladene Zeiträume</td></tr>
+   <tr><td><b>Fächer und Lehrkräfte</b></td><td>ausgeschriebene Namen, Trennung nach Lehrkraft</td></tr>
+   <tr><td><b>Sicherung und Speicher</b></td><td>Sichern, einlesen, teilen, Ordner, Speicherstand</td></tr>
+  </table>
+  <p><b>‹ Alle Einstellungen</b> führt zurück ins Menü. <b>Speichern</b> gilt für
+   alles zusammen, egal in welchem Bereich du gerade stehst — die Felder der
+   anderen bleiben die ganze Zeit über bestehen.</p>`},
 
 {id:"raster", teil:"Der Stundenplan", titel:"Stundenraster einstellen", worte:"zeiten stunden block doppelstunde pause slots",
  text:`<p>Eine Zeile pro Feld im Tagesplan. Unter <b>Std.</b> stehen die
@@ -3568,6 +3591,88 @@ $("#sOrdnerJetzt").onclick = async () => {
   await jetztSichern(true);
   ordnerStand();
 };
+/* Die Einstellungen sind über die Fassungen auf achtzehn Überschriften
+   gewachsen — als eine Rolle war das nicht mehr zu überblicken. Jetzt
+   dieselbe Zweistufigkeit wie im Einträge-Reiter: erst ein Menü, das den
+   Stand jedes Bereichs nennt, dann der Bereich selbst.
+
+   Die Bereiche stehen in index.html ohne „hidden" — versteckt werden sie
+   erst hier. Nach einer Aktualisierung trifft kurzzeitig neues index.html
+   auf altes app.js; wären sie in der Vorgabe versteckt, stünde dort dann
+   gar nichts mehr. So sieht man in dem Fall die alte lange Liste. */
+const EINST_TEILE = [
+  {id:"darstellung",  titel:"Darstellung",
+   stand: () => [cfg.modus === "hell" ? "hell" : "dunkel",
+                 {mono:"Monospace", serif:"Serife"}[cfg.schrift] || "Systemschrift",
+                 cfg.akzent].join(" · ")},
+  {id:"schule",       titel:"Schule und Stundenraster",
+   stand: () => (cfg.klasse ? cfg.klasse + " · " : "")
+     + zahl(cfg.slots.length, "Stunde", "Stunden")
+     + (cfg.zweiWochen ? " · A/B-Wochen" : "")},
+  {id:"noten",        titel:"Noten und Zeugnis",
+   stand: () => (cfg.notenSystem === "punkte15" ? "Punkte 0–15" : "Noten 1–6")
+     + ` · ${Number(cfg.anteilM)||0} % mündlich`
+     + (Object.keys(cfg.anteile||{}).length + Object.keys(cfg.anteileLk||{}).length
+        ? " · eigene Verhältnisse" : "")},
+  {id:"fehlzeiten",   titel:"Fehlzeiten und Archiv",
+   stand: () => `${cfg.stdProTag} Stunden je Schultag · Archiv `
+     + (archivFrist() ? zahl(archivFrist(), "Tag", "Tage") : "für immer")},
+  {id:"erinnerungen", titel:"Erinnerungen und Kalender",
+   stand: () => cfg.melden ? "beim Öffnen erinnern" : "keine Erinnerung beim Öffnen"},
+  {id:"ferien",       titel:"Ferien und Feiertage",
+   stand: () => { const n = ferien.filter(f => f.typ !== "eigen").length;
+     return n ? zahl(n, "Zeitraum geladen", "Zeiträume geladen")
+              : (LAENDER[cfg.land] || "kein Bundesland gewählt"); }},
+  {id:"namen",        titel:"Fächer und Lehrkräfte",
+   stand: () => `${zahl(alleFaecher().length, "Fach", "Fächer")} · `
+     + zahl(alleLehrer().length, "Lehrkraft", "Lehrkräfte")
+     + (cfg.nachLehrer ? " · getrennt" : "")},
+  {id:"sicherung",    titel:"Sicherung und Speicher",
+   stand: () => { const a = sicherungAlter();
+     return a === null ? "noch nie gesichert"
+          : a === 0 ? "heute gesichert"
+          : "zuletzt vor " + zahl(a, "Tag", "Tagen"); }}
+];
+let einstTeil = null;
+function einstZeigen(id){
+  einstTeil = id;
+  $("#einstMenu").classList.toggle("hidden", id !== null);
+  $("#einstZurueckZeile").classList.toggle("hidden", id === null);
+  $("#einstTeilTitel").classList.toggle("hidden", id === null);
+  /* Die Anleitung gehört zur obersten Ebene — in einem Bereich wäre sie nur
+     ein Knopf, der von ihm wegführt. */
+  $("#einstHilfeZeile").classList.toggle("hidden", id !== null);
+  const teil = EINST_TEILE.find(t => t.id === id);
+  $("#einstTeilTitel").textContent = teil ? teil.titel : "";
+  document.querySelectorAll(".einstTeil").forEach(el => {
+    el.classList.toggle("hidden", el.dataset.einst !== id);
+    /* „Noten und Zeugnis" über „Noten" liest sich wie ein Stottern. Die erste
+       innere Überschrift verschwindet, wenn der Bereichstitel mit ihr beginnt —
+       im Markup bleibt sie stehen, damit die Liste ohne diese Ebene vollständig
+       ist (altes app.js, neues index.html). */
+    const erste = el.querySelector(".eyebrow");
+    if(erste) erste.classList.toggle("hidden",
+      el.dataset.einst === id && teil && teil.titel.startsWith(erste.textContent.trim()));
+  });
+  if(id === null) einstMenuZeichnen();
+  /* Nach dem Wechsel oben anfangen — sonst steht man mitten im neuen Bereich. */
+  dlgEinst.scrollTop = 0;
+}
+function einstMenuZeichnen(){
+  $("#einstMenu").innerHTML = EINST_TEILE.map(t => {
+    let stand = "";
+    /* Ein Bereich, dessen Stand nicht zu ermitteln ist, darf nicht den
+       ganzen Dialog mitreissen. */
+    try{ stand = t.stand(); }catch(e){ stand = ""; }
+    return `<button type="button" data-einstteil="${t.id}">${esc(t.titel)}<small>${esc(stand)}</small></button>`;
+  }).join("");
+}
+$("#einstMenu").onclick = e => {
+  const b = e.target.closest("[data-einstteil]"); if(!b) return;
+  einstZeigen(b.dataset.einstteil);
+};
+$("#bEinstZurueck").onclick = () => einstZeigen(null);
+
 /* Merkt sich beim Öffnen den Zustand aller Felder. Beim Schließen wird
    verglichen — nur dann fragt die App nach. */
 let einstStand = null;
@@ -3579,7 +3684,7 @@ function einstFelder(){
 }
 const einstGeaendert = () => einstStand !== null && einstFelder() !== einstStand;
 
-function einstellungenOeffnen(){
+function einstellungenOeffnen(teil){
   sKlasse.value = cfg.klasse;
   sZweiWochen.checked = cfg.zweiWochen;
   slotEditorZeichnen(cfg.slots);
@@ -3623,6 +3728,7 @@ function einstellungenOeffnen(){
   $("#sWocheStand").textContent = "";
   $("#sDateiAlle").classList.toggle("hidden", profile.length < 2);
   sicherungStand(); speicherStand(); versionPruefen();
+  einstZeigen(EINST_TEILE.some(t => t.id === teil) ? teil : null);
   dlgEinst.showModal();
   einstStand = einstFelder();
 }

@@ -135,6 +135,9 @@ pruef("Hausaufgabe merkt sich die Lehrkraft",
 /* Die Einstellung selbst: einmal durch den Dialog und zurück. */
 await page.evaluate(() => { cfg.nachLehrer = false; sichern(); einstellungenOeffnen(); });
 await page.waitForTimeout(300);
+/* Seit v46 sind die Einstellungen zweistufig — erst in den Bereich. */
+await page.evaluate(() => einstZeigen("namen"));
+await page.waitForTimeout(150);
 await page.check("#sNachLehrer");
 await page.click("#bEinstSpeichern");
 await page.waitForTimeout(300);

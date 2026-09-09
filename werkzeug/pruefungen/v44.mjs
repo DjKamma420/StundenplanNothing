@@ -62,6 +62,9 @@ await page.evaluate(() => { cfg.akzent = "#12a463"; noten = [
   {id:"n1",fach:"MA",lk:"",art:"s",wert:2,datum:"2026-03-01",titel:"",notiz:"",geloescht:false}];
   sichern(); einstellungenOeffnen(); });
 await page.waitForTimeout(300);
+/* Seit v46 sind die Einstellungen zweistufig — erst in den Bereich. */
+await page.evaluate(() => einstZeigen("sicherung"));
+await page.waitForTimeout(150);
 await page.fill("#sDaten", fremd);
 await page.click("#sLaden");
 await page.waitForTimeout(400);

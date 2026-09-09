@@ -59,6 +59,9 @@ const boese = JSON.stringify({
   noten:[], sonder:[], ferien:[{von:"2026-01-01",bis:"x",name:"<img src=x onerror=window.__x=1>",typ:"eigen"}]
 });
 await page.evaluate(() => einstellungenOeffnen()); await page.waitForTimeout(200);
+/* Seit v46 sind die Einstellungen zweistufig — erst in den Bereich. */
+await page.evaluate(() => einstZeigen("sicherung"));
+await page.waitForTimeout(150);
 await page.fill("#sDaten", boese);
 await page.click("#sLaden"); await page.waitForTimeout(400);
 await page.evaluate(() => { ["tag","kalender","zeugnis","eintraege"].forEach(v=>{ansicht=v;try{zeichne()}catch(e){}}); });

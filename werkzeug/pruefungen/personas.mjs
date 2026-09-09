@@ -113,6 +113,9 @@ let gefragt = [];
 page.on("dialog", async d => { gefragt.push(d.message()); await d.dismiss(); });   // ausdrücklich ablehnen
 await page.evaluate(() => { window.__vorReset = eintraege.length; einstellungenOeffnen(); });
 await page.waitForTimeout(200);
+/* Seit v46 sind die Einstellungen zweistufig — erst in den Bereich. */
+await page.evaluate(() => einstZeigen("sicherung"));
+await page.waitForTimeout(150);
 await page.click("#sReset"); await page.waitForTimeout(200);
 const nachAbbruch = await page.evaluate(() => eintraege.length);
 pruef("„Alles löschen“ fragt nach und bricht bei Ablehnung ab",

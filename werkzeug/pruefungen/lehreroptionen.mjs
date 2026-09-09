@@ -96,6 +96,9 @@ pruef("Einstellungen zeigen eine Zeile je Lehrkraft",
   (await page.$$("#sAnteilFaecher [data-anteillkfach]")).length === 2);
 pruef("die Lehrkraft-Zeile schlägt den Fachwert vor",
   (await page.getAttribute('#sAnteilFaecher [data-anteillkfach="MA/MÜ"]', "placeholder")) === "70");
+/* Seit v46 sind die Einstellungen zweistufig — erst in den Bereich. */
+await page.evaluate(() => einstZeigen("noten"));
+await page.waitForTimeout(150);
 await page.fill('#sAnteilFaecher [data-anteillkfach="MA/SC"]', "30");
 await page.click("#bEinstSpeichern");
 await page.waitForTimeout(400);
