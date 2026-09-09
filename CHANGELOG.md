@@ -2,6 +2,35 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v45
+
+Nachtrag zu v43: die Trennung nach Lehrkraft war an mehreren Stellen nur
+halb durchgezogen. Die Regel lautet jetzt — **wo die App etwas je Fach
+anbietet, gibt es das bei eingeschalteter Trennung auch je Lehrkraft.**
+
+**Behoben**
+- **Der Schnitt je Lehrkraft war mit dem falschen Verhältnis gerechnet.**
+  Das Zeugnis zeigte seit v43 einen eigenen Schnitt je Lehrkraft, benutzte
+  dafür aber das mündlich/schriftlich-Verhältnis des ganzen Fachs. Wer zwei
+  Kurse trennt, tut das oft genau deshalb, weil sie verschieden gewichten —
+  die Zahl war damit für mindestens einen der beiden falsch
+
+**Neu**
+- **Verhältnis und Zielnote je Lehrkraft.** `anteilFuer` kennt drei Stufen:
+  Wert der Lehrkraft in diesem Fach, sonst Wert des Fachs, sonst Standard.
+  Erreichbar über die Unterzeile im Zeugnis (jetzt antippbar, nennt ihr
+  eigenes Verhältnis), über einen eigenen Chip auf der Notenkarte und über
+  eine eingerückte Zeile unter jedem Fach in ⚙ → *Verhältnis je Fach*.
+  Der graue Wert im leeren Feld zeigt, welche Stufe gerade greift
+- **Merkblätter** gliedern nach Fach *und* Lehrkraft, wie die Notizen seit v43
+- **Fehlzeiten** teilen ihre Stunden je Kurs auf, nicht nur je Fach, und
+  nennen die Lehrkraft in der Zeile
+- `werkzeug/pruefungen/lehreroptionen.mjs` prüft die Regel fest nach: die
+  drei Stufen einzeln, ihre Wirkung auf den Schnitt, beide Klickwege in den
+  Dialog, dass „Standard" nur die eigene Stufe zurücknimmt, die Einstellungen,
+  die Gliederung der Merkblätter und die Aufteilung der Fehlzeiten — jeweils
+  auch der Nachweis, dass ohne die Einstellung alles beim Alten bleibt
+
 ## v44
 
 Fünf Lücken aus der Bestandsaufnahme nach v43. Der sechste Punkt von damals —

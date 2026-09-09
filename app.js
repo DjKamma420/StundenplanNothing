@@ -75,6 +75,7 @@ const STANDARD = {
   notenSystem: "note6",
   anteilM: 50,
   anteile: {},
+  anteileLk: {},               // Verhältnis je Fach *und* Lehrkraft
   lehrer: {},
   fachnamen: {},
   akzent: "#e5382b",
@@ -421,11 +422,21 @@ function serienTermine(start, takt, bis){
 }
 
 /* --- Noten --- */
-const anteilFuer = fach => {
-  const e = cfg.anteile && cfg.anteile[fach];
+/* Schlüssel für ein Fach bei einer bestimmten Lehrkraft. Der Schrägstrich
+   kommt in keinem Kürzel vor — Fächer und Lehrkräfte laufen durch alsKuerzel. */
+const lkSchluessel = (fach, lk) => fach + "/" + alsLk(lk);
+/* Drei Stufen: eigener Wert für dieses Fach bei dieser Lehrkraft, sonst der
+   des Fachs, sonst der Standard. Wer nach Lehrkraft trennt, tut das oft
+   genau deshalb — zwei Kurse desselben Fachs gewichten verschieden. */
+const anteilFuer = (fach, lk) => {
+  const e = (lk && cfg.anteileLk && cfg.anteileLk[lkSchluessel(fach, lk)] != null)
+    ? cfg.anteileLk[lkSchluessel(fach, lk)]
+    : (cfg.anteile && cfg.anteile[fach]);
   return Math.max(0, Math.min(100, Number((e === undefined || e === null) ? cfg.anteilM : e) || 0));
 };
-const hatEigenenAnteil = f => cfg.anteile && cfg.anteile[f] !== undefined && cfg.anteile[f] !== null;
+const hatEigenenAnteil = (f, lk) => lk
+  ? !!(cfg.anteileLk && cfg.anteileLk[lkSchluessel(f, lk)] != null)
+  : !!(cfg.anteile && cfg.anteile[f] !== undefined && cfg.anteile[f] !== null);
 /* lk undefiniert: alle Noten des Fachs. lk "" : nur die ohne Lehrkraft. */
 function notenSchnitt(fach, lk){
   const teil = art => {
@@ -433,7 +444,7 @@ function notenSchnitt(fach, lk){
       && (lk === undefined || alsLk(n.lk) === alsLk(lk)));
     return l.length ? l.reduce((s,n) => s + n.wert, 0) / l.length : null;
   };
-  const m = teil("m"), sch = teil("s"), aM = anteilFuer(fach);
+  const m = teil("m"), sch = teil("s"), aM = anteilFuer(fach, lk);
   if(m === null && sch === null) return {m:null, s:null, gesamt:null};
   if(m === null)   return {m:null, s:sch, gesamt:sch};
   if(sch === null) return {m, s:null, gesamt:m};
@@ -946,13 +957,18 @@ function zeichneNoten(){
   $("#einListe").innerHTML = liste.map(f => {
     const sch = notenSchnitt(f), aM = anteilFuer(f);
     const eigene = notenAktiv().filter(n => n.fach === f).sort((a,b) => b.datum.localeCompare(a.datum));
+    /* Wo nach Lehrkraft getrennt wird, braucht jede Lehrkraft ihren eigenen
+       Chip — sonst gäbe es die Fach-Option ohne die Lehrkraft-Option. */
+    const lkChips = lehrerTeileZuFach(f).filter(t => t.lk).map(t =>
+      `<button type="button" class="anteilchip" data-anteil="${esc(f)}" data-anteillk="${esc(t.lk)}">
+        ${esc(t.name)}: ${anteilFuer(f, t.lk)} %${hatEigenenAnteil(f, t.lk) ? " · eigen" : ""}</button>`).join("");
     return `<li style="display:block;padding:0;border:0"><div class="notenkarte">
       <div class="kopfz">
         <div><div style="font-size:17px">${esc(fachName(f))}</div>
           <div class="teil">mündlich ${notenText(sch.m)} · schriftlich ${notenText(sch.s)}</div></div>
         <div class="schnitt">${notenText(sch.gesamt)}</div></div>
       <div class="notenchips"><button type="button" class="anteilchip" data-anteil="${esc(f)}">
-        ${aM} % mündlich${hatEigenenAnteil(f) ? " · eigen" : ""}</button></div>
+        ${aM} % mündlich${hatEigenenAnteil(f) ? " · eigen" : ""}</button>${lkChips}</div>
       ${eigene.map(n => `<div class="notenzeile" data-note="${n.id}">
         <span class="wert">${notenText(n.wert)}</span>
         <span class="art">${n.art === "m" ? "mündl." : "schriftl."}</span>
@@ -965,12 +981,19 @@ function zeichneNoten(){
 }
 
 function zeichneMerk(){
-  const liste = listeVonTyp("M");
+  /* Mit Trennung nach Lehrkraft zählt Fach *und* Lehrkraft als Überschrift —
+     sonst gäbe es hier die Fach-Gliederung ohne die Lehrkraft-Gliederung. */
+  const schluessel = e => cfg.nachLehrer ? e.fach + "/" + alsLk(e.lk) : e.fach;
+  const liste = listeVonTyp("M").slice()
+    .sort((a,b) => schluessel(a).localeCompare(schluessel(b)) || b.datum.localeCompare(a.datum));
   $("#einSubHinweis").textContent = "Antippen zum Ansehen.";
   let letztesFach = null;
   $("#einListe").innerHTML = liste.map(e => {
-    const kopf = e.fach !== letztesFach ? `<div class="eyebrow mitte" style="margin-top:18px">${esc(fachName(e.fach))}</div>` : "";
-    letztesFach = e.fach;
+    const jetzt = schluessel(e);
+    const kopf = jetzt !== letztesFach
+      ? `<div class="eyebrow mitte" style="margin-top:18px">${esc(fachName(e.fach))}${
+          cfg.nachLehrer && e.lk ? " · " + esc(lehrerName(alsLk(e.lk))) : ""}</div>` : "";
+    letztesFach = jetzt;
     const bilder = (e.bilder || []).length;
     return `<li style="display:block;padding:0;border:0">${kopf}
       <button type="button" class="merkzeile" data-schau="${e.id}">
@@ -1000,12 +1023,15 @@ function fehlText(){
   return `${zahl(g,"Stunde","Stunden")} = ${tageText(g)}`
        + (u ? ` · davon ${u} unentschuldigt` : "");
 }
-/** Versäumte Stunden je Fach — was ohne Fach erfasst wurde, bleibt aussen vor. */
+/** Versäumte Stunden je Fach — was ohne Fach erfasst wurde, bleibt aussen vor.
+    Mit Trennung nach Lehrkraft zählt jeder Kurs für sich. */
 function fehlJeFach(){
   const nach = new Map();
   listeVonTyp("F").forEach(e => {
     if(!e.fach) return;
-    nach.set(e.fach, (nach.get(e.fach) || 0) + (Number(e.stunden) || 1));
+    const k = fachName(e.fach)
+      + (cfg.nachLehrer && e.lk ? " (" + lehrerName(alsLk(e.lk)) + ")" : "");
+    nach.set(k, (nach.get(k) || 0) + (Number(e.stunden) || 1));
   });
   return [...nach.entries()].sort((a,b) => b[1] - a[1] || a[0].localeCompare(b[0]));
 }
@@ -1013,12 +1039,13 @@ function zeichneFehlzeiten(){
   const liste = listeVonTyp("F");
   const jeFach = fehlJeFach();
   $("#einSubHinweis").textContent = fehlText()
-    + (jeFach.length ? " · " + jeFach.map(([f,n]) => `${fachName(f)} ${n}`).join(", ") : "");
+    + (jeFach.length ? " · " + jeFach.map(([f,n]) => `${f} ${n}`).join(", ") : "");
   $("#einListe").innerHTML = liste.map(e => `<li>
     <span style="width:18px;flex:none"></span>
     <div class="wachs" data-bearbeite="${e.id}">
       <div class="kopf"><span class="khn">F</span>
-        <span class="titel">${e.fach ? esc(e.fach)+" — " : ""}${zahl(Number(e.stunden)||1,"Stunde","Stunden")} ${esc(e.titel) || "Fehlzeit"}</span></div>
+        <span class="titel">${e.fach ? esc(e.fach) + (cfg.nachLehrer && e.lk ? " ("+esc(alsLk(e.lk))+")" : "") + " — " : ""}${
+          zahl(Number(e.stunden)||1,"Stunde","Stunden")} ${esc(e.titel) || "Fehlzeit"}</span></div>
       ${e.notiz ? `<div class="notiz">${esc(e.notiz)}</div>` : ""}
       <div class="wann">${zeigDatum(e.datum)}</div></div></li>`).join("");
   $("#einNix").textContent = "Keine Fehlzeiten erfasst.";
@@ -1056,9 +1083,17 @@ function zeichneZeugnis(){
     const anzahl = notenAktiv().filter(n => n.fach === f).length;
     const unter = lehrerTeileZuFach(f).map(t => {
       const ts = notenSchnitt(f, t.lk), tg = zeugnisNote(ts.gesamt);
-      return `<div class="zeuUnter"><span class="wer">${esc(t.name)}</span>
-        <span class="roh">${notenText(ts.gesamt)}</span>
-        <span class="note">${tg === null ? "—" : tg}</span></div>`;
+      /* Auch die Unterzeile führt in den Verhältnis- und Zielnoten-Dialog —
+         ohne das gäbe es die Einstellung nur für das Fach als Ganzes, und
+         der Schnitt darunter wäre mit dem falschen Verhältnis gerechnet. */
+      return t.lk
+        ? `<button type="button" class="zeuUnter" data-zeufach="${esc(f)}" data-zeulk="${esc(t.lk)}">
+             <span class="wer">${esc(t.name)}<small>${anteilFuer(f, t.lk)} % mündlich</small></span>
+             <span class="roh">${notenText(ts.gesamt)}</span>
+             <span class="note">${tg === null ? "—" : tg}</span></button>`
+        : `<div class="zeuUnter"><span class="wer">${esc(t.name)}</span>
+             <span class="roh">${notenText(ts.gesamt)}</span>
+             <span class="note">${tg === null ? "—" : tg}</span></div>`;
     }).join("");
     return `<button type="button" class="zeuZeile" data-zeufach="${esc(f)}">
       <div class="fachn">${esc(fachName(f))}
@@ -1864,7 +1899,7 @@ function listenKlick(e){
   const ereignis = e.target.closest("[data-ereignis]");
   if(ereignis){ ereignisOeffnen(ereignis.dataset.ereignis); return; }
   const anteil = e.target.closest("[data-anteil]");
-  if(anteil){ anteilOeffnen(anteil.dataset.anteil); return; }
+  if(anteil){ anteilOeffnen(anteil.dataset.anteil, anteil.dataset.anteillk || ""); return; }
   const note = e.target.closest("[data-note]");
   if(note){ noteOeffnen(noten.find(n => n.id === note.dataset.note)); return; }
   const bea = e.target.closest("[data-bearbeite]");
@@ -1906,7 +1941,7 @@ $("#einMenu").onclick = e => {
 };
 $("#zeuListe").onclick = e => {
   const b = e.target.closest("[data-zeufach]"); if(!b) return;
-  anteilOeffnen(b.dataset.zeufach);
+  anteilOeffnen(b.dataset.zeufach, b.dataset.zeulk || "");
 };
 
 /* --- Suche --- */
@@ -1938,11 +1973,11 @@ function suchen(){
 }
 
 /* --- Verhältnis und Zielnote --- */
-let anteilFach = null;
-function anteilOeffnen(fach){
-  anteilFach = fach;
-  $("#anTitel").textContent = fachName(fach);
-  anWert.value = anteilFuer(fach);
+let anteilFach = null, anteilLk = "";
+function anteilOeffnen(fach, lk){
+  anteilFach = fach; anteilLk = alsLk(lk);
+  $("#anTitel").textContent = fachName(fach) + (anteilLk ? " · " + lehrerName(anteilLk) : "");
+  anWert.value = anteilFuer(fach, anteilLk);
   anZiel.value = ""; $("#anZielErgebnis").textContent = "";
   anteilVorschau();
   dlgAnteil.showModal();
@@ -1950,7 +1985,10 @@ function anteilOeffnen(fach){
 function anteilVorschau(){
   const m = Math.max(0, Math.min(100, Number(anWert.value) || 0));
   $("#anHinweis").textContent = `${m} % mündlich, ${100-m} % schriftlich.`
-    + (hatEigenenAnteil(anteilFach) ? "" : " Zurzeit gilt der Standard.");
+    + (hatEigenenAnteil(anteilFach, anteilLk) ? ""
+       : anteilLk ? ` Zurzeit gilt der Wert für ${fachName(anteilFach)} (${anteilFuer(anteilFach)} %).`
+                  : " Zurzeit gilt der Standard.")
+    + (anteilLk ? "" : " Gilt für alle Lehrkräfte dieses Fachs, die keinen eigenen Wert haben.");
 }
 anWert.oninput = anteilVorschau;
 function zielRechnen(){
@@ -1958,11 +1996,12 @@ function zielRechnen(){
   const feld = $("#anZielErgebnis");
   if(isNaN(ziel)){ feld.textContent = ""; return; }
   const art = anZielArt.value;
-  const eigene = notenAktiv().filter(n => n.fach === anteilFach);
+  const eigene = notenAktiv().filter(n => n.fach === anteilFach
+    && (!anteilLk || alsLk(n.lk) === anteilLk));
   const derArt = eigene.filter(n => n.art === art);
   const andere = eigene.filter(n => n.art !== art);
   const mittel = l => l.length ? l.reduce((s,n) => s+n.wert, 0)/l.length : null;
-  const aM = anteilFuer(anteilFach)/100;
+  const aM = anteilFuer(anteilFach, anteilLk)/100;
   const gew = art === "m" ? aM : 1-aM;
   const andMittel = mittel(andere);
   const n = derArt.length;
@@ -1981,12 +2020,19 @@ function zielRechnen(){
 }
 anZiel.oninput = zielRechnen; anZielArt.onchange = zielRechnen;
 $("#bAnStandard").onclick = () => {
-  if(cfg.anteile) delete cfg.anteile[anteilFach];
+  if(anteilLk){ if(cfg.anteileLk) delete cfg.anteileLk[lkSchluessel(anteilFach, anteilLk)]; }
+  else if(cfg.anteile) delete cfg.anteile[anteilFach];
   sichern(); dlgAnteil.close(); zeichne();
 };
 $("#bAnSpeichern").onclick = () => {
-  if(!cfg.anteile) cfg.anteile = {};
-  cfg.anteile[anteilFach] = Math.max(0, Math.min(100, Number(anWert.value) || 0));
+  const wert = Math.max(0, Math.min(100, Number(anWert.value) || 0));
+  if(anteilLk){
+    if(!cfg.anteileLk) cfg.anteileLk = {};
+    cfg.anteileLk[lkSchluessel(anteilFach, anteilLk)] = wert;
+  } else {
+    if(!cfg.anteile) cfg.anteile = {};
+    cfg.anteile[anteilFach] = wert;
+  }
   sichern(); dlgAnteil.close(); zeichne();
 };
 
@@ -2410,6 +2456,15 @@ function cfgSaeubern(roh){
     Object.entries(roh.anteile).slice(0, 400).forEach(([k,v]) => {
       const f = alsKuerzel(k); if(f) c.anteile[f] = alsZahl(v, 0, 100, 50);
     });
+  c.anteileLk  = {};
+  if(roh && roh.anteileLk && typeof roh.anteileLk === "object")
+    Object.entries(roh.anteileLk).slice(0, 400).forEach(([k,v]) => {
+      /* Zwei Kürzel mit Schrägstrich dazwischen — sonst nichts. */
+      const teile = String(k).split("/");
+      if(teile.length !== 2) return;
+      const f = alsKuerzel(teile[0]), l = alsKuerzel(teile[1]);
+      if(f && l) c.anteileLk[f + "/" + l] = alsZahl(v, 0, 100, 50);
+    });
   c.lehrer     = paareSaeubern(c.lehrer);
   c.fachnamen  = paareSaeubern(c.fachnamen);
   c.akzent     = /^#[0-9a-fA-F]{6}$/.test(String(c.akzent)) ? String(c.akzent) : STANDARD.akzent;
@@ -2755,10 +2810,20 @@ MA = Mathematik</pre>
    <li>Der <b>Eintragsdialog</b> bekommt ein Feld <i>Lehrkraft</i>. Kommst du aus
      einer angetippten Stunde, steht sie schon darin.</li>
    <li>Das <b>Zeugnis</b> zeigt unter jedem betroffenen Fach je Lehrkraft einen
-     eigenen Schnitt. Die Zeile des Fachs bleibt und rechnet weiter über alles.</li>
-   <li>Die <b>Notizen</b> bekommen Zwischenüberschriften je Lehrkraft.</li>
+     eigenen Schnitt, jeweils mit <i>ihrem</i> Verhältnis gerechnet. Die Zeile des
+     Fachs bleibt und rechnet weiter über alles. Beide Zeilen sind antippbar und
+     führen in Verhältnis und Zielnote — die eine fürs Fach, die andere für die
+     Lehrkraft.</li>
+   <li><b>Verhältnis und Zielnote</b> gibt es damit je Lehrkraft: in den
+     Einstellungen unter <i>Verhältnis je Fach</i> als eingerückte Zeile, auf der
+     Notenkarte als eigener Chip.</li>
+   <li><b>Notizen</b> und <b>Merkblätter</b> bekommen Zwischenüberschriften je
+     Lehrkraft.</li>
+   <li><b>Fehlzeiten</b> werden je Kurs aufgeteilt, nicht nur je Fach.</li>
    <li>Auch die <b>roten Punkte</b> in der Datumsauswahl richten sich danach.</li>
   </ul>
+  <p class="hHinweis">Als Regel: Wo die App etwas <i>je Fach</i> anbietet, gibt es
+   das mit dieser Einstellung auch <i>je Lehrkraft</i>.</p>
   <p class="hHinweis">Der Haken lässt sich jederzeit wieder entfernen. Was schon
    zugeordnet ist, bleibt gespeichert und taucht beim erneuten Setzen wieder auf.</p>`},
 
@@ -2914,9 +2979,21 @@ MA = Mathematik</pre>
    getrennt gemittelt und erst danach verrechnet.</p>`},
 
 {id:"verhaeltnis", teil:"Noten und Zeugnis", titel:"Verhältnis mündlich zu schriftlich", worte:"gewichtung anteil prozent",
- text:`<p>Ein Standardwert gilt für alle Fächer, einzelne Fächer dürfen abweichen.
-   Einstellbar unter ⚙ → <i>Verhältnis je Fach</i> oder durch Antippen einer
-   Fachzeile im Zeugnis.</p>
+ text:`<p>Drei Stufen, jede sticht die darüber:</p>
+  <ol>
+   <li>der <b>Standard</b> für alle Fächer (⚙ → Noten → <i>mündlich %</i>),</li>
+   <li>der Wert eines <b>Fachs</b>,</li>
+   <li>mit <i>Fächer nach Lehrkraft trennen</i> der Wert einer <b>Lehrkraft in
+     diesem Fach</b>.</li>
+  </ol>
+  <p>Einstellbar unter ⚙ → <i>Verhältnis je Fach</i> — dort steht unter jedem Fach
+   mit mehreren Lehrkräften je eine eingerückte Zeile — oder durch Antippen einer
+   Zeile im Zeugnis: die Fachzeile stellt das Fach ein, die Zeile darunter die
+   Lehrkraft. Bleibt eine Zeile leer, gilt die Stufe darüber; der graue Wert im
+   Feld zeigt, welche das gerade ist.</p>
+  <p class="hHinweis">Zwei Kurse desselben Fachs zu trennen lohnt vor allem dann,
+   wenn sie <i>verschieden</i> gewichten — deshalb rechnet jede Unterzeile im
+   Zeugnis mit ihrem eigenen Verhältnis, nicht mit dem des Fachs.</p>
   <p><b>Rechenbeispiel.</b> Mündlich 3,0 · schriftlich 2,0 · Verhältnis 40 % mündlich:</p>
   <pre class="hCode">3,0 × 0,40  +  2,0 × 0,60  =  1,2 + 1,2  =  2,40</pre>
   <p>Gibt es nur eine Art Noten, zählt diese allein — das Verhältnis bleibt dann
@@ -2939,7 +3016,7 @@ MA = Mathematik</pre>
   <p class="hWarn"><b>Das ist eine Schätzung, keine Auskunft.</b> Die App gewichtet
    alle Noten einer Art gleich. Lehrkräfte rechnen oft anders — eine Klausur zählt
    selten so viel wie ein Test.</p>`},
-{id:"merkblatt", teil:"Merkblätter, Fehlzeiten, Ferien", titel:"Merkblätter", worte:"formeln vokabeln bilder foto tafelbild",
+{id:"merkblatt", teil:"Merkblätter, Fehlzeiten, Ferien", titel:"Merkblätter", worte:"formeln vokabeln bilder foto tafelbild lehrkraft",
  text:`<p>Beliebig viele je Fach, jedes mit Datum und Uhrzeit. Zeilenumbrüche und
    Einrückungen bleiben erhalten, dargestellt wird in Monospace — Formeln bleiben
    dadurch ausgerichtet.</p>
@@ -3350,20 +3427,34 @@ $("#sReiheFach").onclick = e => {
 
 function anteilFaecherZeichnen(){
   const liste = alleFaecher();
-  $("#sAnteilFaecher").innerHTML = liste.length
-    ? liste.map(f => `<div class="anteilzeile"><span>${esc(fachName(f))}</span>
+  if(!liste.length){
+    $("#sAnteilFaecher").innerHTML = `<p class="hinweis">Sobald Fächer im Plan stehen, erscheinen sie hier.</p>`;
+    return;
+  }
+  $("#sAnteilFaecher").innerHTML = liste.map(f => {
+    /* Unter jedem Fach seine Lehrkräfte — eingerückt, damit sichtbar bleibt,
+       dass der Fachwert gilt, solange die Zeile darunter leer ist. */
+    const unter = lehrerTeileZuFach(f).filter(t => t.lk).map(t =>
+      `<div class="anteilzeile unter"><span>${esc(t.name)}</span>
+        <input type="number" min="0" max="100" step="5" data-anteillkfach="${esc(lkSchluessel(f, t.lk))}"
+          placeholder="${anteilFuer(f)}" value="${
+            hatEigenenAnteil(f, t.lk) ? esc(cfg.anteileLk[lkSchluessel(f, t.lk)]) : ""}"></div>`).join("");
+    return `<div class="anteilzeile"><span>${esc(fachName(f))}</span>
         <input type="number" min="0" max="100" step="5" data-anteilfach="${esc(f)}"
-          placeholder="${Number(cfg.anteilM)||0}" value="${hatEigenenAnteil(f) ? esc(cfg.anteile[f]) : ""}"></div>`).join("")
-    : `<p class="hinweis">Sobald Fächer im Plan stehen, erscheinen sie hier.</p>`;
+          placeholder="${Number(cfg.anteilM)||0}" value="${hatEigenenAnteil(f) ? esc(cfg.anteile[f]) : ""}"></div>`
+      + unter;
+  }).join("");
 }
-function anteilFaecherLesen(){
+const anteilFelderLesen = merkmal => {
   const o = {};
-  document.querySelectorAll("[data-anteilfach]").forEach(el => {
+  document.querySelectorAll("[data-"+merkmal+"]").forEach(el => {
     const v = el.value.trim();
-    if(v !== "") o[el.dataset.anteilfach] = Math.max(0, Math.min(100, Number(v)||0));
+    if(v !== "") o[el.dataset[merkmal]] = Math.max(0, Math.min(100, Number(v)||0));
   });
   return o;
-}
+};
+const anteilFaecherLesen = () => anteilFelderLesen("anteilfach");
+const anteilLehrerLesen  = () => anteilFelderLesen("anteillkfach");
 const anteilHinweis = () => {
   const m = Math.max(0, Math.min(100, Number(sAnteilM.value)||0));
   $("#sAnteilHinweis").textContent = `${m} % mündlich, ${100-m} % schriftlich.`;
@@ -3782,6 +3873,7 @@ $("#bEinstSpeichern").onclick = () => {
   cfg.notenSystem = sNotenSystem.value;
   cfg.anteilM = Math.max(0, Math.min(100, Number(sAnteilM.value)||0));
   cfg.anteile = anteilFaecherLesen();
+  cfg.anteileLk = anteilLehrerLesen();
   cfg.nachLehrer = sNachLehrer.checked;
   cfg.lehrer = textPaare(sLehrer.value);
   cfg.fachnamen = textPaare(sFaecher.value);
