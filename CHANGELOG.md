@@ -2,6 +2,14 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v49
+
+**Behoben**
+- Akzentflächen wählen jetzt reines Schwarz oder Weiß als Textfarbe. Damit erfüllt auch das Standardrot den Mindestkontrast von 4,5:1 für normalen Text.
+- Trifft eine ältere App auf einen **neueren Datenstand**, bleibt der gespeicherte Datensatz vollständig unangetastet: keine Merkblattmigration, Normalisierung, Archivbereinigung oder Sicherung läuft mehr. Die Oberfläche wird bis zum Update gesperrt.
+- Sicherungsdateien aus einem neueren Datenschema werden vor dem Import abgewiesen, statt unbekannte Felder beim Säubern zu verlieren. Erfolgreich gelesene ältere Sicherungen werden direkt auf den aktuellen Datenstand gesetzt.
+- **Alle Profile wiederherstellen** entfernt nun auch alte profilbezogene Nebenschlüssel derselben Profil-ID, etwa Tagesmerker für Erinnerungen oder eine vertagte Sicherung.
+
 ## v48
 
 **Aufgeräumt**
