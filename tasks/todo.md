@@ -101,3 +101,49 @@ schaden, Aufbau des Plan-ICS samt `EXDATE` in der Ferienspanne und
 Löschen der ganzen Reihe, Aufbau des Wochenrasters mit Ferien und
 Blättern, sowie die Pfeiltasten inklusive der Stille im Eingabefeld.
 Alle neun Prüfdateien: 199 Prüfungen, 0 Fehler.
+
+
+---
+
+# v45 — Lehrer-Optionen überall dort, wo es Fach-Optionen gibt
+
+## Plan
+
+- [x] 1. Alle Stellen durchgehen, an denen die App etwas je Fach anbietet
+      oder gliedert, und die Lücken auflisten.
+- [x] 2. Verhältnis und Zielnote je Lehrkraft (`cfg.anteileLk`).
+- [x] 3. Merkblätter und Fehlzeiten nachziehen.
+- [x] 4. Anleitung, Prüfdatei, v45.
+
+## Ergebnis
+
+**Die Bestandsaufnahme** — je Fach gibt es: den Eintragsdialog (hatte die
+Lehrkraft schon), das Zeugnis (Unterzeilen seit v43), die Notizen (seit
+v43), die Suche und die Datumspunkte (seit v43) — und ohne Lehrkraft-Ebene:
+**Verhältnis/Zielnote**, **Merkblätter**, **Fehlzeiten**.
+
+**Der eigentliche Fund war kein fehlender Knopf, sondern eine falsche
+Zahl.** Das Zeugnis rechnete den Schnitt je Lehrkraft mit dem Verhältnis
+des Fachs. Wer zwei Kurse trennt, tut das häufig, weil sie verschieden
+gewichten — dann war die Unterzeile für mindestens einen der beiden falsch.
+Ohne die Lehrkraft-Option gab es gar keine Möglichkeit, das richtigzustellen.
+
+**Die Form der Lösung** — drei Stufen mit Rückfall, kein viertes Konzept:
+
+    anteileLk["MA/MÜ"]  →  anteile["MA"]  →  anteilM
+
+Eigene Map statt zusammengesetzter Schlüssel in `cfg.anteile`: dort hätten
+„MA" und „MA/MÜ" nebeneinander gelegen und jede Schleife über die Fächer
+hätte sie auseinanderhalten müssen. Der Säuberer nimmt nur Schlüssel aus
+genau zwei Kürzeln.
+
+**Sichtbar wird die Stufe im leeren Feld:** der Platzhalter einer
+Lehrkraft-Zeile ist der Wert des Fachs, nicht der Standard. So sieht man
+ohne Nachdenken, was gerade gilt.
+
+**Ein Fehlschlag in `lehrer.mjs`** war die Prüfung, nicht die App: sie las
+den Namen der Unterzeile über `textContent` und bekam seit v45 das
+Verhältnis mit dazu. Sie liest jetzt den ersten Textknoten.
+
+**Nachweis.** `werkzeug/pruefungen/lehreroptionen.mjs`, 25 Prüfungen.
+Alle zehn Prüfdateien: 224 Prüfungen, 0 Fehler.

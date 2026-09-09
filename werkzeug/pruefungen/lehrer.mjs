@@ -51,8 +51,11 @@ await page.evaluate(() => {
   sichern(); ansicht = "zeugnis"; zeichne();
 });
 await page.waitForTimeout(150);
+/* Der Name steht im ersten Textknoten; das <small> darunter nennt seit v45
+   das Verhältnis dieser Lehrkraft und gehört nicht zum Namen. */
 const unter = await page.$$eval("#zeuListe .zeuUnter",
-  l => l.map(z => z.querySelector(".wer").textContent.trim() + "=" + z.querySelector(".note").textContent.trim()));
+  l => l.map(z => z.querySelector(".wer").firstChild.textContent.trim()
+                  + "=" + z.querySelector(".note").textContent.trim()));
 pruef("Zeugnis trennt das Fach nach Lehrkraft",
   unter.includes("Frau Müller=2") && unter.includes("Herr Schmidt=4"), unter.join(" · "));
 pruef("Gesamtschnitt des Fachs bleibt stehen",
