@@ -1,8 +1,7 @@
 /* =====================================================================
    Stundenplan — gesamte Logik.
-   Aufbau siehe CLAUDE.md. Kurz: kein Framework, ein Datensatz je
-   Profil im localStorage, bei jeder Änderung wird die sichtbare Ansicht
-   neu gezeichnet.
+   Kein Framework: ein Datensatz je Profil im localStorage. Bei jeder
+   Änderung wird die sichtbare Ansicht neu gezeichnet.
    ===================================================================== */
 
 /* --- Fehleranzeige zuerst: eine leere Seite sagt niemandem etwas --- */
