@@ -2,7 +2,8 @@ name: Interne Hilfsdateien entfernen
 
 on:
   push:
-    branches: [cleanup/remove-ai-files]
+    branches:
+      - cleanup/remove-ai-files
 
 permissions:
   contents: write
@@ -15,52 +16,7 @@ jobs:
       - name: Öffentliche Dateien bereinigen
         shell: bash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          app = Path('app.js')
-          s = app.read_text(encoding='utf-8')
-          alt = '''   Aufbau siehe CLAUDE.md. Kurz: kein Framework, ein Datensatz je
-   Profil im localStorage, bei jeder Änderung wird die sichtbare Ansicht
-   neu gezeichnet.'''
-          neu = '''   Kein Framework: ein Datensatz je Profil im localStorage. Bei jeder
-   Änderung wird die sichtbare Ansicht neu gezeichnet.'''
-          if alt not in s:
-              raise SystemExit('app.js: erwarteter Claude-Verweis fehlt')
-          app.write_text(s.replace(alt, neu, 1), encoding='utf-8')
-
-          beitrag = Path('CONTRIBUTING.md')
-          s = beitrag.read_text(encoding='utf-8')
-          s = s.replace('''- `CLAUDE.md`, `.claude/skills/` — Kontext und Abläufe für die Arbeit mit
-  Claude Code.\n''', '')
-          beitrag.write_text(s, encoding='utf-8')
-
-          sw = Path('sw.js')
-          s = sw.read_text(encoding='utf-8')
-          if 'const VERSION = "v47";' not in s:
-              raise SystemExit('sw.js: v47 nicht gefunden')
-          sw.write_text(s.replace('const VERSION = "v47";', 'const VERSION = "v48";', 1), encoding='utf-8')
-
-          ch = Path('CHANGELOG.md')
-          s = ch.read_text(encoding='utf-8')
-          s = s.replace('- `app.js` verweist nicht mehr auf die nicht vorhandene `ARCHITEKTUR.md`, sondern auf `CLAUDE.md`.',
-                        '- Der veraltete Verweis auf die nicht vorhandene `ARCHITEKTUR.md` wurde entfernt.')
-          marker = 'Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.\n\n'
-          neu = '''## v48
-
-**Aufgeräumt**
-- Entwicklungsinterne KI-/Assistenten-Hilfsdateien aus dem öffentlichen Repository entfernt; sie sind für Nutzung und Beiträge nicht erforderlich.
-- Verweise darauf aus Quellkommentar und Mitmach-Dokumentation entfernt.
-- Keine funktionale Änderung an der App.
-
-'''
-          if '## v48' not in s:
-              if marker not in s:
-                  raise SystemExit('CHANGELOG.md: Einfügepunkt fehlt')
-              s = s.replace(marker, marker + neu, 1)
-          ch.write_text(s, encoding='utf-8')
-          PY
-
+          echo 'CmZyb20gcGF0aGxpYiBpbXBvcnQgUGF0aAoKYXBwID0gUGF0aCgiYXBwLmpzIikKcyA9IGFwcC5yZWFkX3RleHQoZW5jb2Rpbmc9InV0Zi04IikKYWx0ID0gIiAgIEF1ZmJhdSBzaWVoZSBDTEFVREUubWQuIEt1cno6IGtlaW4gRnJhbWV3b3JrLCBlaW4gRGF0ZW5zYXR6IGplXG4gICBQcm9maWwgaW0gbG9jYWxTdG9yYWdlLCBiZWkgamVkZXIgw4RuZGVydW5nIHdpcmQgZGllIHNpY2h0YmFyZSBBbnNpY2h0XG4gICBuZXUgZ2V6ZWljaG5ldC4iCm5ldSA9ICIgICBLZWluIEZyYW1ld29yazogZWluIERhdGVuc2F0eiBqZSBQcm9maWwgaW0gbG9jYWxTdG9yYWdlLiBCZWkgamVkZXJcbiAgIMOEbmRlcnVuZyB3aXJkIGRpZSBzaWNodGJhcmUgQW5zaWNodCBuZXUgZ2V6ZWljaG5ldC4iCmlmIGFsdCBub3QgaW4gczoKICAgIHJhaXNlIFN5c3RlbUV4aXQoImFwcC5qczogZXJ3YXJ0ZXRlciBDbGF1ZGUtVmVyd2VpcyBmZWhsdCIpCmFwcC53cml0ZV90ZXh0KHMucmVwbGFjZShhbHQsIG5ldSwgMSksIGVuY29kaW5nPSJ1dGYtOCIpCgpiZWl0cmFnID0gUGF0aCgiQ09OVFJJQlVUSU5HLm1kIikKcyA9IGJlaXRyYWcucmVhZF90ZXh0KGVuY29kaW5nPSJ1dGYtOCIpCnMgPSBzLnJlcGxhY2UoIi0gYENMQVVERS5tZGAsIGAuY2xhdWRlL3NraWxscy9gIOKAlCBLb250ZXh0IHVuZCBBYmzDpHVmZSBmw7xyIGRpZSBBcmJlaXQgbWl0XG4gIENsYXVkZSBDb2RlLlxuIiwgIiIpCmJlaXRyYWcud3JpdGVfdGV4dChzLCBlbmNvZGluZz0idXRmLTgiKQoKc3cgPSBQYXRoKCJzdy5qcyIpCnMgPSBzdy5yZWFkX3RleHQoZW5jb2Rpbmc9InV0Zi04IikKaWYgJ2NvbnN0IFZFUlNJT04gPSAidjQ3IjsnIG5vdCBpbiBzOgogICAgcmFpc2UgU3lzdGVtRXhpdCgic3cuanM6IHY0NyBuaWNodCBnZWZ1bmRlbiIpCnN3LndyaXRlX3RleHQocy5yZXBsYWNlKCdjb25zdCBWRVJTSU9OID0gInY0NyI7JywgJ2NvbnN0IFZFUlNJT04gPSAidjQ4IjsnLCAxKSwgZW5jb2Rpbmc9InV0Zi04IikKCmNoID0gUGF0aCgiQ0hBTkdFTE9HLm1kIikKcyA9IGNoLnJlYWRfdGV4dChlbmNvZGluZz0idXRmLTgiKQpzID0gcy5yZXBsYWNlKCItIGBhcHAuanNgIHZlcndlaXN0IG5pY2h0IG1laHIgYXVmIGRpZSBuaWNodCB2b3JoYW5kZW5lIGBBUkNISVRFS1RVUi5tZGAsIHNvbmRlcm4gYXVmIGBDTEFVREUubWRgLiIsCiAgICAgICAgICAgICAgIi0gRGVyIHZlcmFsdGV0ZSBWZXJ3ZWlzIGF1ZiBkaWUgbmljaHQgdm9yaGFuZGVuZSBgQVJDSElURUtUVVIubWRgIHd1cmRlIGVudGZlcm50LiIpCm1hcmtlciA9ICJEaWUgVmVyc2lvbnNudW1tZXIgc3RlaHQgaW4gYHN3LmpzYCB1bmQgaXN0IGRpZSBlaW56aWdlIFN0ZWxsZSwgYW4gZGVyIHNpZSBnZXBmbGVndCB3aXJkLlxuXG4iCm5ldV9jaCA9ICIiIiMjIHY0OAoKKipBdWZnZXLDpHVtdCoqCi0gRW50d2lja2x1bmdzaW50ZXJuZSBLSS0vQXNzaXN0ZW50ZW4tSGlsZnNkYXRlaWVuIGF1cyBkZW0gw7ZmZmVudGxpY2hlbiBSZXBvc2l0b3J5IGVudGZlcm50OyBzaWUgc2luZCBmw7xyIE51dHp1bmcgdW5kIEJlaXRyw6RnZSBuaWNodCBlcmZvcmRlcmxpY2guCi0gVmVyd2Vpc2UgZGFyYXVmIGF1cyBRdWVsbGtvbW1lbnRhciB1bmQgTWl0bWFjaC1Eb2t1bWVudGF0aW9uIGVudGZlcm50LgotIEtlaW5lIGZ1bmt0aW9uYWxlIMOEbmRlcnVuZyBhbiBkZXIgQXBwLgoKIiIiCmlmICIjIyB2NDgiIG5vdCBpbiBzOgogICAgaWYgbWFya2VyIG5vdCBpbiBzOgogICAgICAgIHJhaXNlIFN5c3RlbUV4aXQoIkNIQU5HRUxPRy5tZDogRWluZsO8Z2VwdW5rdCBmZWhsdCIpCiAgICBzID0gcy5yZXBsYWNlKG1hcmtlciwgbWFya2VyICsgbmV1X2NoLCAxKQpjaC53cml0ZV90ZXh0KHMsIGVuY29kaW5nPSJ1dGYtOCIpCg==' | base64 -d | python
           git rm -r .claude CLAUDE.md
           git rm .github/workflows/ai-cleanup.yml
           git config user.name "github-actions[bot]"
