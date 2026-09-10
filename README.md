@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="icon-192.png" width="96" height="96" alt="Stundenplan App Icon">
+  <img src="icon-192.png" width="96" height="96" alt="Stundenplan Nothing PWA App Icon">
 </p>
 
-<h1 align="center">Stundenplan</h1>
+<h1 align="center">Stundenplan Nothing PWA</h1>
 
 <p align="center">
-  Eine lokale, installierbare Stundenplan-App für Schüler — mit Hausaufgaben, Klausuren, Noten, Kalender und Offline-Modus.
+  Eine lokale, installierbare Stundenplan-PWA für Schüler — mit Hausaufgaben, Klausuren, Noten, Kalender und Offline-Modus.
 </p>
 
 <p align="center">
-  <strong><a href="https://djkamma420.github.io/StundenplanNothing/">App öffnen</a></strong>
+  <strong><a href="https://djkamma420.github.io/StundenplanNothing/">PWA öffnen</a></strong>
   ·
   <a href="PRIVACY.md">Datenschutz</a>
   ·
@@ -20,9 +20,9 @@
 
 ---
 
-## Was die App macht
+## Was die PWA macht
 
-Stundenplan ersetzt keinen Schulserver. Sie ist eine persönliche Übersicht auf deinem eigenen Gerät.
+Stundenplan Nothing PWA ersetzt keinen Schulserver. Sie ist eine persönliche Übersicht auf deinem eigenen Gerät.
 
 - Tagesansicht mit echten Uhrzeiten und aktueller Stunde
 - Wochenansicht für Montag bis Freitag
@@ -43,7 +43,7 @@ Stundenplan ersetzt keinen Schulserver. Sie ist eine persönliche Übersicht auf
 
 **Kein Konto. Keine Datenbank. Kein Tracking. Keine Cloud-Synchronisierung.**
 
-Die persönlichen Daten liegen im `localStorage` des Browsers auf dem jeweiligen Gerät. Die App selbst wird über GitHub Pages ausgeliefert. Für das optionale Laden deutscher Ferien wird `openholidaysapi.org` angesprochen.
+Die persönlichen Daten liegen im `localStorage` des Browsers auf dem jeweiligen Gerät. Die PWA selbst wird über GitHub Pages ausgeliefert. Für das optionale Laden deutscher Ferien wird `openholidaysapi.org` angesprochen.
 
 Das bedeutet auch: Wenn Browser- oder Websitedaten gelöscht werden, können die lokalen Daten verloren gehen. Deshalb regelmäßig eine Sicherung erstellen.
 
@@ -53,7 +53,7 @@ Mehr dazu: [PRIVACY.md](PRIVACY.md)
 
 ## Schnellstart
 
-### 1. App öffnen
+### 1. PWA öffnen
 
 **https://djkamma420.github.io/StundenplanNothing/**
 
@@ -65,7 +65,7 @@ Mehr dazu: [PRIVACY.md](PRIVACY.md)
 | iPhone / Safari | Teilen → **Zum Home-Bildschirm** |
 | Desktop | Installationssymbol in der Adressleiste, sofern vom Browser angeboten |
 
-Die App funktioniert auch direkt im Browser. Als installierte PWA ist sie für den täglichen Einsatz sinnvoller.
+Die PWA funktioniert auch direkt im Browser. Installiert ist sie für den täglichen Einsatz sinnvoller.
 
 ### 3. Stundenplan einrichten
 
@@ -82,7 +82,7 @@ Eine Woche reicht; bei A-/B-Wochen werden zwei Wochen gepflegt.
 
 ## Stundenplan importieren
 
-Beim Import aus einem Schulportal erwartet die App pro Stunde ungefähr dieses Format:
+Beim Import aus einem Schulportal erwartet die PWA pro Stunde ungefähr dieses Format:
 
 ```text
 1
@@ -113,7 +113,7 @@ Diese Plan-Datei enthält nur die für den Stundenplan benötigten Informationen
 
 Persönliche Einträge wie Noten, Fehlzeiten, Hausaufgaben oder Merkblattbilder werden dabei nicht mitgegeben.
 
-Kann der Browser Dateien direkt teilen, öffnet die App das Teilen-Menü. Andernfalls wird die Plan-Datei heruntergeladen. Der Empfänger liest sie über **Datei einlesen** ein; bestehende persönliche Einträge bleiben dabei erhalten.
+Kann der Browser Dateien direkt teilen, öffnet die PWA das Teilen-Menü. Andernfalls wird die Plan-Datei heruntergeladen. Der Empfänger liest sie über **Datei einlesen** ein; bestehende persönliche Einträge bleiben dabei erhalten.
 
 ---
 
@@ -135,7 +135,7 @@ Eine vollständige Sicherung kann persönliche Daten enthalten. Sie sollte entsp
 
 ## Kalender
 
-Die App kann zwei Arten von Kalenderdaten exportieren:
+Die PWA kann zwei Arten von Kalenderdaten exportieren:
 
 - persönliche Termine, Hausaufgaben und Klausuren
 - den wiederkehrenden Unterrichtsplan
@@ -148,7 +148,7 @@ Die `.ics`-Dateien können beispielsweise in Apple Kalender, Google Kalender ode
 
 ## Unterstützte Umgebung
 
-Die App ist als moderne Web-App gebaut und auf aktuelle Browser ausgelegt.
+Stundenplan Nothing PWA ist als moderne Web-App gebaut und auf aktuelle Browser ausgelegt.
 
 Typische Zielgeräte:
 
@@ -156,7 +156,7 @@ Typische Zielgeräte:
 - iPhone/iPad mit Safari
 - Windows, macOS und Linux mit modernen Browsern
 
-Einige Browserfunktionen sind systembedingt nicht überall identisch. Dazu gehören insbesondere Datei-Share, Dateisystemzugriff, Installation und Benachrichtigungen. Für nicht verfügbare Funktionen verwendet die App nach Möglichkeit einen Fallback.
+Einige Browserfunktionen sind systembedingt nicht überall identisch. Dazu gehören insbesondere Datei-Share, Dateisystemzugriff, Installation und Benachrichtigungen. Für nicht verfügbare Funktionen verwendet die PWA nach Möglichkeit einen Fallback.
 
 ---
 
@@ -183,7 +183,7 @@ Es gibt im Browserbetrieb:
 - keine Datenbank
 - keine Runtime-Paketabhängigkeiten
 
-Die Anwendung wird statisch ausgeliefert. Persönliche Daten werden im Browser gespeichert.
+Die PWA wird statisch ausgeliefert. Persönliche Daten werden im Browser gespeichert.
 
 ## Entwicklung
 
@@ -202,7 +202,7 @@ Weitere Hinweise:
 
 ## Datenschutz
 
-Die App sammelt keine Nutzungsstatistiken und betreibt kein eigenes Backend für persönliche Stundenplandaten.
+Die PWA sammelt keine Nutzungsstatistiken und betreibt kein eigenes Backend für persönliche Stundenplandaten.
 
 Wichtige Details, einschließlich lokaler Speicherung, Ferien-API und Bildern in Merkblättern, stehen in [PRIVACY.md](PRIVACY.md).
 
