@@ -32,7 +32,13 @@ Zum Ausprobieren reicht es, `index.html` im Browser zu öffnen. Für Service Wor
 
 1. **Kein Build-Schritt.** Die App muss vom Handy aus bearbeitbar bleiben. Keine Abhängigkeiten, kein npm, kein Bundler.
 2. **Versionsnummer hochzählen** in `sw.js` bei jeder Änderung an `index.html` oder `app.js`. Es gibt nur diese eine Stelle.
-3. **Deutsche Bezeichner** im Code — der Rest ist auch auf Deutsch.
+3. **Deutsche Bezeichner** im Code — der Rest ist auch auf Deutsch. Auch der
+   deutsche *Satz* ist der Schlüssel: `txt("Speichern")`. Jeder neue oder
+   geänderte Satz braucht seine englische Fassung in `EN` (bzw. `EN_ZAHL` für
+   gezählte Wörter) und im Markup eine Auszeichnung `data-t`, `data-t-html`,
+   `data-t-ph` oder `data-t-al`. `werkzeug/pruefen.mjs` besteht darauf.
+   Gespeichert wird immer Deutsch — Schlüssel, Dateinamen und das
+   Sicherungsformat sind Daten, keine Anzeige.
 4. **Kommentare erklären das Warum**, nicht das Was.
 5. **Nichts hart verdrahten**, was von der Schule abhängt. Zeiten, Fächer, Wochenrhythmus gehören in die Einstellungen.
 6. **Keine Daten nach außen.** Neue Netzwerkaufrufe nur, wenn sie freiwillig sind und im README stehen.
@@ -47,6 +53,7 @@ Zum Ausprobieren reicht es, `index.html` im Browser zu öffnen. Für Service Wor
 node werkzeug/pruefen.mjs --basis origin/main
 node werkzeug/pruefungen/grund.mjs
 node werkzeug/pruefungen/layout.mjs
+node werkzeug/pruefungen/sprache.mjs
 ```
 
 ## Vor einem Pull Request
@@ -57,6 +64,7 @@ node werkzeug/pruefungen/layout.mjs
   alles aus einer eingelesenen Sicherung zusätzlich durch die `…Saeubern`-Funktionen.
 - Erscheint kein roter Fehlerkasten?
 - Funktioniert es auf einem schmalen Handybildschirm?
+- Steht neuer Text auch auf Englisch da, und passt er dort noch in die Zeile?
 
 ## Ideen ohne Code
 

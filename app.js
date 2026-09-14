@@ -24,17 +24,17 @@ function zeigeFehler(text, quelle){
         + " · " + (screen.width + "×" + screen.height)
         + " · " + navigator.userAgent.slice(0, 120);
     }catch(e){}
-    k.textContent = "Fehler\n" + text + (quelle ? "\n" + quelle : "") + umgebung
-      + "\n\nBitte diesen Text weitergeben. Deine Daten sind nicht betroffen.";
+    k.textContent = txt("Fehler") + "\n" + text + (quelle ? "\n" + quelle : "") + umgebung
+      + "\n\n" + txt("Bitte diesen Text weitergeben. Deine Daten sind nicht betroffen.");
     /* Wer hier steht, kommt sonst nicht weiter. Die häufigste Ursache ist eine
        halb erneuerte Fassung — neues index.html, altes app.js. Ein Neuladen
        ohne Zwischenspeicher behebt genau das. Der Speicher bleibt unberührt. */
     const knopf = document.createElement("button");
-    knopf.textContent = "App neu laden";
+    knopf.textContent = txt("App neu laden");
     knopf.style.cssText = "margin-top:12px;font:inherit;background:#fff;color:#e5382b;"
       + "border:0;border-radius:8px;padding:9px 14px;font-weight:700";
     knopf.onclick = async () => {
-      knopf.textContent = "Lädt …";
+      knopf.textContent = txt("Lädt …");
       try{
         if(window.caches) for(const name of await caches.keys()) await caches.delete(name);
         if("serviceWorker" in navigator){
@@ -49,18 +49,19 @@ function zeigeFehler(text, quelle){
 }
 window.addEventListener("error", e => {
   const datei = (e.filename || "").split("/").pop();
-  zeigeFehler(e.message, datei ? `${datei}, Zeile ${e.lineno}` : "");
+  zeigeFehler(e.message, datei ? txt("{datei}, Zeile {zeile}", {datei, zeile:e.lineno}) : "");
 });
 window.addEventListener("unhandledrejection", e =>
-  zeigeFehler("Unerledigt: " + ((e.reason && e.reason.message) || e.reason)));
+  zeigeFehler(txt("Unerledigt") + ": " + ((e.reason && e.reason.message) || e.reason)));
 
 /* Fassung der Daten im Speicher — nicht die der App. Sie steigt nur, wenn
    sich die Form der gespeicherten Daten ändert, und gibt späteren
    Umstellungen einen Anker. Ohne sie weiß niemand, was da liegt. */
 const SCHEMA = 3;
 const datenstandVon = roh => Number(roh && roh.fassung) || 0;
-const neuereDatenText = stand => "Diese Daten stammen aus einer neueren Fassung der App "
-  + `(Datenstand ${stand}, diese App kennt ${SCHEMA}). Aktualisiere die App, bevor du weiterarbeitest.`;
+const neuereDatenText = stand => txt("Diese Daten stammen aus einer neueren Fassung der App "
+  + "(Datenstand {stand}, diese App kennt {kennt}). Aktualisiere die App, bevor du weiterarbeitest.",
+  {stand, kennt:SCHEMA});
 
 /* --- Voreinstellungen. Nichts davon ist auf eine Schule zugeschnitten. --- */
 const STANDARD = {
@@ -90,6 +91,7 @@ const STANDARD = {
   sicherHalten: 3,              // Monate, die im Ordner bleiben; 0 = alles behalten
   archivTage: 0,                // Tage, die Gelöschtes im Archiv bleibt; 0 = für immer
   startProfil: "immer",         // Profilauswahl beim Öffnen: immer | mehrere | nie
+  sprache: "de",                // Oberfläche: de | en | "" für die Gerätesprache
   stdProTag: 8,                 // Stunden je Schultag, für die Umrechnung in Fehltage
   reiheEin: null,               // Reihenfolge im Einträge-Menü
   reiheFach: null,              // Reihenfolge der Fächer im Zeugnis
@@ -121,6 +123,566 @@ const EREIGNISARTEN = ["ereignis","ausfall","vertretung"];
 const ARTLANG = {H:"Hausaufgaben",K:"Klausuren",N:"Notizen",E:"Ereignisse",
                  G:"Noten",M:"Merkblätter",F:"Fehlzeiten",archiv:"Archiv"};
 
+/* =====================================================================
+   Englische Fassung der Oberfläche
+   Links steht der deutsche Satz, wie er im Quelltext aufgerufen wird,
+   rechts seine Übersetzung. Was hier fehlt, erscheint auf Deutsch —
+   und werkzeug/pruefen.mjs meldet es, bevor es jemand zu sehen bekommt.
+   Reihenfolge: erst die Wörter, die gezählt werden, dann alles andere
+   ungefähr so, wie es in der App vorkommt.
+   ===================================================================== */
+/* Gezählte Wörter: „1 Tag" und der Reiter „Tag" sind auf Deutsch dasselbe
+   Wort, auf Englisch nicht. Deshalb eine eigene Tabelle. */
+const EN_ZAHL = {
+  "Tag":"day", "Tage":"days", "Tagen":"days",
+  "Stunde":"lesson", "Stunden":"lessons",
+  "belegte Stunde":"lesson filled in", "belegte Stunden":"lessons filled in",
+  "Eintrag":"entry", "Einträge":"entries",
+  "Termin":"date", "Termine":"dates",
+  "Note":"grade", "Noten":"grades",
+  "Klausur":"exam", "Klausuren":"exams",
+  "Hausaufgabe":"homework task", "Hausaufgaben":"homework tasks",
+  "Bild":"image", "Bilder":"images",
+  "Fach":"subject", "Fächer":"subjects",
+  "Lehrkraft":"teacher", "Lehrkräfte":"teachers",
+  "Monat":"month", "Monate":"months",
+  "Abschnitt":"section", "Abschnitte":"sections",
+  "Sicherung":"backup", "Sicherungen":"backups",
+  "alte Datei":"old file", "alte Dateien":"old files",
+  "eigener Tag":"own free day", "eigene Tage":"own free days",
+  "Zeitraum geladen":"period loaded", "Zeiträume geladen":"periods loaded"
+};
+
+const EN = {
+  /* --- Fehlerkasten, Start, Daten --- */
+  "Fehler":"Error",
+  "Bitte diesen Text weitergeben. Deine Daten sind nicht betroffen.":
+    "Please pass this text on. Your data is not affected.",
+  "App neu laden":"Reload app",
+  "Lädt …":"Loading …",
+  "{datei}, Zeile {zeile}":"{datei}, line {zeile}",
+  "Unerledigt":"Unhandled",
+  "Ansicht „{name}“":"View “{name}”",
+  "Diese Daten stammen aus einer neueren Fassung der App (Datenstand {stand}, diese App kennt {kennt}). Aktualisiere die App, bevor du weiterarbeitest.":
+    "This data comes from a newer version of the app (data version {stand}, this app knows {kennt}). Update the app before carrying on.",
+  "Speicher voll. Lösche Bilder aus Merkblättern oder lege eine Sicherung an.":
+    "Storage full. Delete images from handouts or make a backup.",
+  "Dialogfenster":"Dialog windows",
+  "Dieser Browser ist zu alt für die App — es fehlt: {fehlt}.":
+    "This browser is too old for the app — missing: {fehlt}.",
+  "Auf dem iPhone braucht es iOS 15.4 oder neuer, sonst einen aktuellen Chrome, Firefox, Edge oder Safari.":
+    "On iPhone it needs iOS 15.4 or newer, otherwise a current Chrome, Firefox, Edge or Safari.",
+  "Mein Plan":"My plan", "Profil":"Profile", "Profil {n}":"Profile {n}",
+  "Bild ließ sich nicht lesen.":"The image could not be read.",
+  "Datei ließ sich nicht lesen.":"The file could not be read.",
+  "Datei konnte nicht ausgegeben werden":"The file could not be written",
+
+  /* --- Wochentage, Arten, Listen --- */
+  "Montag":"Monday", "Dienstag":"Tuesday", "Mittwoch":"Wednesday",
+  "Donnerstag":"Thursday", "Freitag":"Friday",
+  "Samstag":"Saturday", "Sonntag":"Sunday", "Wochenende":"Weekend",
+  "Hausaufgabe":"Homework", "Klausur":"Exam", "Notiz":"Note",
+  "Merkblatt":"Handout", "Fehlzeit":"Absence", "Ereignis":"Event", "Note":"Grade",
+  "Hausaufgaben":"Homework", "Klausuren":"Exams", "Notizen":"Notes",
+  "Ereignisse":"Events", "Noten":"Grades", "Merkblätter":"Handouts",
+  "Fehlzeiten":"Absences", "Archiv":"Archive",
+  "entschuldigt":"excused", "unentschuldigt":"unexcused", "verspätet":"late",
+
+  /* --- Kopf und Reiter --- */
+  "Stundenplan":"Timetable", "Tag":"Day", "Kalender":"Calendar",
+  "Einträge":"Entries", "Zeugnis":"Report",
+  "Ansicht":"View", "Wochentag":"Weekday", "Inhaltsverzeichnis":"Table of contents",
+  "Plan bearbeiten":"Edit timetable", "Kacheln umsortieren":"Reorder tiles",
+  "Profil wechseln":"Switch profile", "Einstellungen":"Settings",
+  "Woche zurück":"Previous week", "Woche vor":"Next week",
+  "Monat zurück":"Previous month", "Monat vor":"Next month",
+  "Woche":"Week", "Heute":"Today", "Diese Woche":"This week",
+  "KW {n}":"Week {n}", "{w}-Woche":"week {w}", "A/B-Wochen":"A/B weeks",
+
+  /* --- Tagesansicht --- */
+  "Feiertag":"Public holiday", "Ferien":"Holidays", "kein Unterricht":"no lessons",
+  "frei":"free", "fällt aus":"cancelled", "Ausfall":"Cancelled",
+  "Vertretung":"Cover", "einmalig":"one-off", "jetzt":"now",
+  "Schluss nach {zeit}":"School ends after {zeit}",
+  "Freistunde":"Free period", "Pause":"Break", "Schule aus":"School's out",
+  "noch {n} min":"{n} min left", "in {n} min":"in {n} min",
+  "Beginnt um {zeit}":"Starts at {zeit}", "dann {fach}":"then {fach}",
+  "weiter um {zeit} · noch {n} min":"continues at {zeit} · {n} min left",
+  "Schulschluss in {h} h {m} min":"School ends in {h} h {m} min",
+  "{name} in {dauer}":"{name} in {dauer}",
+  "An diesem Tag":"On this day", "Nichts eingetragen.":"Nothing entered.",
+  "Bearbeiten ist an: Antippen ändert Fach, Raum und Lehrkraft. Nochmal auf ✎ oben tippen, wenn du fertig bist.":
+    "Editing is on: tapping changes subject, room and teacher. Tap ✎ at the top again when you are done.",
+  "Erledigt":"Done", "Reihe":"Series",
+  "Ohne Lehrkraft":"Without a teacher", "ohne Lehrkraft":"without a teacher",
+
+  /* --- Sicherungsbanner --- */
+  "Sicherung fällig":"Backup due",
+  "Dieser Plan wurde noch nie gesichert.":"This plan has never been backed up.",
+  "Letzte Sicherung vor {dauer}.":"Last backup {dauer} ago.",
+  "Löscht der Browser seine Websitedaten, ist ohne Sicherung alles weg.":
+    "If the browser clears its site data, everything is gone without a backup.",
+  "Jetzt sichern":"Back up now", "Heute nicht":"Not today",
+
+  /* --- Kalender --- */
+  "Ein Feld gedrückt halten oder doppelt antippen, um etwas einzutragen.":
+    "Press and hold a cell, or double-tap it, to add something.",
+  "Nichts an diesem Tag.":"Nothing on this day.",
+  "nichts eingetragen":"nothing entered", "eigener freier Tag":"own free day",
+  "Freien Tag ändern":"Change free day", "Freier Tag":"Free day",
+  "Praktikum, Ausflug, beweglicher Ferientag":"work experience, trip, floating holiday",
+  "Tag markieren":"Mark day",
+  "Für schuleigene freie Tage, Praktika oder Ausflüge. Der Tag wird grau dargestellt und aus dem Unterricht herausgenommen.":
+    "For the school's own free days, work experience or trips. The day is shown in grey and taken out of lessons.",
+  "Bezeichnung":"Label", "Beweglicher Ferientag":"Floating holiday",
+  "bis einschließlich":"up to and including", "Frei":"Free",
+  "Termin":"Appointment",
+  "ganzer Tag oder eine bestimmte Stunde":"all day or one particular lesson",
+  "mit Fälligkeit an diesem Tag":"due on this day",
+  "freier Text zu diesem Tag":"free text for this day",
+  "versäumte Stunden":"lessons missed",
+
+  /* --- Einträge-Menü --- */
+  "Suche":"Search", "Fach, Aufgabe, Notiz …":"Subject, task, note …",
+  "Sortieren ist an: Mit den Pfeilen umstellen. Nochmal auf ✎ oben tippen, wenn du fertig bist.":
+    "Sorting is on: rearrange with the arrows. Tap ✎ at the top again when you are done.",
+  "{n} offen":"{n} open", "nichts offen":"nothing open",
+  "{n} anstehend":"{n} coming up", "nichts anstehend":"nothing coming up",
+  "{n} vorhanden":"{n} there", "keine":"none",
+  "{n} geplant":"{n} planned", "{n} eingetragen":"{n} entered",
+  "{n} im Archiv":"{n} in the archive", "leer":"empty",
+  "Keine offenen Hausaufgaben.":"No open homework.",
+  "Keine Klausuren eingetragen.":"No exams entered.",
+  "Keine Notizen.":"No notes.", "Nichts vorhanden.":"Nothing there.",
+  "Keine Ereignisse geplant.":"No events planned.",
+  "Keine Fehlzeiten erfasst.":"No absences recorded.",
+  "Noch keine Merkblätter.":"No handouts yet.",
+  "Noch keine Noten eingetragen.":"No grades entered yet.",
+  "Antippen zum Ansehen.":"Tap to view.",
+  "ganzer Tag":"all day", "Nichts gefunden.":"Nothing found.",
+  "davon {n} unentschuldigt":"{n} of them unexcused",
+
+  /* --- Archiv --- */
+  "Archiv ist leer.":"The archive is empty.",
+  "gelöscht {datum}":"deleted {datum}",
+  "wird beim nächsten Öffnen entfernt":"will be removed the next time you open the app",
+  "noch heute":"today only", "noch {dauer}":"{dauer} left",
+  "Gelöschtes bleibt hier, bis du es selbst entfernst. Eine Frist stellst du unter ⚙ → Archiv ein.":
+    "Deleted things stay here until you remove them yourself. You can set a time limit under ⚙ → Archive.",
+  "Gelöschtes wird {dauer} nach dem Löschen endgültig entfernt.":
+    "Deleted things are removed for good {dauer} after deletion.",
+  "{n} Eintrag geht in der kommenden Woche verloren.":"{n} entry will be lost in the coming week.",
+  "{n} Einträge gehen in der kommenden Woche verloren.":"{n} entries will be lost in the coming week.",
+  "Zum sofortigen Entfernen ein zweites Mal löschen.":"Delete a second time to remove it at once.",
+  "Endgültig löschen? Das lässt sich nicht rückgängig machen.":
+    "Delete for good? This cannot be undone.",
+  "Löschen":"Delete", "Zurück":"Back",
+
+  /* --- Noten, Zeugnis, Verhältnis --- */
+  "Verhältnis je Fach antippbar. Standard: {n} % mündlich.":
+    "Tap a subject to set its ratio. Default: {n} % oral.",
+  "mündlich {m} · schriftlich {s}":"oral {m} · written {s}",
+  "{n} % mündlich":"{n} % oral", "eigen":"own", "eigene Verhältnisse":"own ratios",
+  "mündl.":"oral", "schriftl.":"written",
+  "mündlich":"oral", "schriftlich":"written", "mündlich %":"oral %",
+  "keine Noten":"no grades",
+  "Aus {noten} in {a} von {b} Fächern.":"From {noten} in {a} of {b} subjects.",
+  "Noch keine Noten. Tippe ein Fach an, um Verhältnis und Zielnote zu setzen.":
+    "No grades yet. Tap a subject to set its ratio and a target grade.",
+  "Versäumt: {text}.":"Missed: {text}.",
+  "Stand heute":"As things stand",
+  "Nur eine Schätzung. Die App gewichtet alle Noten einer Art gleich; Lehrkräfte rechnen oft anders. Keine amtliche Auskunft.":
+    "Only an estimate. The app weights all grades of one kind equally; teachers often calculate differently. Not an official statement.",
+  "Trag zuerst deinen Stundenplan ein — dann erscheinen hier die Fächer.":
+    "Enter your timetable first — then the subjects appear here.",
+  "Verhältnis":"Ratio", "Verhältnis je Fach":"Ratio per subject",
+  "Wie stark zählt die mündliche Note in diesem Fach?":
+    "How much does the oral grade count in this subject?",
+  "{m} % mündlich, {s} % schriftlich.":"{m} % oral, {s} % written.",
+  "Zurzeit gilt der Standard.":"The default applies at the moment.",
+  "Zurzeit gilt der Wert für {fach} ({n} %).":"The value for {fach} applies at the moment ({n} %).",
+  "Gilt für alle Lehrkräfte dieses Fachs, die keinen eigenen Wert haben.":
+    "Applies to every teacher of this subject who has no value of their own.",
+  "Zielnote":"Target grade",
+  "Was müsste die nächste Note sein, um dieses Ziel zu erreichen?":
+    "What would the next grade have to be to reach this target?",
+  "Ziel":"Target", "als":"as", "Standard":"Default",
+  "Die nächste mündliche Note müsste {note} sein.":"The next oral grade would have to be {note}.",
+  "Die nächste schriftliche Note müsste {note} sein.":"The next written grade would have to be {note}.",
+  "Mit einer einzelnen Note nicht erreichbar (rechnerisch {note}).":
+    "Not reachable with a single grade (arithmetically {note}).",
+  "Note 1–6":"Grade 1–6", "Noten 1–6":"Grades 1–6", "Punkte 0–15":"Points 0–15",
+
+  /* --- Stunde antippen, Fach-Info --- */
+  "{tag}, {std}. Stunde":"{tag}, lesson {std}",
+  "Gilt nur für die {woche}-Woche.":"Applies to week {woche} only.",
+  "fällig {datum}":"due {datum}", "kein weiterer Termin":"no further date",
+  "Fällt aus":"Cancelled", "Sonstiges Ereignis":"Other event", "Fach-Info":"Subject info",
+  "was heute dran war":"what was covered today", "Termin eintragen":"enter a date",
+  "diese Stunde versäumt":"this lesson missed", "nur an diesem Tag":"on this day only",
+  "anderes Fach oder Raum":"different subject or room",
+  "Lehrkraft, Raum, Schnitt, Offenes":"teacher, room, average, what is open",
+  "Lehrkraft":"Teacher", "Lehrer":"Teacher", "Raum":"Room", "Fach":"Subject",
+  "Stunden je Woche":"Lessons per week", "Als Nächstes":"Up next",
+  "Schnitt":"Average", "Offen":"Open", "nichts":"nothing",
+  "In dieser Woche steht nichts im Plan.":"Nothing is in the plan this week.",
+  "Eine Stunde antippen springt auf den Tag.":"Tapping a lesson jumps to its day.",
+
+  /* --- Eintragsdialog --- */
+  "Eintrag ändern":"Edit entry", "Neuer Eintrag":"New entry",
+  "Ereignis ändern":"Edit event", "Note ändern":"Edit grade",
+  "+ Eintrag":"+ Entry", "Art":"Kind", "Was":"What", "Wo":"Where",
+  "Überschrift":"Heading", "Inhalt":"Content", "Datum":"Date",
+  "Fach eintippen":"Type a subject", "keins":"none", "alle":"all",
+  "Anderes …":"Something else …", "Aufgabe":"Task", "Details":"Details",
+  "Raum oder Ort":"Room or place", "Stunde":"Lesson", "Stunden":"Lessons",
+  "Wiederholen":"Repeat", "Wiederholen bis":"Repeat until",
+  "jede Woche":"every week", "alle zwei Wochen":"every two weeks",
+  "{anzahl}, jeweils {tag}, letzter am {datum}.":"{anzahl}, each on {tag}, the last on {datum}.",
+  "am selben Wochentag":"on the same weekday",
+  "{n} Termine — mehr legt die App auf einmal nicht an. Letzter: {datum}.":
+    "{n} dates — the app does not create more at once. Last: {datum}.",
+  "Roter Punkt: {fach} steht an diesem Tag im Plan.":"Red dot: {fach} is in the plan on that day.",
+  "bei {wer}":"with {wer}",
+  "Wähle oben ein Fach, dann werden die passenden Tage markiert.":
+    "Choose a subject above and the matching days will be marked.",
+  "Bild hinzufügen":"Add image", "{bilder} · ca. {kb} kB":"{bilder} · about {kb} kB",
+  "Bitte ein Fach wählen.":"Please choose a subject.",
+  "Bitte einen Wert zwischen {a} und {b} eingeben.":"Please enter a value between {a} and {b}.",
+  "Merkblatt vom {datum}":"Handout of {datum}",
+  "Dieser Eintrag gehört zu einer Reihe von {n}.":"This entry belongs to a series of {n}.",
+  "OK löscht die ganze Reihe, Abbrechen nur diesen einen.":
+    "OK deletes the whole series, Cancel only this one.",
+  "Bearbeiten":"Edit", "Fertig":"Done", "Speichern":"Save",
+
+  /* --- Plan einfügen --- */
+  "Plan einfügen":"Paste plan", "Std.":"No.", "von":"from", "bis":"to", "LK":"Teacher",
+  "Aus der Zwischenablage füllen":"Fill from the clipboard",
+  "Erwartet je Stunde eine Zeile im Format <b>FACH, RAUM (LEHRKRAFT)</b>.":
+    "Expects one line per lesson in the format <b>SUBJECT, ROOM (TEACHER)</b>.",
+  "1 FACH, RAUM (LEHRER)":"1 SUBJECT, ROOM (TEACHER)",
+  "In die Tabelle übernehmen":"Copy into the table",
+  "{n} Zeilen übernommen. Prüfen und speichern.":"{n} rows taken over. Check them and save.",
+  "Nichts erkannt. Die Stundennummern müssen mitkopiert sein.":
+    "Nothing recognised. The lesson numbers have to be copied along too.",
+
+  /* --- Profile --- */
+  "Wer bist du?":"Who are you?", "Profile verwalten":"Manage profiles",
+  "Verwalten":"Manage", "Name":"Name", "Neues Profil":"New profile", "Anlegen":"Create",
+  "Name des neuen Profils":"Name of the new profile", "Neuer Name":"New name",
+  "Profil: {name}":"Profile: {name}",
+  "Profil „{name}“ mit allen Daten löschen? Das lässt sich nicht rückgängig machen.":
+    "Delete profile “{name}” with all its data? This cannot be undone.",
+
+  /* --- Ferien, Erinnerungen, Kalender-Export --- */
+  "Ferien und Feiertage":"Holidays and public holidays", "Bundesland":"German state",
+  "wählen":"choose", "Ferien laden":"Load holidays", "Entfernen":"Remove",
+  "Bitte zuerst ein Bundesland wählen.":"Please choose a German state first.",
+  "Wird geladen …":"Loading …",
+  "Der Dienst antwortet nicht. Später noch einmal versuchen.":
+    "The service is not responding. Try again later.",
+  "Laden fehlgeschlagen. Internet prüfen.":"Loading failed. Check your internet connection.",
+  "{n} Einträge gespeichert, bis {datum}.":"{n} entries stored, up to {datum}.",
+  "Noch nichts geladen.":"Nothing loaded yet.",
+  "Erinnerungen":"Reminders",
+  "Die App kann sich nicht selbst wecken. Sie meldet sich beim Öffnen — für echte Wecker nutze den Kalender-Export.":
+    "The app cannot wake itself. It speaks up when you open it — for real alarms use the calendar export.",
+  "Beim Öffnen an Klausuren und Hausaufgaben erinnern":
+    "Remind me of exams and homework when opening",
+  "Benachrichtigungen erlauben":"Allow notifications",
+  "Termine als .ics":"Appointments as .ics", "Stundenplan als .ics":"Timetable as .ics",
+  "<b>Termine</b> sind offene Hausaufgaben, Klausuren und Ereignisse, je mit Wecker. <b>Stundenplan</b> ist der Unterricht selbst als Serientermine für ein Jahr, Ferien ausgenommen — zwei Dateien, damit im Handykalender zwei Kalender entstehen, die du einzeln ausblenden kannst.":
+    "<b>Appointments</b> are open homework, exams and events, each with an alarm. <b>Timetable</b> is the lessons themselves as recurring appointments for a year, holidays excepted — two files, so that your phone calendar gets two calendars you can hide separately.",
+  "Berechtigung: {stand}":"Permission: {stand}",
+  "erteilt":"granted", "abgelehnt":"denied", "noch nicht gefragt":"not asked yet",
+  "nicht verfügbar":"not available",
+  "Morgen: {liste}":"Tomorrow: {liste}",
+  "Diese Woche: {klausuren}, {hausaufgaben}":"This week: {klausuren}, {hausaufgaben}",
+  "Klausur am {datum}: {fach}":"Exam on {datum}: {fach}",
+  "HA":"HW", "Unterricht":"Lessons",
+  "Trag zuerst deinen Stundenplan ein.":"Enter your timetable first.",
+
+  /* --- Sicherung, Ordner, Speicher --- */
+  "Sicherung":"Backup", "Als Datei sichern":"Save as file",
+  "Alle Profile sichern":"Back up all profiles", "Datei einlesen":"Read file",
+  "Teilen":"Share", "Stundenplan-Sicherung":"Timetable backup",
+  "„Teilen\" gibt <b>alles</b> weiter — auch Noten, Fehlzeiten und Merkblätter. Für Mitschüler gibt es darunter den Plan allein.":
+    "“Share” passes on <b>everything</b> — grades, absences and handouts included. For classmates there is the plan on its own below.",
+  "Stundenplan weitergeben":"Pass on the timetable",
+  "Nur den Plan teilen":"Share the plan only",
+  "Enthält Stundenraster, Fächer, Räume, Lehrkräfte und deren Namen — sonst nichts. Beim Einlesen ersetzt eine solche Datei nur den Plan; Einträge, Noten und Merkblätter bleiben stehen.":
+    "Contains the period grid, subjects, rooms, teachers and their names — nothing else. When read in, such a file replaces only the plan; entries, grades and handouts stay.",
+  "Teilen ist hier nicht verfügbar — Plan-Datei heruntergeladen.":
+    "Sharing is not available here — the plan file was downloaded instead.",
+  "Erinnerung":"Reminder", "Sichern alle":"Back up every", "Aufheben":"Keep for",
+  "nie erinnern":"never remind", "alles behalten":"keep everything",
+  "7 Tage":"7 days", "14 Tage":"14 days", "28 Tage":"28 days", "30 Tage":"30 days",
+  "1 Monat":"1 month", "3 Monate":"3 months", "6 Monate":"6 months", "1 Jahr":"1 year",
+  "für immer":"forever",
+  "Die App erinnert dich alle {dauer} in der Tagesansicht.":
+    "The app reminds you every {dauer} in the day view.",
+  "Es wird nicht erinnert. Ans Sichern denkst du dann selbst.":
+    "There is no reminder. Remembering to back up is then up to you.",
+  "Im Sicherungsordner bleiben die letzten {dauer}; ältere Sicherungen der App werden dort gelöscht.":
+    "The backup folder keeps the last {dauer}; the app deletes its older backups there.",
+  "Im Sicherungsordner bleibt alles liegen.":"Everything stays in the backup folder.",
+  "Sicherungsordner":"Backup folder",
+  "Wähle einmal einen Ordner — danach legt die App ihre Sicherungen immer dort ab, ohne zu fragen.":
+    "Choose a folder once — after that the app always puts its backups there without asking.",
+  "Beim Öffnen automatisch in den Ordner sichern, wenn es fällig ist":
+    "Back up to the folder automatically on opening when it is due",
+  "Ordner wählen":"Choose folder", "Jetzt dorthin sichern":"Back up there now",
+  "Ordner lösen":"Release folder", "Ordner":"Folder",
+  "Wähle zuerst einen Ordner.":"Choose a folder first.",
+  "Noch kein Ordner gewählt. Sicherungen gehen in die Downloads.":
+    "No folder chosen yet. Backups go to your downloads.",
+  "Ordner: {name}":"Folder: {name}",
+  "Zugriff muss beim nächsten Sichern einmal bestätigt werden":
+    "access has to be confirmed once at the next backup",
+  "{anzahl} darin":"{anzahl} in it",
+  "{n} davon älter als die Haltefrist":"{n} of them older than the retention period",
+  "Gesichert: {name}":"Backed up: {name}",
+  "Sicherung angelegt: {name}":"Backup created: {name}",
+  "{dateien} entfernt":"{dateien} removed",
+  "Dieser Browser kann keinen festen Ordner vergeben — das können bislang nur Chrome und Edge auf dem Rechner. Sicherungen landen deshalb im normalen Download-Ordner.<br><br> <b>Auf dem Handy:</b> In Chrome unter <i>⋮ → Einstellungen → Downloads</i> die Option <i>Speicherort für Dateien abfragen</i> einschalten. Dann fragt jeder Download nach dem Ordner, und du kannst dort einen eigenen anlegen.":
+    "This browser cannot be given a fixed folder — so far only Chrome and Edge on a computer can do that. Backups therefore end up in the normal downloads folder.<br><br> <b>On a phone:</b> in Chrome, under <i>⋮ → Settings → Downloads</i>, switch on <i>Ask where to save files</i>. Then every download asks for the folder, and you can create one of your own there.",
+  "Text übernehmen":"Take over text", "Alles löschen":"Delete everything",
+  "Speicher":"Storage",
+  "{kb} kB von rund {grenze} kB belegt ({anteil} %) · {bilder} in Merkblättern.":
+    "{kb} kB of about {grenze} kB used ({anteil} %) · {bilder} in handouts.",
+  "Der Speicher ist zu {n} % voll. Lege eine Sicherung an und entferne alte Bilder aus Merkblättern, sonst gehen neue Einträge verloren.":
+    "Storage is {n} % full. Make a backup and remove old images from handouts, otherwise new entries will be lost.",
+  "Noch nie gesichert. Jetzt wäre ein guter Zeitpunkt.":
+    "Never backed up. Now would be a good moment.",
+  "Letzte Sicherung vor {dauer} — Zeit für eine neue.":
+    "Last backup {dauer} ago — time for a new one.",
+  "Letzte Sicherung: {datum}{zusatz}.":"Last backup: {datum}{zusatz}.",
+  "(vor {dauer})":"({dauer} ago)", "(heute)":"(today)",
+  "Der Text lässt sich nicht lesen. Ist es wirklich eine Sicherungsdatei?":
+    "The text cannot be read. Is it really a backup file?",
+  "In der Datei stecken keine lesbaren Profile.":"The file contains no readable profiles.",
+  "In der Datei steckt kein erkennbarer Stundenplan.":
+    "The file contains no recognisable timetable.",
+  "Diese Sicherung enthält alle Profile. Sämtliche Profile auf diesem Gerät werden dadurch ersetzt. Fortfahren?":
+    "This backup contains all profiles. Every profile on this device will be replaced. Continue?",
+  "Das ersetzt den gesamten Plan dieses Profils — Einträge, Noten, Merkblätter und Archiv.":
+    "This replaces the entire plan of this profile — entries, grades, handouts and archive.",
+  "Von den jetzigen Daten gibt es noch keine Sicherung.":
+    "There is no backup of the current data yet.",
+  "Letzte Sicherung der jetzigen Daten: vor {dauer}.":
+    "Last backup of the current data: {dauer} ago.",
+  "Fortfahren?":"Continue?",
+  "Das ersetzt den Stundenplan durch {stunden}.":"This replaces the timetable with {stunden}.",
+  "Einträge, Noten, Fehlzeiten und Merkblätter bleiben unberührt.":
+    "Entries, grades, absences and handouts are left untouched.",
+  "Stundenplan übernommen. Deine Einträge und Noten sind unverändert.":
+    "Timetable taken over. Your entries and grades are unchanged.",
+  "Plan, Einträge, Noten, Merkblätter und Archiv dieses Profils löschen?":
+    "Delete the plan, entries, grades, handouts and archive of this profile?",
+
+  /* --- Einstellungen: Menü und Bereiche --- */
+  "Anleitung und Technik":"Guide and technical notes",
+  "‹ Alle Einstellungen":"‹ All settings",
+  "Darstellung":"Appearance", "Schule und Stundenraster":"School and period grid",
+  "Noten und Zeugnis":"Grades and report card",
+  "Fehlzeiten und Archiv":"Absences and archive",
+  "Erinnerungen und Kalender":"Reminders and calendar",
+  "Fächer und Lehrkräfte":"Subjects and teachers",
+  "Sicherung und Speicher":"Backup and storage",
+  "hell":"light", "dunkel":"dark",
+  "Monospace":"monospace", "Serife":"serif", "Systemschrift":"system font",
+  "{n} Stunden je Schultag":"{n} lessons per school day",
+  "beim Öffnen erinnern":"remind on opening",
+  "keine Erinnerung beim Öffnen":"no reminder on opening",
+  "kein Bundesland gewählt":"no German state chosen",
+  "getrennt":"separated",
+  "noch nie gesichert":"never backed up", "heute gesichert":"backed up today",
+  "zuletzt vor {dauer}":"last time {dauer} ago",
+  "Akzentfarbe":"Accent colour", "Hex":"Hex", "Modus":"Mode",
+  "Dunkel":"Dark", "Hell":"Light", "Schrift":"Typeface",
+  "System":"System", "Technisch":"Technical", "Serif":"Serif",
+  "Beim Öffnen":"On opening",
+  "immer zur Profilauswahl":"always show the profile picker",
+  "nur bei mehreren Profilen":"only with several profiles",
+  "gleich in den Plan":"straight into the plan",
+  "Schule":"School", "Klasse":"Class", "Deine Klasse":"Your class",
+  "Stundenraster":"Period grid",
+  "„Std.\" sind die Stundennummern, die dieses Feld abdeckt.":
+    "“No.” are the lesson numbers this slot covers.",
+  "4 Blöcke à 90 min":"4 blocks of 90 min", "8 Einzelstunden":"8 single lessons",
+  "+ Zeile":"+ Row", "Zeile löschen":"Delete row",
+  "Wochenwechsel":"Week change",
+  "A- und B-Woche getrennt führen":"Keep A and B weeks separately",
+  "Feste Regel: ungerade Kalenderwoche = <b>A</b>, gerade = <b>B</b>.":
+    "Fixed rule: odd calendar week = <b>A</b>, even = <b>B</b>.",
+  "Diese Woche ist KW {kw}, also {woche}.":"This week is week {kw}, so {woche}.",
+  "Die {nach}-Woche wird vollständig durch die {von}-Woche ersetzt. Fortfahren?":
+    "Week {nach} will be replaced entirely by week {von}. Continue?",
+  "{von}-Woche in die {nach}-Woche übernommen.":"Week {von} copied into week {nach}.",
+  "Leer lassen heißt: Standard von oben.":"Leaving it empty means: the default from above.",
+  "Sobald Fächer im Plan stehen, erscheinen sie hier.":
+    "As soon as subjects are in the plan, they appear here.",
+  "Reihenfolge der Fächer":"Order of subjects",
+  "Gilt für das Zeugnis und die Liste darüber.":"Applies to the report card and the list above it.",
+  "nach oben":"move up", "nach unten":"move down",
+  "Stunden je Schultag":"Lessons per school day",
+  "Damit rechnet das Zeugnis versäumte Stunden in Tage um.":
+    "The report card uses this to convert missed lessons into days.",
+  "Gelöschtes aufbewahren":"Keep deleted items",
+  "Nichts wird von selbst entfernt. Das Archiv wächst, bis du einzelne Einträge endgültig löschst.":
+    "Nothing is removed by itself. The archive grows until you delete individual entries for good.",
+  "Gelöschtes wird {dauer} nach dem Löschen endgültig entfernt — das lässt sich nicht rückgängig machen.":
+    "Deleted things are removed for good {dauer} after deletion — this cannot be undone.",
+  "Beim Speichern verschwinden dadurch sofort {n}.":"Saving will immediately remove {n}.",
+  "Lehrkräfte":"Teachers", "Fächer nach Lehrkraft trennen":"Separate subjects by teacher",
+  "Dann sucht „Als Nächstes“ die nächste Stunde desselben Fachs <i>bei derselben Lehrkraft</i>, Einträge bekommen ein Feld dafür, und Zeugnis und Notizen zeigen Unterpunkte je Lehrkraft.":
+    "Then “Up next” looks for the next lesson in the same subject <i>with the same teacher</i>, entries gain a field for it, and the report card and notes show sub-entries per teacher.",
+  "Je Zeile ein Kürzel und der Name, getrennt durch ein Gleichheitszeichen.":
+    "One abbreviation and name per line, separated by an equals sign.",
+  "KÜRZEL = Name":"ABBR = Name", "Fachnamen":"Subject names",
+  "KÜRZEL = Fachname":"ABBR = Subject name",
+  "Nach Update suchen":"Check for update",
+  "Du bist auf dem neuesten Stand":"You are up to date",
+  "Es gibt ungespeicherte Änderungen.":"There are unsaved changes.",
+  "OK = speichern und schließen":"OK = save and close",
+  "Abbrechen = verwerfen":"Cancel = discard",
+  "Das Raster wird kürzer. Dabei gehen {stunden} am Ende der Tage verloren.":
+    "The grid gets shorter. {stunden} at the end of the days will be lost.",
+  "Trotzdem speichern?":"Save anyway?",
+  "MIT-Lizenz — Weiterverwendung erlaubt, Urheberhinweis behalten":
+    "MIT licence — reuse permitted, keep the copyright notice",
+  "von <a href=\"https://github.com/DjKamma420\" target=\"_blank\" rel=\"noopener\">DjKamma420</a> · <a href=\"https://github.com/DjKamma420/StundenplanNothing\" target=\"_blank\" rel=\"noopener\">Quellcode</a>":
+    "by <a href=\"https://github.com/DjKamma420\" target=\"_blank\" rel=\"noopener\">DjKamma420</a> · <a href=\"https://github.com/DjKamma420/StundenplanNothing\" target=\"_blank\" rel=\"noopener\">Source code</a>",
+  "Ferien und Feiertage von <a href=\"https://openholidaysapi.org\" target=\"_blank\" rel=\"noopener\">openholidaysapi.org</a>":
+    "Holidays and public holidays from <a href=\"https://openholidaysapi.org\" target=\"_blank\" rel=\"noopener\">openholidaysapi.org</a>",
+  "Entwickelt mit KI-Unterstützung":"Developed with AI assistance",
+
+  /* --- Fuß und Anleitung --- */
+  "Wischen wechselt die Ansicht":"Swipe to change the view",
+  "{laeuft} · {server} verfügbar — tippen zum Aktualisieren":
+    "{laeuft} · {server} available — tap to update",
+  "{laeuft} (neu: {server})":"{laeuft} (new: {server})",
+  "Anleitung":"Guide", "Inhalt|Verzeichnis":"Contents", "↑ Anfang":"↑ Top",
+  "Stichwort suchen, etwa „Sicherung“ …":"Search for a keyword, for instance “backup” …",
+  "{anzahl} zu „{wort}“":"{anzahl} for “{wort}”",
+  "Nichts zu „{wort}“ gefunden.":"Nothing found for “{wort}”.",
+  "2,0":"2.0", "2,3":"2.3"
+};
+
+
+/* =====================================================================
+   Sprache
+   Die Oberfläche ist auf Deutsch geschrieben, und der deutsche Satz ist
+   zugleich sein eigener Schlüssel: txt("Speichern") liefert auf Deutsch
+   genau diesen Satz, auf Englisch den Eintrag aus EN. Fehlt eine
+   Übersetzung, erscheint der deutsche Satz — nie eine leere Stelle und
+   nie ein Kürzel. werkzeug/pruefen.mjs stellt sicher, dass es zu jedem
+   Schlüssel eine englische Fassung gibt; sonst veraltete die Übersetzung
+   stillschweigend, sobald jemand einen deutschen Satz umformuliert.
+
+   Gespeichert wird weiterhin Deutsch: Wochentagskürzel, Fehlzeitenarten,
+   Dateinamen und das Sicherungsformat sind Daten, keine Anzeige. Eine
+   Sicherung bleibt dadurch auf jedem Gerät lesbar, gleich in welcher
+   Sprache sie entstanden ist.
+   ===================================================================== */
+const SPRACHEN = {de:"Deutsch", en:"English"};
+const geraeteSprache = () => /^de/i.test(navigator.language || "") ? "de" : "en";
+/* cfg gibt es beim Laden dieser Datei noch nicht — ein Fehler vor dem ersten
+   Zeichnen muss trotzdem einen lesbaren Satz zeigen können. Deshalb steht
+   diese Abteilung ganz vorn: alles danach darf txt() benutzen. */
+function spracheJetzt(){
+  try{ if(cfg && SPRACHEN[cfg.sprache]) return cfg.sprache; }catch(e){}
+  return geraeteSprache();
+}
+const istEnglisch = () => spracheJetzt() === "en";
+/* „Wort|Kontext" trennt gleiche Wörter mit verschiedener Bedeutung —
+   auf Deutsch zählt nur der Teil vor dem Strich. */
+const ohneKontext = s => { const i = String(s).indexOf("|"); return i < 0 ? String(s) : String(s).slice(0,i); };
+/* {name} in einem Satz wird durch werte.name ersetzt. So bleibt die
+   Wortstellung der Übersetzung überlassen: „vor 3 Tagen" ist im Englischen
+   „3 days ago", und das lässt sich nicht aus Bausteinen zusammensetzen. */
+function txt(schluessel, werte){
+  const fremd = istEnglisch() && EN[schluessel];
+  const text = typeof fremd === "string" ? fremd : ohneKontext(schluessel);
+  return werte ? text.replace(/\{(\w+)\}/g, (ganz,k) => k in werte ? werte[k] : ganz) : text;
+}
+/* Ein Satz, dessen Einzahl und Mehrzahl verschieden gebaut sind. */
+const txtz = (n, ein, viele, werte) => txt(n === 1 ? ein : viele, Object.assign({n}, werte));
+/* Gezählte Wörter haben eine eigene Tabelle: „1 Tag" und der Reiter „Tag"
+   sind auf Deutsch dasselbe Wort, auf Englisch „day" und „Day". */
+const mehrzahlWort = w => {
+  const fremd = istEnglisch() && EN_ZAHL[w];
+  return typeof fremd === "string" ? fremd : w;
+};
+/* Sprache der Datums- und Zahlenausgabe. en-GB, weil dort wie hier der Tag
+   vor dem Monat steht und die Uhr vierundzwanzig Stunden hat. */
+const ORT = () => istEnglisch() ? "en-GB" : "de-DE";
+/* Das Dezimalkomma ist deutsch. Eingelesen werden beide Zeichen. */
+const kommaZahl = s => istEnglisch() ? String(s) : String(s).replace(".", ",");
+/* Tag und Monat ohne Jahr, wie sie neben einer Überschrift stehen. */
+const tagMonat = d => istEnglisch()
+  ? `${zwei(d.getDate())}/${zwei(d.getMonth()+1)}`
+  : `${zwei(d.getDate())}.${zwei(d.getMonth()+1)}.`;
+/* Wochentagskürzel sind im Plan Schlüssel und dürfen sich nicht ändern —
+   angezeigt wird trotzdem, was man in der jeweiligen Sprache liest. */
+const TAGKURZ = {MO:"MO", DI:"TU", MI:"WE", DO:"TH", FR:"FR", WE:"WKND"};
+const tagKurz = k => istEnglisch() ? (TAGKURZ[k] || k) : k;
+/* Spaltenköpfe des Kalenders. */
+const KALENDERKOEPFE = () => istEnglisch()
+  ? ["Mo","Tu","We","Th","Fr","Sa","Su"] : ["Mo","Di","Mi","Do","Fr","Sa","So"];
+
+/* Der Text im Markup trägt seinen deutschen Satz selbst als Schlüssel.
+   Gesammelt wird er einmal, bevor das erste Mal übersetzt wird — danach
+   stünde dort Englisch, und der Schlüssel wäre verloren. */
+const textNorm = s => String(s == null ? "" : s).replace(/\s+/g," ").trim();
+let htmlTexte = null;
+function htmlTexteSammeln(){
+  htmlTexte = [];
+  const nimm = (auswahl, art, lies) => document.querySelectorAll(auswahl).forEach(el => {
+    const schluessel = textNorm(lies(el));
+    if(schluessel) htmlTexte.push({el, art, schluessel});
+  });
+  /* Nur der erste Textknoten: Knöpfe wie „Hausaufgabe<small id=…>" tragen
+     ein Feld in sich, das die App später füllt. textContent zu setzen
+     würde es mitsamt seiner Kennung entfernen. */
+  nimm("[data-t]", "text", el => {
+    const k = [...el.childNodes].find(x => x.nodeType === 3 && x.nodeValue.trim());
+    return k ? k.nodeValue : el.textContent;
+  });
+  nimm("[data-t-html]", "html", el => el.innerHTML);
+  nimm("[data-t-ph]", "ph", el => el.getAttribute("placeholder"));
+  nimm("[data-t-al]", "al", el => el.getAttribute("aria-label"));
+}
+function htmlTexteSetzen(){
+  if(!htmlTexte) htmlTexteSammeln();
+  htmlTexte.forEach(({el, art, schluessel}) => {
+    const neu = txt(schluessel);
+    if(art === "html"){ el.innerHTML = neu; return; }
+    if(art === "ph"){ el.setAttribute("placeholder", neu); return; }
+    if(art === "al"){ el.setAttribute("aria-label", neu); return; }
+    const k = [...el.childNodes].find(x => x.nodeType === 3 && x.nodeValue.trim());
+    if(k) k.nodeValue = neu; else el.textContent = neu;
+  });
+}
+/* Wird bei jedem Zeichnen aufgerufen, tut aber nur etwas, wenn sich die
+   Sprache wirklich geändert hat — auch ein Profilwechsel kann sie ändern. */
+let spracheAktiv = null;
+function spracheAnwenden(){
+  const s = spracheJetzt();
+  if(s === spracheAktiv) return;
+  spracheAktiv = s;
+  try{ document.documentElement.lang = s; }catch(e){}
+  hilfeAufbauen();
+  htmlTexteSetzen();
+  /* Der Hinweis unten entsteht nur bei der Versionsprüfung. Ohne diese
+     Zeile bliebe genau er nach einem Sprachwechsel deutsch stehen. */
+  wischTextSetzen();
+}
+/* Sofort einsammeln, noch bevor irgendeine Funktion einen Text überschreibt —
+   danach stünde dort nicht mehr der deutsche Satz, der als Schlüssel dient.
+   app.js steht am Ende des <body>; die Elemente gibt es also schon. */
+htmlTexteSammeln();
+
 /* Date.now() allein kollidiert, sobald zwei Einträge in derselben
    Millisekunde entstehen — beim Einlesen einer Sicherung passiert genau das. */
 const neueId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
@@ -140,7 +702,7 @@ const Speicher = {
     if(datenZuNeu) return;
     this.puffer[k] = v;
     try{ localStorage.setItem(this.pfad(k), JSON.stringify(v)); }
-    catch(e){ zeigeFehler("Speicher voll. Lösche Bilder aus Merkblättern oder lege eine Sicherung an."); }
+    catch(e){ zeigeFehler(txt("Speicher voll. Lösche Bilder aus Merkblättern oder lege eine Sicherung an.")); }
   },
   entferne(k){
     if(datenZuNeu) return;
@@ -171,7 +733,7 @@ function profileLaden(){
   }catch(e){ profile = []; }
   if(!Array.isArray(profile) || !profile.length){
     const alt = DATEN.some(k => { try{ return localStorage.getItem(k) !== null; }catch(e){ return false; } });
-    profile = [{id:"1", name: alt ? "Mein Plan" : "Profil 1"}];
+    profile = [{id:"1", name: alt ? txt("Mein Plan") : txt("Profil {n}", {n:1})}];
     profilId = "1";
     if(alt) DATEN.forEach(k => { try{
       const v = localStorage.getItem(k);
@@ -182,7 +744,7 @@ function profileLaden(){
   if(!profile.some(x => x.id === profilId)) profilId = profile[0].id;
 }
 profileLaden();
-const profilName = () => (profile.find(x => x.id === profilId) || {}).name || "Profil";
+const profilName = () => (profile.find(x => x.id === profilId) || {}).name || txt("Profil");
 
 let cfg, plan, eintraege, ferien, sonder, noten;
 function zustandLaden(){
@@ -190,6 +752,11 @@ function zustandLaden(){
   const rohCfg = Speicher.lies("cfg", {});
   datenZuNeu = datenstandVon(rohCfg) > SCHEMA;
   cfg       = Object.assign({}, STANDARD, rohCfg);
+  /* Ein frisch angelegtes Profil hat noch gar keine Einstellungen. Nur
+     dort entscheidet die Gerätesprache — ein bestehendes Profil bleibt
+     deutsch, auch wenn das Gerät auf Englisch steht. Eine Aktualisierung
+     der App darf niemandem die Sprache umstellen. */
+  if(!Object.keys(rohCfg || {}).length) cfg.sprache = "";
   plan      = Speicher.lies("plan", {});
   eintraege = Speicher.lies("eintraege", []);
   ferien    = Speicher.lies("ferien", []);
@@ -227,7 +794,7 @@ function merkblattUmziehen(){
   if(alt && typeof alt === "object" && !Array.isArray(alt)){
     Object.entries(alt).forEach(([fach, text]) => {
       if(text) eintraege.push({id:neueId(), typ:"M", fach, datum:iso(new Date()),
-        titel:"Merkblatt", notiz:text, bilder:[], erledigt:false, geloescht:false});
+        titel:txt("Merkblatt"), notiz:text, bilder:[], erledigt:false, geloescht:false});
     });
     Speicher.schreib("merkblatt", []);
     Speicher.schreib("eintraege", eintraege);
@@ -242,7 +809,9 @@ let gewaehlt = new Date(), kalMonat = new Date(), kalTag = new Date();
 const zwei = n => String(n).padStart(2,"0");
 const iso  = d => `${d.getFullYear()}-${zwei(d.getMonth()+1)}-${zwei(d.getDate())}`;
 const gleich = (a,b) => iso(a) === iso(b);
-const zeigDatum = s => s ? s.slice(8,10)+"."+s.slice(5,7)+"."+s.slice(0,4) : "";
+const zeigDatum = s => !s ? ""
+  : istEnglisch() ? s.slice(8,10)+"/"+s.slice(5,7)+"/"+s.slice(0,4)
+                  : s.slice(8,10)+"."+s.slice(5,7)+"."+s.slice(0,4);
 function montagVon(d){
   const x = new Date(d); x.setHours(0,0,0,0);
   const wt = x.getDay() === 0 ? 7 : x.getDay();
@@ -469,14 +1038,14 @@ function notenSchnitt(fach, lk){
   return {m, s:sch, gesamt:(m*aM + sch*(100-aM))/100};
 }
 const notenText = w => (w === null || w === undefined) ? "—"
-  : (cfg.notenSystem === "punkte15" ? w.toFixed(1) : w.toFixed(2).replace(".", ","));
+  : (cfg.notenSystem === "punkte15" ? kommaZahl(w.toFixed(1)) : kommaZahl(w.toFixed(2)));
 const zeugnisNote = w => (w === null || w === undefined) ? null : Math.round(w);
 
 /* --- Werkzeug --- */
 const $ = s => document.querySelector(s);
 const esc = t => String(t == null ? "" : t).replace(/[&<>"']/g, c =>
   ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const zahl = (n, ein, viele) => `${n} ${n === 1 ? ein : viele}`;
+const zahl = (n, ein, viele) => `${n} ${mehrzahlWort(n === 1 ? ein : viele)}`;
 /* Stundenraster-Felder kommen aus den Einstellungen und können nach dem
    Einlesen einer fremden Sicherung alles enthalten — nie roh ins HTML. */
 const stdText = s => esc(String((s && s.std) || "").replace(/,/g,"/"));
@@ -519,6 +1088,7 @@ function themaAnwenden(){
    Zeichnen
    ===================================================================== */
 function zeichne(){
+  spracheAnwenden();
   if(datenZuNeu) return;
   normalisiere();
   themaAnwenden();
@@ -541,7 +1111,7 @@ function zeichne(){
     else if(ansicht === "kalender") zeichneKalender();
     else if(ansicht === "zeugnis") zeichneZeugnis();
     else zeichneEintraege();
-  }catch(e){ zeigeFehler("Ansicht \u201e"+ansicht+"\u201c: "+e.message, (e.stack||"").split("\n")[1]||""); }
+  }catch(e){ zeigeFehler(txt("Ansicht „{name}“", {name:ansicht})+": "+e.message, (e.stack||"").split("\n")[1]||""); }
 }
 
 function zeichneTag(){
@@ -549,17 +1119,18 @@ function zeichneTag(){
   document.body.classList.toggle("bearbeiten", bearbeiten);
   $("#btnEdit").setAttribute("aria-pressed", bearbeiten);
   $("#editHinweis").classList.toggle("hidden", !bearbeiten);
-  $("#klasseAnzeige").textContent = cfg.klasse || "Stundenplan";
-  $("#titel").innerHTML = (idx === 5 ? "Wochenende" : LANG[TAGE[idx]]) +
-    ` <span>${zwei(gewaehlt.getDate())}.${zwei(gewaehlt.getMonth()+1)}.</span>`;
-  $("#kwLabel").textContent = "KW " + kalenderwoche(gewaehlt);
+  $("#klasseAnzeige").textContent = cfg.klasse || txt("Stundenplan");
+  $("#titel").innerHTML = (idx === 5 ? txt("Wochenende") : txt(LANG[TAGE[idx]])) +
+    ` <span>${tagMonat(gewaehlt)}</span>`;
+  $("#kwLabel").textContent = txt("KW {n}", {n:kalenderwoche(gewaehlt)});
   $("#abLabel").classList.toggle("hidden", !cfg.zweiWochen);
   $("#abLabel").textContent = woche;
   $("#countdown").textContent = countdownText();
 
   const frei = freiAm(gewaehlt), b = $("#freiBanner");
   b.classList.toggle("hidden", !frei);
-  if(frei) b.innerHTML = `<b>${esc(frei.name)}</b><div>${frei.typ === "feiertag" ? "Feiertag" : "Ferien"} · kein Unterricht</div>`;
+  if(frei) b.innerHTML = `<b>${esc(frei.name)}</b><div>${
+    frei.typ === "feiertag" ? txt("Feiertag") : txt("Ferien")} · ${txt("kein Unterricht")}</div>`;
 
   const mo = montagVon(gewaehlt);
   $("#tage").innerHTML = [...TAGE, "WE"].map((t,i) => {
@@ -569,28 +1140,28 @@ function zeichneTag(){
     const hat = (i === 5 ? [plusTage(mo,5), plusTage(mo,6)] : [d])
       .flatMap(x => eintraegeAm(x)).filter(e => !e.erledigt);
     const zeichen = [...new Set(hat.map(e => e.typ))].join("");
-    return `<button type="button" data-tag="${i}" aria-pressed="${i === idx}">${t}
+    return `<button type="button" data-tag="${i}" aria-pressed="${i === idx}">${tagKurz(t)}
       ${istHeute ? '<span class="punkt"></span>'
         : (zeichen ? `<span class="khn" style="border:0;padding:0;display:block;margin-top:4px">${zeichen}</span>` : "")}
     </button>`;
   }).join("");
 
   if(idx === 5){
-    $("#plan").innerHTML = [["Samstag",plusTage(mo,5)],["Sonntag",plusTage(mo,6)]].map(([n,d]) => {
+    $("#plan").innerHTML = [[txt("Samstag"),plusTage(mo,5)],[txt("Sonntag"),plusTage(mo,6)]].map(([n,d]) => {
       /* sonderTag statt sonderFrei: ein Ereignis, dem jemand eine Stunde
          zugeordnet hat, war am Wochenende sonst unsichtbar. */
       const es = eintraegeAm(d), ev = sonderTag(d);
       const inhalt =
         ev.map(o => `<div style="margin-top:9px" data-wesonder="${o.id}">
-             <span class="einmalig">${o.art === "vertretung" ? "Vertretung" : o.art === "ausfall" ? "Ausfall" : "Ereignis"}</span>
+             <span class="einmalig">${o.art === "vertretung" ? txt("Vertretung") : o.art === "ausfall" ? txt("Ausfall") : txt("Ereignis")}</span>
              <span style="margin-left:7px">${esc(o.titel)}${
                o.slot !== null && cfg.slots[o.slot] ? " · " + esc(cfg.slots[o.slot].von) : ""}</span></div>`).join("") +
         es.map(e => `<div style="margin-top:9px"><span class="khn">${e.typ}</span>
-             <span style="margin-left:7px">${e.fach ? esc(e.fach)+" — " : ""}${esc(e.titel) || ART[e.typ]}</span></div>`).join("");
+             <span style="margin-left:7px">${e.fach ? esc(e.fach)+" — " : ""}${esc(e.titel) || txt(ART[e.typ])}</span></div>`).join("");
       return `<div class="we-teil">
-        <div class="eyebrow">${n} ${zwei(d.getDate())}.${zwei(d.getMonth()+1)}.</div>
-        ${inhalt || `<div class="detail" style="margin-top:6px">frei</div>`}
-        <button class="mini" data-weplus="${iso(d)}" style="margin-top:11px">+ Ereignis</button>
+        <div class="eyebrow">${n} ${tagMonat(d)}</div>
+        ${inhalt || `<div class="detail" style="margin-top:6px">${txt("frei")}</div>`}
+        <button class="mini" data-weplus="${iso(d)}" style="margin-top:11px">+ ${txt("Ereignis")}</button>
       </div>`;
     }).join("");
   } else {
@@ -610,9 +1181,9 @@ function zeichneTag(){
                    e.fach.toUpperCase() === f.fach.toUpperCase());
       const zeichen = [...new Set(es.map(e => e.typ))].map(t => `<span class="khn">${t}</span>`).join("");
       const text = ausfall ? esc(regulaer ? regulaer.fach : "—")
-                 : o ? esc(o.titel) : (f ? esc(f.fach) : "frei");
+                 : o ? esc(o.titel) : (f ? esc(f.fach) : txt("frei"));
       let unten = stdText(s);
-      if(ausfall) unten += " · fällt aus";
+      if(ausfall) unten += " · " + txt("fällt aus");
       else if(o){
         if(o.raum) unten += ` · ${esc(o.raum)}`;
         if(regulaer) unten += ` · <span class="durch">${esc(regulaer.fach)}</span>`;
@@ -623,13 +1194,13 @@ function zeichneTag(){
         <div>
           <div class="fach ${(f || o) ? "" : "leer"}">${text}</div>
           <div class="detail">${unten}</div>
-          ${o && !ausfall ? `<div class="marker"><span class="einmalig">${o.art === "vertretung" ? "Vertretung" : "einmalig"}</span></div>` : ""}
+          ${o && !ausfall ? `<div class="marker"><span class="einmalig">${o.art === "vertretung" ? txt("Vertretung") : txt("einmalig")}</span></div>` : ""}
           ${zeichen ? `<div class="marker">${zeichen}</div>` : ""}
         </div></button>`;
     });
-    if(linie !== null) teile.splice(linie, 0, '<div class="jetztlinie"><span>jetzt</span></div>');
+    if(linie !== null) teile.splice(linie, 0, `<div class="jetztlinie"><span>${txt("jetzt")}</span></div>`);
     if(bis < cfg.slots.length && bis > 0)
-      teile.push(`<div class="schluss">Schluss nach ${esc(cfg.slots[bis-1].bis)}</div>`);
+      teile.push(`<div class="schluss">${txt("Schluss nach {zeit}", {zeit:esc(cfg.slots[bis-1].bis)})}</div>`);
     $("#plan").innerHTML = teile.join("");
   }
   zeichneFortschritt();
@@ -666,13 +1237,13 @@ function sicherungBanner(){
   b.classList.toggle("hidden", !zeigen);
   if(!zeigen) return;
   const alter = sicherungAlter();
-  b.innerHTML = `<b>Sicherung fällig</b>
-    <div>${alter === null ? "Dieser Plan wurde noch nie gesichert."
-      : "Letzte Sicherung vor " + zahl(alter,"Tag","Tagen") + "."}
-      Löscht der Browser seine Websitedaten, ist ohne Sicherung alles weg.</div>
+  b.innerHTML = `<b>${txt("Sicherung fällig")}</b>
+    <div>${alter === null ? txt("Dieser Plan wurde noch nie gesichert.")
+      : txt("Letzte Sicherung vor {dauer}.", {dauer:zahl(alter,"Tag","Tagen")})}
+      ${txt("Löscht der Browser seine Websitedaten, ist ohne Sicherung alles weg.")}</div>
     <div class="chips" style="margin-top:11px">
-      <button type="button" id="bSicherJetzt">Jetzt sichern</button>
-      <button type="button" id="bSicherSpaeter">Heute nicht</button>
+      <button type="button" id="bSicherJetzt">${txt("Jetzt sichern")}</button>
+      <button type="button" id="bSicherSpaeter">${txt("Heute nicht")}</button>
     </div>`;
 }
 $("#sicherBanner").onclick = e => {
@@ -726,12 +1297,13 @@ function zeichneFortschritt(){
     const s = cfg.slots[i], von = minuten(s.von), bis = minuten(s.bis);
     anteil = (j - von)/(bis - von);
     const x = inhalt(i);
-    links = x ? `<b>${esc(x.fach || x.titel)}</b>${x.raum ? " · "+esc(x.raum) : ""}` : "Freistunde";
-    rechts = `noch ${bis - j} min`;
+    links = x ? `<b>${esc(x.fach || x.titel)}</b>${x.raum ? " · "+esc(x.raum) : ""}` : txt("Freistunde");
+    rechts = txt("noch {n} min", {n:bis - j});
   } else if(j < ersteVon){
-    links = "Beginnt um " + cfg.slots[0].von; rechts = `in ${ersteVon - j} min`;
+    links = txt("Beginnt um {zeit}", {zeit:cfg.slots[0].von});
+    rechts = txt("in {n} min", {n:ersteVon - j});
   } else if(j >= letzteBis){
-    anteil = 1; links = "Schule aus"; rechts = "";
+    anteil = 1; links = txt("Schule aus"); rechts = "";
   } else {
     let vor = cfg.slots[0], nach = cfg.slots[letzter];
     for(let k = 0; k < letzter; k++)
@@ -739,8 +1311,9 @@ function zeichneFortschritt(){
     const von = minuten(vor.bis), bis = minuten(nach.von);
     anteil = (j - von)/(bis - von);
     const naechstes = inhalt(cfg.slots.indexOf(nach));
-    links = `<b>Pause</b>${naechstes ? " · dann "+esc(naechstes.fach || naechstes.titel) : ""}`;
-    rechts = `weiter um ${nach.von} · noch ${bis - j} min`;
+    links = `<b>${txt("Pause")}</b>${naechstes
+      ? " · " + txt("dann {fach}", {fach:esc(naechstes.fach || naechstes.titel)}) : ""}`;
+    rechts = txt("weiter um {zeit} · noch {n} min", {zeit:nach.von, n:bis - j});
   }
   $("#balkenFuell").style.width = (Math.max(0,Math.min(1,anteil))*100).toFixed(1) + "%";
   $("#fortLinks").innerHTML = links;
@@ -753,14 +1326,14 @@ function countdownText(){
     const j = jetztMin(), ende = minuten(cfg.slots[letzter].bis);
     if(j < ende){
       const rest = ende - j;
-      return `Schulschluss in ${Math.floor(rest/60)} h ${zwei(rest%60)} min`;
+      return txt("Schulschluss in {h} h {m} min", {h:Math.floor(rest/60), m:zwei(rest%60)});
     }
   }
   const naechste = ferien.filter(f => f.typ === "ferien" && f.von > iso(heute))
     .sort((a,b) => a.von.localeCompare(b.von))[0];
   if(naechste){
     const tage = Math.round((new Date(naechste.von+"T12:00") - new Date(iso(heute)+"T12:00"))/864e5);
-    return `${naechste.name} in ${zahl(tage,"Tag","Tagen")}`;
+    return txt("{name} in {dauer}", {name:naechste.name, dauer:zahl(tage,"Tag","Tagen")});
   }
   return "";
 }
@@ -769,14 +1342,14 @@ function listeZeile(e, mitNotiz = true){
   const d = new Date(e.datum + "T12:00");
   const abhakbar = e.typ === "H" || e.typ === "K" || e.typ === "N";
   return `<li class="${e.erledigt ? "weg" : ""}">
-      ${abhakbar ? `<input type="checkbox" class="hak" data-hak="${e.id}" ${e.erledigt ? "checked" : ""} aria-label="Erledigt">`
+      ${abhakbar ? `<input type="checkbox" class="hak" data-hak="${e.id}" ${e.erledigt ? "checked" : ""} aria-label="${txt("Erledigt")}">`
                  : `<span style="width:18px;flex:none"></span>`}
       <div class="wachs" data-bearbeite="${e.id}">
         <div class="kopf"><span class="khn ${e.erledigt ? "aus" : ""}">${e.typ}</span>
-          <span class="titel">${e.fach ? esc(e.fach)+" — " : ""}${esc(e.titel) || ART[e.typ]}</span></div>
+          <span class="titel">${e.fach ? esc(e.fach)+" — " : ""}${esc(e.titel) || txt(ART[e.typ])}</span></div>
         ${mitNotiz && e.notiz ? `<div class="notiz">${esc(e.notiz)}</div>` : ""}
-        <div class="wann">${d.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}${
-          e.serie ? " · Reihe" : ""}</div>
+        <div class="wann">${d.toLocaleDateString(ORT(),{weekday:"short",day:"2-digit",month:"2-digit"})}${
+          e.serie ? " · " + txt("Reihe") : ""}</div>
       </div></li>`;
 }
 function zeichneListe(sel, nixSel, liste, mitNotiz = true){
@@ -799,15 +1372,15 @@ function zeichneListeNachLehrer(sel, nixSel, liste){
     (a ? 0 : 1) - (b ? 0 : 1) || lehrerName(a).localeCompare(lehrerName(b)));
   $(sel).innerHTML = reihe.map(k =>
     `<li style="display:block;padding:0;border:0"><div class="eyebrow mitte" style="margin-top:18px">
-       ${esc(k ? lehrerName(k) : "Ohne Lehrkraft")}</div></li>`
+       ${k ? esc(lehrerName(k)) : txt("Ohne Lehrkraft")}</div></li>`
     + gruppen.get(k).map(e => listeZeile(e)).join("")).join("");
   $(nixSel).hidden = liste.length > 0;
 }
 
 function zeichneKalender(){
-  $("#monatLabel").textContent = kalMonat.toLocaleDateString("de-DE",{month:"long",year:"numeric"});
+  $("#monatLabel").textContent = kalMonat.toLocaleDateString(ORT(),{month:"long",year:"numeric"});
   const start = montagVon(new Date(kalMonat.getFullYear(), kalMonat.getMonth(), 1));
-  let html = ["Mo","Di","Mi","Do","Fr","Sa","So"].map(t => `<div class="wt">${t}</div>`).join("");
+  let html = KALENDERKOEPFE().map(w => `<div class="wt">${w}</div>`).join("");
   for(let i = 0; i < 42; i++){
     const d = plusTage(start, i);
     const es = eintraegeAm(d).filter(e => !e.erledigt);
@@ -819,16 +1392,17 @@ function zeichneKalender(){
        ${d.getDate()}<span class="zeichen">${zeichen}</span></button>`;
   }
   $("#gitter").innerHTML = html;
-  $("#kalTagLabel").textContent = kalTag.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"long"});
+  $("#kalTagLabel").textContent = kalTag.toLocaleDateString(ORT(),{weekday:"long",day:"2-digit",month:"long"});
   const frei = freiAm(kalTag);
   $("#kalFerien").classList.toggle("hidden", !frei);
-  if(frei) $("#kalFerien").textContent = frei.name + (frei.typ === "feiertag" ? " · Feiertag" : " · Ferien");
+  if(frei) $("#kalFerien").textContent = frei.name
+    + " · " + (frei.typ === "feiertag" ? txt("Feiertag") : txt("Ferien"));
   zeichneListe("#kalListe", "#kalNix", eintraegeAm(kalTag), false);
   const ev = sonderTag(kalTag);
   if(ev.length){
     $("#kalListe").insertAdjacentHTML("afterbegin", ev.map(o => `<li>
       <span style="width:18px;flex:none"></span>
-      <div class="wachs" data-ereignis="${o.id}"><div class="kopf"><span class="einmalig">Ereignis</span>
+      <div class="wachs" data-ereignis="${o.id}"><div class="kopf"><span class="einmalig">${txt("Ereignis")}</span>
         <span class="titel">${esc(o.titel)}</span></div></div></li>`).join(""));
     $("#kalNix").hidden = true;
   }
@@ -845,7 +1419,7 @@ let sortModus = false;
 function kachelnZeichnen(){
   const liste = reiheEin();
   $("#einKacheln").innerHTML = liste.map((k,i) => {
-    const knopf = `<button type="button" data-sub="${k}">${ARTLANG[k]}<small id="zahl${k}"></small></button>`;
+    const knopf = `<button type="button" data-sub="${k}">${txt(ARTLANG[k])}<small id="zahl${k}"></small></button>`;
     if(!sortModus) return knopf;
     /* Im Sortiermodus zählt der Kachelklick nicht — sonst öffnet sich beim
        Umsortieren dauernd eine Liste. */
@@ -883,12 +1457,13 @@ function archivListe(){
 /* Was der Hinweis oben im Archiv sagt. */
 function archivHinweis(liste){
   const tage = archivFrist();
-  if(!tage) return "Gelöschtes bleibt hier, bis du es selbst entfernst. "
-    + "Eine Frist stellst du unter ⚙ → Archiv ein.";
+  if(!tage) return txt("Gelöschtes bleibt hier, bis du es selbst entfernst. "
+    + "Eine Frist stellst du unter ⚙ → Archiv ein.");
   const bald = liste.filter(a => a.rest !== null && a.rest <= 7).length;
-  return `Gelöschtes wird ${zahl(tage,"Tag","Tage")} nach dem Löschen endgültig entfernt.`
-    + (bald ? ` ${zahl(bald,"Eintrag geht","Einträge gehen")} in der kommenden Woche verloren.` : "")
-    + " Zum sofortigen Entfernen ein zweites Mal löschen.";
+  return txt("Gelöschtes wird {dauer} nach dem Löschen endgültig entfernt.", {dauer:zahl(tage,"Tag","Tage")})
+    + (bald ? " " + txtz(bald, "{n} Eintrag geht in der kommenden Woche verloren.",
+                               "{n} Einträge gehen in der kommenden Woche verloren.") : "")
+    + " " + txt("Zum sofortigen Entfernen ein zweites Mal löschen.");
 }
 const archivFinden = (art,id) => art === "eintrag" ? eintraege.find(x => x.id === id)
   : art === "ereignis" ? sonder.find(x => x.id === id) : noten.find(x => x.id === id);
@@ -906,21 +1481,21 @@ function zeichneEintraege(){
     const off = t => listeVonTyp(t).filter(e => !e.erledigt).length;
     const std = fehlStunden();
     const zaehler = {
-      H: off("H") ? `${off("H")} offen` : "nichts offen",
-      K: off("K") ? `${off("K")} anstehend` : "nichts anstehend",
-      N: off("N") ? `${off("N")} vorhanden` : "keine",
-      E: kommendeEreignisse().length ? `${kommendeEreignisse().length} geplant` : "keine",
-      G: notenAktiv().length ? `${notenAktiv().length} eingetragen` : "keine",
-      M: listeVonTyp("M").length ? `${listeVonTyp("M").length} vorhanden` : "keine",
-      F: std ? `${zahl(std,"Stunde","Stunden")} · ${tageText(std)}` : "keine",
-      archiv: archivListe().length ? `${archivListe().length} im Archiv` : "leer"
+      H: off("H") ? txt("{n} offen", {n:off("H")}) : txt("nichts offen"),
+      K: off("K") ? txt("{n} anstehend", {n:off("K")}) : txt("nichts anstehend"),
+      N: off("N") ? txt("{n} vorhanden", {n:off("N")}) : txt("keine"),
+      E: kommendeEreignisse().length ? txt("{n} geplant", {n:kommendeEreignisse().length}) : txt("keine"),
+      G: notenAktiv().length ? txt("{n} eingetragen", {n:notenAktiv().length}) : txt("keine"),
+      M: listeVonTyp("M").length ? txt("{n} vorhanden", {n:listeVonTyp("M").length}) : txt("keine"),
+      F: std ? `${zahl(std,"Stunde","Stunden")} · ${tageText(std)}` : txt("keine"),
+      archiv: archivListe().length ? txt("{n} im Archiv", {n:archivListe().length}) : txt("leer")
     };
     Object.entries(zaehler).forEach(([k,v]) => { const el = $("#zahl"+k); if(el) el.textContent = v; });
     suchen();
 
     return;
   }
-  $("#einTitel").textContent = ARTLANG[einSub] || "";
+  $("#einTitel").textContent = einSub && ARTLANG[einSub] ? txt(ARTLANG[einSub]) : "";
 
   if(einSub === "archiv"){
     const liste = archivListe();
@@ -929,18 +1504,19 @@ function zeichneEintraege(){
     el.style.color = archivFrist() ? "var(--akzent)" : "";
     $("#einListe").innerHTML = liste.map(e => {
       const rest = e.rest === null ? ""
-        : e.rest <= 0 ? " · wird beim nächsten Öffnen entfernt"
-        : e.rest === 1 ? " · noch heute" : ` · noch ${zahl(e.rest,"Tag","Tage")}`;
+        : e.rest <= 0 ? " · " + txt("wird beim nächsten Öffnen entfernt")
+        : e.rest === 1 ? " · " + txt("noch heute")
+        : " · " + txt("noch {dauer}", {dauer:zahl(e.rest,"Tag","Tage")});
       return `<li>
       <div class="wachs">
         <div class="kopf"><span class="khn aus">${esc(e.marke)}</span>
           <span class="titel" style="color:var(--muted)">${esc(e.text)}</span></div>
-        <div class="wann">${zeigDatum(e.datum)} · gelöscht ${zeigDatum(e.seit)}<span
+        <div class="wann">${zeigDatum(e.datum)} · ${txt("gelöscht {datum}", {datum:zeigDatum(e.seit)})}<span
           style="${e.rest !== null && e.rest <= 7 ? "color:var(--akzent)" : ""}">${rest}</span></div></div>
-      <button class="mini" data-zurueck="${e.art}:${e.id}">Zurück</button>
-      <button class="mini" data-endgueltig="${e.art}:${e.id}" style="border-color:var(--akzent);color:var(--akzent)">Löschen</button>
+      <button class="mini" data-zurueck="${e.art}:${e.id}">${txt("Zurück")}</button>
+      <button class="mini" data-endgueltig="${e.art}:${e.id}" style="border-color:var(--akzent);color:var(--akzent)">${txt("Löschen")}</button>
     </li>`; }).join("");
-    $("#einNix").textContent = "Archiv ist leer.";
+    $("#einNix").textContent = txt("Archiv ist leer.");
     $("#einNix").hidden = liste.length > 0;
     return;
   }
@@ -948,16 +1524,16 @@ function zeichneEintraege(){
     const liste = kommendeEreignisse();
     $("#einListe").innerHTML = liste.map(o => {
       const d = new Date(o.datum+"T12:00");
-      const wann = d.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"}) +
-        (o.slot !== null && cfg.slots[o.slot] ? ` · ${esc(cfg.slots[o.slot].von)}` : " · ganzer Tag");
+      const wann = d.toLocaleDateString(ORT(),{weekday:"short",day:"2-digit",month:"2-digit"}) +
+        (o.slot !== null && cfg.slots[o.slot] ? ` · ${esc(cfg.slots[o.slot].von)}` : " · " + txt("ganzer Tag"));
       return `<li><span style="width:18px;flex:none"></span>
         <div class="wachs" data-ereignis="${o.id}">
-          <div class="kopf"><span class="einmalig">${o.art === "ausfall" ? "Ausfall" : o.art === "vertretung" ? "Vertretung" : "Ereignis"}</span>
+          <div class="kopf"><span class="einmalig">${o.art === "ausfall" ? txt("Ausfall") : o.art === "vertretung" ? txt("Vertretung") : txt("Ereignis")}</span>
             <span class="titel">${esc(o.titel)}</span></div>
           ${o.notiz ? `<div class="notiz">${esc(o.notiz)}</div>` : ""}
           <div class="wann">${wann}${o.raum ? " · "+esc(o.raum) : ""}</div></div></li>`;
     }).join("");
-    $("#einNix").textContent = "Keine Ereignisse geplant.";
+    $("#einNix").textContent = txt("Keine Ereignisse geplant.");
     $("#einNix").hidden = liste.length > 0;
     return;
   }
@@ -968,13 +1544,13 @@ function zeichneEintraege(){
   const liste = listeVonTyp(einSub);
   if(cfg.nachLehrer && einSub === "N") zeichneListeNachLehrer("#einListe", "#einNix", liste);
   else zeichneListe("#einListe", "#einNix", liste);
-  $("#einNix").textContent = {H:"Keine offenen Hausaufgaben.",K:"Keine Klausuren eingetragen.",
-                              N:"Keine Notizen."}[einSub] || "Nichts vorhanden.";
+  $("#einNix").textContent = txt({H:"Keine offenen Hausaufgaben.",K:"Keine Klausuren eingetragen.",
+                              N:"Keine Notizen."}[einSub] || "Nichts vorhanden.");
 }
 
 function zeichneNoten(){
   $("#einSubHinweis").textContent =
-    `Verhältnis je Fach antippbar. Standard: ${Number(cfg.anteilM)||0} % mündlich.`;
+    txt("Verhältnis je Fach antippbar. Standard: {n} % mündlich.", {n:Number(cfg.anteilM)||0});
   const liste = alleFaecher().filter(f => notenAktiv().some(n => n.fach === f));
   $("#einListe").innerHTML = liste.map(f => {
     const sch = notenSchnitt(f), aM = anteilFuer(f);
@@ -983,22 +1559,23 @@ function zeichneNoten(){
        Chip — sonst gäbe es die Fach-Option ohne die Lehrkraft-Option. */
     const lkChips = lehrerTeileZuFach(f).filter(t => t.lk).map(t =>
       `<button type="button" class="anteilchip" data-anteil="${esc(f)}" data-anteillk="${esc(t.lk)}">
-        ${esc(t.name)}: ${anteilFuer(f, t.lk)} %${hatEigenenAnteil(f, t.lk) ? " · eigen" : ""}</button>`).join("");
+        ${esc(t.name)}: ${anteilFuer(f, t.lk)} %${hatEigenenAnteil(f, t.lk) ? " · " + txt("eigen") : ""}</button>`).join("");
     return `<li style="display:block;padding:0;border:0"><div class="notenkarte">
       <div class="kopfz">
         <div><div style="font-size:17px">${esc(fachName(f))}</div>
-          <div class="teil">mündlich ${notenText(sch.m)} · schriftlich ${notenText(sch.s)}</div></div>
+          <div class="teil">${txt("mündlich {m} · schriftlich {s}",
+            {m:notenText(sch.m), s:notenText(sch.s)})}</div></div>
         <div class="schnitt">${notenText(sch.gesamt)}</div></div>
       <div class="notenchips"><button type="button" class="anteilchip" data-anteil="${esc(f)}">
-        ${aM} % mündlich${hatEigenenAnteil(f) ? " · eigen" : ""}</button>${lkChips}</div>
+        ${txt("{n} % mündlich", {n:aM})}${hatEigenenAnteil(f) ? " · " + txt("eigen") : ""}</button>${lkChips}</div>
       ${eigene.map(n => `<div class="notenzeile" data-note="${n.id}">
         <span class="wert">${notenText(n.wert)}</span>
-        <span class="art">${n.art === "m" ? "mündl." : "schriftl."}</span>
+        <span class="art">${n.art === "m" ? txt("mündl.") : txt("schriftl.")}</span>
         <span class="wofuer">${esc(n.titel) || "—"}</span>
         <span class="tag">${zeigDatum(n.datum)}</span></div>`).join("")}
     </div></li>`;
   }).join("");
-  $("#einNix").textContent = "Noch keine Noten eingetragen.";
+  $("#einNix").textContent = txt("Noch keine Noten eingetragen.");
   $("#einNix").hidden = liste.length > 0;
 }
 
@@ -1008,7 +1585,7 @@ function zeichneMerk(){
   const schluessel = e => cfg.nachLehrer ? e.fach + "/" + alsLk(e.lk) : e.fach;
   const liste = listeVonTyp("M").slice()
     .sort((a,b) => schluessel(a).localeCompare(schluessel(b)) || b.datum.localeCompare(a.datum));
-  $("#einSubHinweis").textContent = "Antippen zum Ansehen.";
+  $("#einSubHinweis").textContent = txt("Antippen zum Ansehen.");
   let letztesFach = null;
   $("#einListe").innerHTML = liste.map(e => {
     const jetzt = schluessel(e);
@@ -1019,12 +1596,12 @@ function zeichneMerk(){
     const bilder = (e.bilder || []).length;
     return `<li style="display:block;padding:0;border:0">${kopf}
       <button type="button" class="merkzeile" data-schau="${e.id}">
-        <div class="mtitel">${esc(e.titel) || "Merkblatt"}</div>
+        <div class="mtitel">${esc(e.titel) || txt("Merkblatt")}</div>
         <div class="mstand">${zeigDatum(e.datum)}${e.zeit ? " · "+e.zeit : ""}
           ${bilder ? " · " + zahl(bilder,"Bild","Bilder") : ""}</div>
       </button></li>`;
   }).join("");
-  $("#einNix").textContent = "Noch keine Merkblätter.";
+  $("#einNix").textContent = txt("Noch keine Merkblätter.");
   $("#einNix").hidden = liste.length > 0;
 }
 
@@ -1035,15 +1612,15 @@ const fehlStunden = art => listeVonTyp("F")
   .reduce((s,e) => s + (Number(e.stunden) || 1), 0);
 const alsTage = std => {
   const p = Math.max(1, Number(cfg.stdProTag) || 8);
-  const t = std / p;
-  return t % 1 ? t.toFixed(1).replace(".", ",") : String(t);
+  const w = std / p;
+  return w % 1 ? kommaZahl(w.toFixed(1)) : String(w);
 };
-const tageText = std => { const t = alsTage(std); return `${t} ${t === "1" ? "Tag" : "Tage"}`; };
+const tageText = std => { const w = alsTage(std); return `${w} ${mehrzahlWort(w === "1" ? "Tag" : "Tage")}`; };
 function fehlText(){
   const g = fehlStunden(), u = fehlStunden("unentschuldigt");
   if(!g) return "";
   return `${zahl(g,"Stunde","Stunden")} = ${tageText(g)}`
-       + (u ? ` · davon ${u} unentschuldigt` : "");
+       + (u ? " · " + txt("davon {n} unentschuldigt", {n:u}) : "");
 }
 /** Versäumte Stunden je Fach — was ohne Fach erfasst wurde, bleibt aussen vor.
     Mit Trennung nach Lehrkraft zählt jeder Kurs für sich. */
@@ -1067,10 +1644,10 @@ function zeichneFehlzeiten(){
     <div class="wachs" data-bearbeite="${e.id}">
       <div class="kopf"><span class="khn">F</span>
         <span class="titel">${e.fach ? esc(e.fach) + (cfg.nachLehrer && e.lk ? " ("+esc(alsLk(e.lk))+")" : "") + " — " : ""}${
-          zahl(Number(e.stunden)||1,"Stunde","Stunden")} ${esc(e.titel) || "Fehlzeit"}</span></div>
+          zahl(Number(e.stunden)||1,"Stunde","Stunden")} ${e.titel ? esc(txt(e.titel)) : txt("Fehlzeit")}</span></div>
       ${e.notiz ? `<div class="notiz">${esc(e.notiz)}</div>` : ""}
       <div class="wann">${zeigDatum(e.datum)}</div></div></li>`).join("");
-  $("#einNix").textContent = "Keine Fehlzeiten erfasst.";
+  $("#einNix").textContent = txt("Keine Fehlzeiten erfasst.");
   $("#einNix").hidden = liste.length > 0;
 }
 
@@ -1087,7 +1664,7 @@ function lehrerTeileZuFach(f){
   const s = new Set(lehrerZuFach(f));
   notenAktiv().forEach(n => { if(n.fach === f && n.lk) s.add(alsLk(n.lk)); });
   const teile = [...s].sort().map(k => ({lk:k, name:lehrerName(k)}));
-  if(notenAktiv().some(n => n.fach === f && !n.lk)) teile.push({lk:"", name:"ohne Lehrkraft"});
+  if(notenAktiv().some(n => n.fach === f && !n.lk)) teile.push({lk:"", name:txt("ohne Lehrkraft")});
   return teile.length > 1 ? teile : [];
 }
 function zeichneZeugnis(){
@@ -1097,9 +1674,10 @@ function zeichneZeugnis(){
   $("#zeuSchnitt").textContent = gesamt === null ? "" : notenText(gesamt);
   const fehl = fehlText();
   $("#zeuHinweis").textContent = (notenAktiv().length
-    ? `Aus ${zahl(notenAktiv().length,"Note","Noten")} in ${schnitte.length} von ${liste.length} Fächern.`
-    : "Noch keine Noten. Tippe ein Fach an, um Verhältnis und Zielnote zu setzen.")
-    + (fehl ? `  Versäumt: ${fehl}.` : "");
+    ? txt("Aus {noten} in {a} von {b} Fächern.",
+        {noten:zahl(notenAktiv().length,"Note","Noten"), a:schnitte.length, b:liste.length})
+    : txt("Noch keine Noten. Tippe ein Fach an, um Verhältnis und Zielnote zu setzen."))
+    + (fehl ? "  " + txt("Versäumt: {text}.", {text:fehl}) : "");
   $("#zeuListe").innerHTML = liste.map(f => {
     const sch = notenSchnitt(f), ganz = zeugnisNote(sch.gesamt);
     const anzahl = notenAktiv().filter(n => n.fach === f).length;
@@ -1110,7 +1688,7 @@ function zeichneZeugnis(){
          der Schnitt darunter wäre mit dem falschen Verhältnis gerechnet. */
       return t.lk
         ? `<button type="button" class="zeuUnter" data-zeufach="${esc(f)}" data-zeulk="${esc(t.lk)}">
-             <span class="wer">${esc(t.name)}<small>${anteilFuer(f, t.lk)} % mündlich</small></span>
+             <span class="wer">${esc(t.name)}<small>${txt("{n} % mündlich", {n:anteilFuer(f, t.lk)})}</small></span>
              <span class="roh">${notenText(ts.gesamt)}</span>
              <span class="note">${tg === null ? "—" : tg}</span></button>`
         : `<div class="zeuUnter"><span class="wer">${esc(t.name)}</span>
@@ -1119,7 +1697,7 @@ function zeichneZeugnis(){
     }).join("");
     return `<button type="button" class="zeuZeile" data-zeufach="${esc(f)}">
       <div class="fachn">${esc(fachName(f))}
-        <small>${anzahl ? zahl(anzahl,"Note","Noten") : "keine Noten"} · ${anteilFuer(f)} % mündlich</small></div>
+        <small>${anzahl ? zahl(anzahl,"Note","Noten") : txt("keine Noten")} · ${txt("{n} % mündlich", {n:anteilFuer(f)})}</small></div>
       <div class="roh">${notenText(sch.gesamt)}</div>
       <div class="note">${ganz === null ? "—" : ganz}</div></button>${unter}`;
   }).join("");
@@ -1267,15 +1845,15 @@ function kalMenuOeffnen(datum){
   const frei = freiAm(kalTag);
   const eigen = ferien.find(f => f.typ === "eigen" && datum >= f.von && datum <= f.bis);
   $("#kmTitel").textContent =
-    kalTag.toLocaleDateString("de-DE",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+    kalTag.toLocaleDateString(ORT(),{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
   const dran = sonderTag(kalTag).length + eintraegeAm(kalTag).length;
   $("#kmStand").textContent = [
-    frei ? frei.name + (frei.typ === "feiertag" ? " · Feiertag"
-                      : frei.typ === "eigen" ? " · eigener freier Tag" : " · Ferien") : "",
+    frei ? frei.name + " · " + (frei.typ === "feiertag" ? txt("Feiertag")
+                      : frei.typ === "eigen" ? txt("eigener freier Tag") : txt("Ferien")) : "",
     dran ? zahl(dran, "Eintrag", "Einträge") : ""
-  ].filter(Boolean).join(" · ") || "nichts eingetragen";
-  $("#bKmFreiText").textContent = eigen ? "Freien Tag ändern" : "Freier Tag";
-  $("#bKmFreiKlein").textContent = eigen ? eigen.name : "Praktikum, Ausflug, beweglicher Ferientag";
+  ].filter(Boolean).join(" · ") || txt("nichts eingetragen");
+  $("#bKmFreiText").textContent = eigen ? txt("Freien Tag ändern") : txt("Freier Tag");
+  $("#bKmFreiKlein").textContent = eigen ? eigen.name : txt("Praktikum, Ausflug, beweglicher Ferientag");
   dlgKalTag.showModal();
 }
 const kalMenu = (typ, extra) => {
@@ -1302,7 +1880,7 @@ function tagFreiOeffnen(datum){
 }
 $("#bTagFreiAb").onclick = () => dlgTagFrei.close();
 $("#bTagFreiSpeichern").onclick = () => {
-  const name = tfName.value.trim() || "Frei";
+  const name = tfName.value.trim() || txt("Frei");
   const bis = tfBis.value && tfBis.value >= tagFreiDatum ? tfBis.value : tagFreiDatum;
   ferien = ferien.filter(f => !(f.typ === "eigen" && tagFreiDatum >= f.von && tagFreiDatum <= f.bis));
   ferien.push({von:tagFreiDatum, bis, name, typ:"eigen"});
@@ -1364,11 +1942,12 @@ function blockDialog(){
   const woche = wocheFuer(gewaehlt), tag = TAGE[tagIndex(gewaehlt)];
   const f = plan[woche][tag][offenerBlock] || {};
   fFach.value = f.fach || ""; fRaum.value = f.raum || ""; fLK.value = f.lk || "";
-  $("#dlgBlockTitel").textContent = `${LANG[tag]}, ${cfg.slots[offenerBlock].std.replace(/,/g,"/")}. Stunde`;
+  $("#dlgBlockTitel").textContent = txt("{tag}, {std}. Stunde",
+    {tag:txt(LANG[tag]), std:cfg.slots[offenerBlock].std.replace(/,/g,"/")});
   $("#dlgBlockZeit").textContent = `${cfg.slots[offenerBlock].von} – ${cfg.slots[offenerBlock].bis}`;
   const h = $("#hinweisWoche");
   h.classList.toggle("hidden", !cfg.zweiWochen);
-  h.textContent = `Gilt nur für die ${woche}-Woche.`;
+  h.textContent = txt("Gilt nur für die {woche}-Woche.", {woche});
   dlgBlock.showModal();
 }
 $("#bBlockAb").onclick = () => dlgBlock.close();
@@ -1398,8 +1977,8 @@ function schnellDialog(){
   $("#schnellZeit").textContent = `${s.von} – ${s.bis}`;
   const naechste = naechsterTagMitFach(gewaehlt, fach.toUpperCase(), schnellLk());
   $("#bSchnellHAZiel").textContent = naechste
-    ? "fällig " + naechste.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})
-    : "kein weiterer Termin";
+    ? txt("fällig {datum}", {datum:naechste.toLocaleDateString(ORT(),{weekday:"short",day:"2-digit",month:"2-digit"})})
+    : txt("kein weiterer Termin");
   dlgSchnell.showModal();
 }
 const schnell = (typ, datum, extra) => { dlgSchnell.close();
@@ -1425,7 +2004,7 @@ $("#bSchnellAusfall").onclick = () => {
   const datum = iso(gewaehlt);
   sonder = sonder.filter(x => !(x.datum === datum && x.slot === offenerBlock));
   sonder.push({id:neueId(), datum, slot:offenerBlock, art:"ausfall",
-               titel:"Fällt aus", raum:"", notiz:"", geloescht:false});
+               titel:txt("Fällt aus"), raum:"", notiz:"", geloescht:false});
   sichern(); zeichne();
 };
 $("#bSchnellVertretung").onclick = () => {
@@ -1460,16 +2039,16 @@ function fachInfo(i){
   $("#fiKuerzel").textContent = fachName(k) === k ? "" : k;
   const zeile = (a,b) => `<div class="fiZeile"><span>${a}</span><span>${b}</span></div>`;
   $("#fiInhalt").innerHTML =
-    zeile("Lehrkraft", f.lk ? esc(lehrerName(f.lk)) : "—") +
-    zeile("Raum", esc(f.raum) || "—") +
-    zeile("Stunden je Woche", proWoche % 1 ? proWoche.toFixed(1) : String(proWoche)) +
-    (naechste ? `<div class="fiZeile"><span>Als Nächstes</span>
+    zeile(txt("Lehrkraft"), f.lk ? esc(lehrerName(f.lk)) : "—") +
+    zeile(txt("Raum"), esc(f.raum) || "—") +
+    zeile(txt("Stunden je Woche"), proWoche % 1 ? kommaZahl(proWoche.toFixed(1)) : String(proWoche)) +
+    (naechste ? `<div class="fiZeile"><span>${txt("Als Nächstes")}</span>
        <span><button type="button" class="mini" data-zukalender="${iso(naechste)}">
-       ${naechste.toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit"})}</button></span></div>`
-     : zeile("Als Nächstes","—")) +
-    zeile("Schnitt", notenText(sch.gesamt)) +
-    zeile("Merkblätter", mb ? String(mb) : "keine") +
-    zeile("Offen", offen.length ? offen.map(e => e.typ).join(" ") : "nichts");
+       ${naechste.toLocaleDateString(ORT(),{weekday:"short",day:"2-digit",month:"2-digit"})}</button></span></div>`
+     : zeile(txt("Als Nächstes"),"—")) +
+    zeile(txt("Schnitt"), notenText(sch.gesamt)) +
+    zeile(txt("Merkblätter"), mb ? String(mb) : txt("keine")) +
+    zeile(txt("Offen"), offen.length ? offen.map(e => e.typ).join(" ") : txt("nichts"));
   dlgFach.showModal();
 }
 $("#bFachAb").onclick = () => dlgFach.close();
@@ -1497,13 +2076,13 @@ function wochenOeffnen(d){
 }
 function zeichneWoche(){
   const mo = wochenAnker, woche = wocheFuer(mo);
-  $("#wochenLabel").textContent = `KW ${kalenderwoche(mo)}`
-    + (cfg.zweiWochen ? ` · ${woche}-Woche` : "")
-    + ` · ${zwei(mo.getDate())}.${zwei(mo.getMonth()+1)}.`;
+  $("#wochenLabel").textContent = txt("KW {n}", {n:kalenderwoche(mo)})
+    + (cfg.zweiWochen ? " · " + txt("{w}-Woche", {w:woche}) : "")
+    + ` · ${tagMonat(mo)}`;
 
   const tage = TAGE.map((t,i) => plusTage(mo, i));
   const kopf = `<tr><th class="zeitspalte"></th>` + TAGE.map((t,i) =>
-    `<th class="${gleich(tage[i], new Date()) ? "heute" : ""}">${t}</th>`).join("") + `</tr>`;
+    `<th class="${gleich(tage[i], new Date()) ? "heute" : ""}">${tagKurz(t)}</th>`).join("") + `</tr>`;
 
   /* Nur so viele Zeilen, wie in dieser Woche irgendwo Unterricht steht —
      dieselbe Regel wie im Tagesplan, sonst stehen unten leere Reihen. */
@@ -1540,9 +2119,9 @@ function zeichneWoche(){
   $("#wochenTab").innerHTML = bis ? kopf + zeilen : "";
   const ferienDerWoche = [...new Set(tage.map(d => freiAm(d)).filter(Boolean).map(f => f.name))];
   $("#wochenHinweis").textContent = !bis
-    ? "In dieser Woche steht nichts im Plan."
+    ? txt("In dieser Woche steht nichts im Plan.")
     : (ferienDerWoche.length ? ferienDerWoche.join(" · ") + " · " : "")
-      + "Eine Stunde antippen springt auf den Tag.";
+      + txt("Eine Stunde antippen springt auf den Tag.");
 }
 $("#btnWoche").onclick = () => wochenOeffnen(gewaehlt);
 $("#bWocheAb").onclick = () => dlgWoche.close();
@@ -1567,9 +2146,9 @@ let eintragLk = "";
 
 function fachAuswahlFuellen(wert){
   const liste = alleFaecher();
-  eFach.innerHTML = `<option value="">— keins —</option>` +
+  eFach.innerHTML = `<option value="">— ${txt("keins")} —</option>` +
     liste.map(f => `<option ${f === wert ? "selected" : ""}>${esc(f)}</option>`).join("") +
-    `<option value="__frei">Anderes …</option>`;
+    `<option value="__frei">${txt("Anderes …")}</option>`;
   if(wert && !liste.includes(wert)){ eFach.value = "__frei"; eFachFrei.value = wert; }
   else if(!wert) eFach.value = "";
   freiUmschalten();
@@ -1581,7 +2160,7 @@ const aktuellesFach = () => (eFach.value === "__frei" ? eFachFrei.value : eFach.
 function lkAuswahlFuellen(wert){
   const fach = aktuellesFach(), w = alsLk(wert);
   const liste = [...new Set([...(fach ? lehrerZuFach(fach) : alleLehrer()), ...(w ? [w] : [])])].sort();
-  eLk.innerHTML = `<option value="">— alle —</option>` + liste.map(k =>
+  eLk.innerHTML = `<option value="">— ${txt("alle")} —</option>` + liste.map(k =>
     `<option value="${esc(k)}" ${k === w ? "selected" : ""}>${esc(lehrerName(k))}</option>`).join("");
   eLk.value = liste.includes(w) ? w : "";
   lkUmschalten();
@@ -1605,7 +2184,7 @@ eFachFrei.oninput = () => {
 eTyp.onchange = artUmschalten;
 
 function stundenAuswahlFuellen(slot){
-  eStunde.innerHTML = `<option value="">ganzer Tag</option>` +
+  eStunde.innerHTML = `<option value="">${txt("ganzer Tag")}</option>` +
     cfg.slots.map((s,i) => `<option value="${i}" ${i === slot ? "selected" : ""}>${esc(stdText(s))} · ${esc(s.von)}</option>`).join("");
   if(slot === null || slot === undefined) eStunde.value = "";
 }
@@ -1626,9 +2205,12 @@ function wdhStand(){
   const tage = serienTermine(start, takt, eWdhBis.value || "");
   const letzter = tage.at(-1);
   $("#eWdhStand").textContent = tage.length >= WDH_MAX
-    ? `${WDH_MAX} Termine — mehr legt die App auf einmal nicht an. Letzter: ${zeigDatum(letzter)}.`
-    : `${zahl(tage.length,"Termin","Termine")}, jeweils ${LANG[TAGE[tagIndex(start)]] || "am selben Wochentag"}`
-      + `, letzter am ${zeigDatum(letzter)}.`;
+    ? txt("{n} Termine — mehr legt die App auf einmal nicht an. Letzter: {datum}.",
+        {n:WDH_MAX, datum:zeigDatum(letzter)})
+    : txt("{anzahl}, jeweils {tag}, letzter am {datum}.", {
+        anzahl: zahl(tage.length,"Termin","Termine"),
+        tag: LANG[TAGE[tagIndex(start)]] ? txt(LANG[TAGE[tagIndex(start)]]) : txt("am selben Wochentag"),
+        datum: zeigDatum(letzter)});
 }
 eWdh.onchange = () => {
   $("#eWdhBisWrap").classList.toggle("hidden", eWdh.value === "0");
@@ -1647,10 +2229,10 @@ function artUmschalten(){
   $("#eFehlWrap").classList.toggle("hidden", !fehl);
   $("#eBildWrap").classList.toggle("hidden", !merk);
   $("#eTextWrap").classList.toggle("hidden", fehl);
-  $("#eTextLabel").textContent = merk ? "Überschrift" : "Was";
-  $("#eNotizLabel").textContent = merk ? "Inhalt" : "Notizen";
+  $("#eTextLabel").textContent = merk ? txt("Überschrift") : txt("Was");
+  $("#eNotizLabel").textContent = merk ? txt("Inhalt") : txt("Notizen");
   eNotiz.style.minHeight = merk ? "220px" : "";
-  $("#eWertLabel").textContent = cfg.notenSystem === "punkte15" ? "Punkte 0–15" : "Note 1–6";
+  $("#eWertLabel").textContent = cfg.notenSystem === "punkte15" ? txt("Punkte 0–15") : txt("Note 1–6");
   if(ev) $("#eFachFreiWrap").classList.add("hidden"); else freiUmschalten();
   lkUmschalten();
   wdhUmschalten();
@@ -1662,14 +2244,14 @@ let eMonat = new Date();
 function datumFeldText(){
   const v = eDatum.value;
   $("#eDatumFeld").textContent = v
-    ? new Date(v+"T12:00").toLocaleDateString("de-DE",{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric"})
+    ? new Date(v+"T12:00").toLocaleDateString(ORT(),{weekday:"short",day:"2-digit",month:"2-digit",year:"numeric"})
     : "—";
 }
 function zeichneDatumWahl(){
   const fach = aktuellesFach(), lk = cfg.nachLehrer ? alsLk(eLk.value) : "";
-  $("#eMonatLabel").textContent = eMonat.toLocaleDateString("de-DE",{month:"long",year:"numeric"});
+  $("#eMonatLabel").textContent = eMonat.toLocaleDateString(ORT(),{month:"long",year:"numeric"});
   const start = montagVon(new Date(eMonat.getFullYear(), eMonat.getMonth(), 1));
-  let html = ["Mo","Di","Mi","Do","Fr","Sa","So"].map(t => `<div class="wt">${t}</div>`).join("");
+  let html = KALENDERKOEPFE().map(w => `<div class="wt">${w}</div>`).join("");
   for(let i = 0; i < 42; i++){
     const d = plusTage(start, i);
     html += `<button type="button" class="tagfeld ${d.getMonth() !== eMonat.getMonth() ? "fremd" : ""}
@@ -1679,8 +2261,9 @@ function zeichneDatumWahl(){
   }
   $("#eGitter").innerHTML = html;
   $("#eGitterHinweis").textContent = fach
-    ? `Roter Punkt: ${fach}${lk ? " bei " + lehrerName(lk) : ""} steht an diesem Tag im Plan.`
-    : "Wähle oben ein Fach, dann werden die passenden Tage markiert.";
+    ? txt("Roter Punkt: {fach} steht an diesem Tag im Plan.",
+        {fach: fach + (lk ? " " + txt("bei {wer}", {wer:lehrerName(lk)}) : "")})
+    : txt("Wähle oben ein Fach, dann werden die passenden Tage markiert.");
 }
 function datumWahlOeffnen(auf){
   $("#eDatumWahl").classList.toggle("hidden", !auf);
@@ -1701,7 +2284,8 @@ function bilderZeichnen(){
     `<div class="bildweg"><img src="${esc(b)}" alt=""><button type="button" data-bildweg="${i}">×</button></div>`).join("");
   const kb = Math.round(bilder.reduce((s,b) => s + b.length, 0) / 1024 * 0.75);
   const warn = speicherWarnung();
-  $("#bildStand").textContent = (bilder.length ? `${zahl(bilder.length,"Bild","Bilder")} · ca. ${kb} kB` : "")
+  $("#bildStand").textContent = (bilder.length
+    ? txt("{bilder} · ca. {kb} kB", {bilder:zahl(bilder.length,"Bild","Bilder"), kb}) : "")
     + (warn ? (bilder.length ? " · " : "") + warn : "");
   $("#bildStand").style.color = warn ? "var(--akzent)" : "";
 }
@@ -1727,7 +2311,7 @@ function bildVerkleinern(datei, fertig){
       c.getContext("2d").drawImage(bild, 0, 0, c.width, c.height);
       fertig(c.toDataURL("image/jpeg", 0.7));
     };
-    bild.onerror = () => zeigeFehler("Bild ließ sich nicht lesen.");
+    bild.onerror = () => zeigeFehler(txt("Bild ließ sich nicht lesen."));
     bild.src = leser.result;
   };
   leser.readAsDataURL(datei);
@@ -1750,10 +2334,10 @@ function eintragOeffnen(e, datum, typ, fach, slot, extra){
   const vorhanden = (typ === "E" && slot !== undefined && slot !== null) ? sonderAn(d, slot) : null;
   if(vorhanden){ ereignisId = vorhanden.id; ereignisArt = vorhanden.art || "ereignis"; }
 
-  $("#dlgEintragTitel").textContent = (e || vorhanden) ? "Eintrag ändern" : "Neuer Eintrag";
+  $("#dlgEintragTitel").textContent = (e || vorhanden) ? txt("Eintrag ändern") : txt("Neuer Eintrag");
   eTyp.value = e ? e.typ : (typ || standardArt());
   eDatum.value = e ? e.datum : iso(d);
-  eText.value = e ? (e.titel || "") : (vorhanden ? vorhanden.titel : (ereignisArt === "vertretung" ? "Vertretung" : ""));
+  eText.value = e ? (e.titel || "") : (vorhanden ? vorhanden.titel : (ereignisArt === "vertretung" ? txt("Vertretung") : ""));
   eNotiz.value = e ? (e.notiz || "") : (vorhanden ? (vorhanden.notiz || "") : "");
   if(e && e.typ === "M") bilder = (e.bilder || []).slice();
   if(e && e.typ === "F"){ eFehlArt.value = e.titel || "entschuldigt"; eFehlStd.value = Number(e.stunden)||1; }
@@ -1774,7 +2358,7 @@ function ereignisOeffnen(id){
   bearbeiteId = null; noteId = null; ereignisId = id; bilder = [];
   eWdh.value = "0"; eWdhBis.value = "";
   ereignisArt = o.art || "ereignis";
-  $("#dlgEintragTitel").textContent = "Ereignis ändern";
+  $("#dlgEintragTitel").textContent = txt("Ereignis ändern");
   eTyp.value = "E"; eDatum.value = o.datum;
   eText.value = o.titel; eNotiz.value = o.notiz || ""; eOrt.value = o.raum || "";
   stundenAuswahlFuellen(o.slot);
@@ -1789,10 +2373,10 @@ function noteOeffnen(n){
   if(!n) return eintragOeffnen(null, new Date(), "G", "");
   bearbeiteId = null; ereignisId = null; noteId = n.id; bilder = [];
   eWdh.value = "0"; eWdhBis.value = "";
-  $("#dlgEintragTitel").textContent = "Note ändern";
+  $("#dlgEintragTitel").textContent = txt("Note ändern");
   eTyp.value = "G"; eDatum.value = n.datum;
   eText.value = n.titel || ""; eNotiz.value = n.notiz || "";
-  eWert.value = String(n.wert).replace(".", ","); eNArt.value = n.art;
+  eWert.value = kommaZahl(String(n.wert)); eNArt.value = n.art;
   fachAuswahlFuellen(n.fach);
   eintragLk = alsLk(n.lk); lkAuswahlFuellen(eintragLk);
   datumFeldText(); datumWahlOeffnen(false); artUmschalten();
@@ -1836,8 +2420,8 @@ $("#bEintragSpeichern").onclick = () => {
     const wert = parseFloat(String(eWert.value).replace(",", "."));
     const grenze = cfg.notenSystem === "punkte15" ? [0,15] : [1,6];
     if(isNaN(wert) || wert < grenze[0] || wert > grenze[1])
-      return alert(`Bitte einen Wert zwischen ${grenze[0]} und ${grenze[1]} eingeben.`);
-    if(!fach) return alert("Bitte ein Fach wählen.");
+      return alert(txt("Bitte einen Wert zwischen {a} und {b} eingeben.", {a:grenze[0], b:grenze[1]}));
+    if(!fach) return alert(txt("Bitte ein Fach wählen."));
     const nd = {fach, lk:aktuelleLk(), art:eNArt.value, wert, datum,
                 titel:eText.value.trim(), notiz:eNotiz.value.trim()};
     const alteNote = noteId && noten.find(x => x.id === noteId);
@@ -1845,7 +2429,7 @@ $("#bEintragSpeichern").onclick = () => {
     else noten.push(Object.assign({id:neueId(), geloescht:false}, nd));
     sichern(); dlgEintrag.close(); zeichne(); return;
   }
-  if(!fach && t === "M") return alert("Bitte ein Fach wählen.");
+  if(!fach && t === "M") return alert(txt("Bitte ein Fach wählen."));
   const jetzt = new Date();
   const daten = {typ:t, fach, lk: aktuelleLk(), datum,
     titel: t === "F" ? eFehlArt.value : eText.value.trim(),
@@ -1854,7 +2438,7 @@ $("#bEintragSpeichern").onclick = () => {
   if(t === "M"){
     daten.bilder = bilder.slice();
     daten.zeit = `${zwei(jetzt.getHours())}:${zwei(jetzt.getMinutes())}`;
-    if(!daten.titel) daten.titel = "Merkblatt vom " + zeigDatum(datum);
+    if(!daten.titel) daten.titel = txt("Merkblatt vom {datum}", {datum:zeigDatum(datum)});
   }
   const alter = bearbeiteId && eintraege.find(x => x.id === bearbeiteId);
   if(alter) Object.assign(alter, daten);
@@ -1884,8 +2468,8 @@ $("#bEintragWeg").onclick = () => {
   const geschwister = ziel.serie
     ? topf.filter(x => x.serie === ziel.serie && !x.geloescht) : [ziel];
   if(geschwister.length > 1
-     && confirm(`Dieser Eintrag gehört zu einer Reihe von ${geschwister.length}.\n\n`
-       + "OK löscht die ganze Reihe, Abbrechen nur diesen einen."))
+     && confirm(txt("Dieser Eintrag gehört zu einer Reihe von {n}.", {n:geschwister.length}) + "\n\n"
+       + txt("OK löscht die ganze Reihe, Abbrechen nur diesen einen.")))
     geschwister.forEach(insArchiv);
   else insArchiv(ziel);
   sichern(); dlgEintrag.close(); zeichne();
@@ -1896,7 +2480,7 @@ let schauId = null;
 function schauOeffnen(id){
   const e = eintraege.find(x => x.id === id); if(!e) return;
   schauId = id;
-  $("#schauTitel").textContent = e.titel || "Merkblatt";
+  $("#schauTitel").textContent = e.titel || txt("Merkblatt");
   $("#schauStand").textContent = `${fachName(e.fach)} · ${zeigDatum(e.datum)}${e.zeit ? " · "+e.zeit : ""}`;
   $("#schauText").textContent = e.notiz || "";
   $("#schauBilder").innerHTML = (e.bilder||[]).map(b => `<img src="${esc(b)}" alt="">`).join("");
@@ -1937,7 +2521,7 @@ $("#einListe").addEventListener("click", e => {
     sichern(); zeichne(); return;
   }
   const weg = e.target.closest("[data-endgueltig]");
-  if(weg && confirm("Endgültig löschen? Das lässt sich nicht rückgängig machen.")){
+  if(weg && confirm(txt("Endgültig löschen? Das lässt sich nicht rückgängig machen."))){
     const [art,id] = weg.dataset.endgueltig.split(":");
     if(art === "eintrag") eintraege = eintraege.filter(x => x.id !== id);
     else if(art === "ereignis") sonder = sonder.filter(x => x.id !== id);
@@ -1989,9 +2573,9 @@ function suchen(){
     <div class="wachs" ${e.note ? `data-note="${e.id}"` : e.ereignis ? `data-ereignis="${e.id}"`
        : e.typ === "M" ? `data-schau="${e.id}"` : `data-bearbeite="${e.id}"`}>
       <div class="kopf"><span class="khn">${e.typ}</span>
-        <span class="titel">${e.fach ? esc(e.fach)+" — " : ""}${esc(e.titel) || ART[e.typ] || ""}</span></div>
+        <span class="titel">${e.fach ? esc(e.fach)+" — " : ""}${esc(e.titel) || (ART[e.typ] ? txt(ART[e.typ]) : "")}</span></div>
       <div class="wann">${zeigDatum(e.datum)}</div></div></li>`).join("")
-    || `<li><div class="wachs"><span class="titel" style="color:var(--muted)">Nichts gefunden.</span></div></li>`;
+    || `<li><div class="wachs"><span class="titel" style="color:var(--muted)">${txt("Nichts gefunden.")}</span></div></li>`;
 }
 
 /* --- Verhältnis und Zielnote --- */
@@ -2006,11 +2590,12 @@ function anteilOeffnen(fach, lk){
 }
 function anteilVorschau(){
   const m = Math.max(0, Math.min(100, Number(anWert.value) || 0));
-  $("#anHinweis").textContent = `${m} % mündlich, ${100-m} % schriftlich.`
+  $("#anHinweis").textContent = txt("{m} % mündlich, {s} % schriftlich.", {m, s:100-m})
     + (hatEigenenAnteil(anteilFach, anteilLk) ? ""
-       : anteilLk ? ` Zurzeit gilt der Wert für ${fachName(anteilFach)} (${anteilFuer(anteilFach)} %).`
-                  : " Zurzeit gilt der Standard.")
-    + (anteilLk ? "" : " Gilt für alle Lehrkräfte dieses Fachs, die keinen eigenen Wert haben.");
+       : anteilLk ? " " + txt("Zurzeit gilt der Wert für {fach} ({n} %).",
+                              {fach:fachName(anteilFach), n:anteilFuer(anteilFach)})
+                  : " " + txt("Zurzeit gilt der Standard."))
+    + (anteilLk ? "" : " " + txt("Gilt für alle Lehrkräfte dieses Fachs, die keinen eigenen Wert haben."));
 }
 anWert.oninput = anteilVorschau;
 function zielRechnen(){
@@ -2037,8 +2622,9 @@ function zielRechnen(){
   const grenze = cfg.notenSystem === "punkte15" ? [0,15] : [1,6];
   const machbar = noetig >= grenze[0] && noetig <= grenze[1];
   feld.textContent = machbar
-    ? `Die nächste ${art === "m" ? "mündliche" : "schriftliche"} Note müsste ${notenText(noetig)} sein.`
-    : `Mit einer einzelnen Note nicht erreichbar (rechnerisch ${notenText(noetig)}).`;
+    ? txt(art === "m" ? "Die nächste mündliche Note müsste {note} sein."
+                      : "Die nächste schriftliche Note müsste {note} sein.", {note:notenText(noetig)})
+    : txt("Mit einer einzelnen Note nicht erreichbar (rechnerisch {note}).", {note:notenText(noetig)});
 }
 anZiel.oninput = zielRechnen; anZielArt.onchange = zielRechnen;
 $("#bAnStandard").onclick = () => {
@@ -2087,9 +2673,9 @@ function importTabelle(werte){
     const v = werte[i] || {};
     return `<div class="izeile" data-zeile="${i}">
       <div class="std">${esc(stdText(sl))}</div>
-      <input type="text" data-f="fach" value="${esc(v.fach||"")}" placeholder="Fach" autocapitalize="characters">
-      <input type="text" data-f="raum" value="${esc(v.raum||"")}" placeholder="Raum" autocapitalize="characters">
-      <input type="text" data-f="lk" value="${esc(v.lk||"")}" placeholder="LK" autocapitalize="characters">
+      <input type="text" data-f="fach" value="${esc(v.fach||"")}" placeholder="${txt("Fach")}" autocapitalize="characters">
+      <input type="text" data-f="raum" value="${esc(v.raum||"")}" placeholder="${txt("Raum")}" autocapitalize="characters">
+      <input type="text" data-f="lk" value="${esc(v.lk||"")}" placeholder="${txt("LK")}" autocapitalize="characters">
     </div>`;
   }).join("");
 }
@@ -2102,7 +2688,7 @@ const importLaden = () => importTabelle((plan[cfg.zweiWochen ? iWoche.value : "A
 let zurueckZuEinst = false;
 function importOeffnen(){
   iTag.innerHTML = TAGE.map((t,i) =>
-    `<option value="${i}" ${i === Math.min(tagIndex(gewaehlt),4) ? "selected" : ""}>${LANG[t]}</option>`).join("");
+    `<option value="${i}" ${i === Math.min(tagIndex(gewaehlt),4) ? "selected" : ""}>${txt(LANG[t])}</option>`).join("");
   iWoche.value = wocheFuer(gewaehlt);
   $("#iWocheWrap").classList.toggle("hidden", !cfg.zweiWochen);
   iText.value = ""; $("#iErgebnis").textContent = "";
@@ -2116,8 +2702,9 @@ $("#bImportText").onclick = () => {
     return z ? {fach:z.fach, raum:z.raum, lk:z.lk || z.klasse} : {};
   });
   const treffer = werte.filter(w => w.fach).length;
-  if(treffer){ importTabelle(werte); $("#iErgebnis").textContent = `${treffer} Zeilen übernommen. Prüfen und speichern.`; }
-  else $("#iErgebnis").textContent = "Nichts erkannt. Die Stundennummern müssen mitkopiert sein.";
+  if(treffer){ importTabelle(werte);
+    $("#iErgebnis").textContent = txt("{n} Zeilen übernommen. Prüfen und speichern.", {n:treffer}); }
+  else $("#iErgebnis").textContent = txt("Nichts erkannt. Die Stundennummern müssen mitkopiert sein.");
 };
 $("#bImportAb").onclick = () => { dlgImport.close(); if(zurueckZuEinst){ zurueckZuEinst = false; einstellungenOeffnen("schule"); } };
 $("#bImportSpeichern").onclick = () => {
@@ -2135,25 +2722,25 @@ $("#bImportSpeichern").onclick = () => {
 function profilKnopf(){
   const el = $("#btnProfil"); if(!el) return;
   el.textContent = (profilName().trim()[0] || "P").toUpperCase();
-  el.setAttribute("aria-label", "Profil: " + profilName());
+  el.setAttribute("aria-label", txt("Profil: {name}", {name:profilName()}));
 }
 let profilVerwalten = false, profilManuell = false;
 function zeichneProfilAuswahl(){
-  $("#pFrage").textContent = profilVerwalten ? "Profile verwalten" : "Wer bist du?";
-  $("#pVerwalten").textContent = profilVerwalten ? "Fertig" : "Verwalten";
+  $("#pFrage").textContent = profilVerwalten ? txt("Profile verwalten") : txt("Wer bist du?");
+  $("#pVerwalten").textContent = profilVerwalten ? txt("Fertig") : txt("Verwalten");
   $("#pZurueck").classList.toggle("hidden", !profilManuell || profilVerwalten);
   const kacheln = profile.map((x,i) => `<div>
     <button type="button" class="kachel" data-wechsel="${x.id}" aria-current="${x.id === profilId}">
       <div class="feld"><span>${esc((x.name.trim()[0]||"P").toUpperCase())}</span></div>
       <div class="kname">${esc(x.name)}</div>
-      <div class="knum">Profil ${String(i+1).padStart(2,"0")}</div></button>
+      <div class="knum">${txt("Profil {n}", {n:String(i+1).padStart(2,"0")})}</div></button>
     ${profilVerwalten ? `<div class="kwerkzeug">
-      <button type="button" data-umbenennen="${x.id}">Name</button>
+      <button type="button" data-umbenennen="${x.id}">${txt("Name")}</button>
       ${profile.length > 1 ? `<button type="button" class="loesch" data-profilweg="${x.id}">×</button>` : ""}
     </div>` : ""}</div>`).join("");
   const neu = profilVerwalten ? `<div><button type="button" class="kachel neu" id="kachelNeu">
-      <div class="feld"><span>+</span></div><div class="kname">Neues Profil</div>
-      <div class="knum">Anlegen</div></button></div>` : "";
+      <div class="feld"><span>+</span></div><div class="kname">${txt("Neues Profil")}</div>
+      <div class="knum">${txt("Anlegen")}</div></button></div>` : "";
   $("#pGitter").innerHTML = kacheln + neu;
 }
 function profilAuswahlZeigen(manuell){
@@ -2167,7 +2754,7 @@ $("#pZurueck").onclick = profilAuswahlSchliessen;
 $("#pVerwalten").onclick = () => { profilVerwalten = !profilVerwalten; zeichneProfilAuswahl(); };
 $("#pGitter").onclick = e => {
   if(e.target.closest("#kachelNeu")){
-    const name = prompt("Name des neuen Profils", "Profil " + (profile.length+1));
+    const name = prompt(txt("Name des neuen Profils"), txt("Profil {n}", {n:profile.length+1}));
     if(!name || !name.trim()) return;
     const id = neueId();
     profile.push({id, name:name.trim()}); profilId = id; profileSichern();
@@ -2178,14 +2765,15 @@ $("#pGitter").onclick = e => {
   const u = e.target.closest("[data-umbenennen]");
   if(u){
     const x = profile.find(y => y.id === u.dataset.umbenennen);
-    const name = prompt("Neuer Name", x.name);
+    const name = prompt(txt("Neuer Name"), x.name);
     if(name && name.trim()){ x.name = name.trim(); profileSichern(); zeichneProfilAuswahl(); profilKnopf(); }
     return;
   }
   const d = e.target.closest("[data-profilweg]");
   if(d){
     const x = profile.find(y => y.id === d.dataset.profilweg);
-    if(!confirm(`Profil \u201e${x.name}\u201c mit allen Daten löschen? Das lässt sich nicht rückgängig machen.`)) return;
+    if(!confirm(txt("Profil „{name}“ mit allen Daten löschen? Das lässt sich nicht rückgängig machen.",
+      {name:x.name}))) return;
     profilSchluessel(x.id).forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
     profile = profile.filter(y => y.id !== x.id);
     if(profilId === x.id){ profilId = profile[0].id; zustandLaden(); normalisiere(); }
@@ -2205,8 +2793,12 @@ $("#pGitter").onclick = e => {
    ===================================================================== */
 async function ferienLaden(land){
   const j = new Date().getFullYear();
+  /* Die Feiertagsnamen gibt es beim Dienst auch auf Englisch; Schulferien
+     oft nur auf Deutsch. Dann bleibt der deutsche Name stehen — besser als
+     gar keiner. */
+  const sp = istEnglisch() ? "EN" : "DE";
   const url = a => `https://openholidaysapi.org/${a}?countryIsoCode=DE&subdivisionCode=${land}`
-    + `&languageIsoCode=DE&validFrom=${j}-01-01&validTo=${j+1}-12-31`;
+    + `&languageIsoCode=${sp}&validFrom=${j}-01-01&validTo=${j+1}-12-31`;
   /* Ohne Abbruch bliebe „Wird geladen …" bei einem hängenden Dienst für
      immer stehen. Fremde Antworten werden zudem nicht blind ausgepackt. */
   const hole = async (a,typ) => {
@@ -2220,9 +2812,10 @@ async function ferienLaden(land){
     if(!Array.isArray(liste)) throw new Error(a + ": unerwartete Antwort");
     return liste.map(x => {
       const namen = Array.isArray(x && x.name) ? x.name : [];
-      const treffer = namen.find(nm => nm && nm.language === "DE") || namen[0];
+      const treffer = namen.find(nm => nm && nm.language === sp)
+        || namen.find(nm => nm && nm.language === "DE") || namen[0];
       return {von:x && x.startDate, bis:x && x.endDate, typ,
-              name:(treffer && treffer.text) || "Ferien"};
+              name:(treffer && treffer.text) || txt("Ferien")};
     }).filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x.von || ""));
   };
   const [feier, schul] = await Promise.all([hole("PublicHolidays","feiertag"), hole("SchoolHolidays","ferien")]);
@@ -2230,16 +2823,16 @@ async function ferienLaden(land){
 }
 $("#sFerienLaden").onclick = async () => {
   const land = sLand.value;
-  if(!land){ $("#sFerienStand").textContent = "Bitte zuerst ein Bundesland wählen."; return; }
-  $("#sFerienStand").textContent = "Wird geladen …";
+  if(!land){ $("#sFerienStand").textContent = txt("Bitte zuerst ein Bundesland wählen."); return; }
+  $("#sFerienStand").textContent = txt("Wird geladen …");
   try{
     const eigene = ferien.filter(f => f.typ === "eigen");   // selbst eingetragene behalten
     ferien = [...await ferienLaden(land), ...eigene].sort((a,b) => a.von.localeCompare(b.von));
     cfg.land = land; sichern(); ferienStand(); zeichne();
   }catch(err){
     $("#sFerienStand").textContent = (err && err.name === "AbortError")
-      ? "Der Dienst antwortet nicht. Später noch einmal versuchen."
-      : "Laden fehlgeschlagen. Internet prüfen.";
+      ? txt("Der Dienst antwortet nicht. Später noch einmal versuchen.")
+      : txt("Laden fehlgeschlagen. Internet prüfen.");
   }
 };
 $("#sFerienWeg").onclick = () => {
@@ -2250,16 +2843,17 @@ function ferienStand(){
   const eigene = ferien.filter(f => f.typ === "eigen").length;
   $("#sFerienStand").textContent = (eigene ? `${zahl(eigene,"eigener Tag","eigene Tage")} · ` : "")
     + (ferien.length
-    ? `${ferien.length} Einträge gespeichert, bis ${zeigDatum(ferien.at(-1).bis)}.`
-    : "Noch nichts geladen.");
+    ? txt("{n} Einträge gespeichert, bis {datum}.", {n:ferien.length, datum:zeigDatum(ferien.at(-1).bis)})
+    : txt("Noch nichts geladen."));
 }
 
 /* Benachrichtigungen: nur beim Öffnen, denn eine Web-App kann sich nicht
    selbst wecken. Für echte Wecker gibt es den Kalender-Export. */
 function meldeStand(){
   const s = ("Notification" in window) ? Notification.permission : "nicht verfügbar";
-  $("#sMeldeStand").textContent = "Berechtigung: " +
-    ({granted:"erteilt", denied:"abgelehnt", default:"noch nicht gefragt"}[s] || s);
+  $("#sMeldeStand").textContent = txt("Berechtigung: {stand}", {stand:
+    txt({granted:"erteilt", denied:"abgelehnt", default:"noch nicht gefragt",
+         "nicht verfügbar":"nicht verfügbar"}[s] || s)});
 }
 $("#sMeldeRecht").onclick = async () => {
   if(!("Notification" in window)) return meldeStand();
@@ -2276,7 +2870,7 @@ async function melden(titel, text){
       const reg = await mitZeitgrenze(navigator.serviceWorker.ready, 3000);
       if(reg && reg.showNotification){
         await reg.showNotification(titel, {body:text, icon:"icon-192.png",
-          badge:"icon-192.png", tag:"stundenplan", lang:"de"});
+          badge:"icon-192.png", tag:"stundenplan", lang:spracheJetzt()});
         return true;
       }
     }
@@ -2302,13 +2896,16 @@ async function erinnerungenPruefen(){
   const morgen = bisEndeWoche.filter(e => e.datum === inTagen(1));
   const klausuren = bisEndeWoche.filter(e => e.typ === "K");
   let text = "";
-  if(morgen.length) text = "Morgen: " + morgen.map(e => (e.fach||"")+" "+(e.titel||ART[e.typ])).join(", ");
+  if(morgen.length) text = txt("Morgen: {liste}",
+    {liste:morgen.map(e => (e.fach||"")+" "+(e.titel||txt(ART[e.typ]))).join(", ")});
   else if(heute.getDay() === 0 && bisEndeWoche.length)
-    text = `Diese Woche: ${zahl(klausuren.length,"Klausur","Klausuren")}, `
-         + `${zahl(bisEndeWoche.length-klausuren.length,"Hausaufgabe","Hausaufgaben")}`;
+    text = txt("Diese Woche: {klausuren}, {hausaufgaben}", {
+      klausuren: zahl(klausuren.length,"Klausur","Klausuren"),
+      hausaufgaben: zahl(bisEndeWoche.length-klausuren.length,"Hausaufgabe","Hausaufgaben")});
   else if(klausuren.length && klausuren[0].datum <= inTagen(3))
-    text = `Klausur am ${zeigDatum(klausuren[0].datum)}: ${klausuren[0].fach||""}`;
-  if(text && await melden("Stundenplan", text)) Speicher.schreib(key, true);
+    text = txt("Klausur am {datum}: {fach}",
+      {datum:zeigDatum(klausuren[0].datum), fach:klausuren[0].fach||""});
+  if(text && await melden(txt("Stundenplan"), text)) Speicher.schreib(key, true);
 }
 
 /* ICS-Export: damit übernimmt der Systemkalender das Erinnern. */
@@ -2335,7 +2932,7 @@ function icsBauen(){
   const roh = icsRoh;
   const stempel = new Date().toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
   const zeilen = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Stundenplan//DE","CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH", `X-WR-CALNAME:${roh("Stundenplan " + (cfg.klasse || profilName()))}`];
+    "METHOD:PUBLISH", `X-WR-CALNAME:${roh(txt("Stundenplan") + " " + (cfg.klasse || profilName()))}`];
   const termin = (id, start, ende, ganztags, titel, notiz, alarm) => {
     zeilen.push("BEGIN:VEVENT", `UID:${id}@stundenplan`, `DTSTAMP:${stempel}`,
       ganztags ? `DTSTART;VALUE=DATE:${start}` : `DTSTART:${start}`,
@@ -2350,7 +2947,7 @@ function icsBauen(){
     /* DTEND ist nach RFC 5545 ausschließend — ein Ganztagstermin endet am
        Folgetag, sonst verschlucken manche Kalender ihn. */
     termin(e.id, icsTag(e.datum), icsFolgetag(e.datum), true,
-      (e.typ === "K" ? "Klausur " : "HA ") + (e.fach||"") + " " + (e.titel||""),
+      (e.typ === "K" ? txt("Klausur") + " " : txt("HA") + " ") + (e.fach||"") + " " + (e.titel||""),
       e.notiz, "PT15H"));
   sonderAktiv().filter(o => o.art !== "ausfall" && o.datum >= iso(plusTage(new Date(),-1)))
     .forEach(o => {
@@ -2371,7 +2968,7 @@ function icsPlanBauen(){
   const roh = icsRoh;
   const stempel = new Date().toISOString().replace(/[-:]/g,"").split(".")[0]+"Z";
   const zeilen = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Stundenplan//DE","CALSCALE:GREGORIAN",
-    "METHOD:PUBLISH", `X-WR-CALNAME:${roh("Unterricht " + (cfg.klasse || profilName()))}`];
+    "METHOD:PUBLISH", `X-WR-CALNAME:${roh(txt("Unterricht") + " " + (cfg.klasse || profilName()))}`];
   const heute = new Date();
   const ende = plusTage(heute, 365);
   /* Ferien und Feiertage fallen als EXDATE heraus. Ohne das behauptet der
@@ -2423,7 +3020,7 @@ function herunterladen(text, name, typ){
 }
 $("#sIcs").onclick = () => herunterladen(icsBauen(), `stundenplan-termine-${iso(new Date())}.ics`, "text/calendar");
 $("#sIcsPlan").onclick = () => {
-  if(!faecher().length) return alert("Trag zuerst deinen Stundenplan ein.");
+  if(!faecher().length) return alert(txt("Trag zuerst deinen Stundenplan ein."));
   herunterladen(icsPlanBauen(), `stundenplan-unterricht-${iso(new Date())}.ics`, "text/calendar");
 };
 
@@ -2499,6 +3096,7 @@ function cfgSaeubern(roh){
   c.sicherHalten = alsZahl(c.sicherHalten, 0, 60, 3);
   c.archivTage = alsZahl(c.archivTage, 0, 3650, 0);
   c.startProfil = ["immer","mehrere","nie"].includes(c.startProfil) ? c.startProfil : "immer";
+  c.sprache     = SPRACHEN[c.sprache] ? c.sprache : "";
   /* Nach erfolgreicher Prüfung liegt das Paket in der aktuellen Form vor. */
   c.fassung = SCHEMA;
   c.stdProTag  = alsZahl(c.stdProTag, 1, 16, 8);
@@ -2552,7 +3150,7 @@ function freiSaeubern(f){
   if(!f || typeof f !== "object") return null;
   const von = alsDatum(f.von); if(!von) return null;
   const bis = alsDatum(f.bis) || von;
-  return {von, bis: bis >= von ? bis : von, name: alsText(f.name, 80) || "Frei",
+  return {von, bis: bis >= von ? bis : von, name: alsText(f.name, 80) || txt("Frei"),
           typ: ["ferien","feiertag","eigen"].includes(f.typ) ? f.typ : "eigen"};
 }
 function sonderSaeubern(o){
@@ -2561,7 +3159,7 @@ function sonderSaeubern(o){
   return {id:alsId(o.id), serie: o.serie ? alsId(o.serie) : null, datum,
           slot: (o.slot === null || o.slot === undefined) ? null : alsZahl(o.slot, 0, 23, null),
           art:  EREIGNISARTEN.includes(o.art) ? o.art : "ereignis",
-          titel:alsText(o.titel, 200) || "Ereignis",
+          titel:alsText(o.titel, 200) || txt("Ereignis"),
           raum: alsText(o.raum, 40), notiz: alsText(o.notiz, 4000),
           geloescht: !!o.geloescht, geloeschtAm: alsDatum(o.geloeschtAm) || null};
 }
@@ -2696,11 +3294,11 @@ async function jetztSichern(fragen){
   try{
     const fertig = await inOrdnerSichern(fragen);
     if(fertig){
-      kurzHinweis(`Gesichert: ${fertig.name}`
-        + (fertig.weg ? ` · ${zahl(fertig.weg,"alte Datei","alte Dateien")} entfernt` : ""));
+      kurzHinweis(txt("Gesichert: {name}", {name:fertig.name})
+        + (fertig.weg ? " · " + txt("{dateien} entfernt", {dateien:zahl(fertig.weg,"alte Datei","alte Dateien")}) : ""));
       return true;
     }
-  }catch(e){ zeigeFehler("Ordner: " + ((e && e.message) || e)); return false; }
+  }catch(e){ zeigeFehler(txt("Ordner") + ": " + ((e && e.message) || e)); return false; }
   herunterladen(sicherungInhalt(), sicherungDateiname(), "application/json");
   sicherungNotiert();
   return true;
@@ -2712,10 +3310,11 @@ async function autoSicherung(){
   await ordnerLaden();
   try{
     const fertig = await inOrdnerSichern(false);
-    if(fertig) kurzHinweis(`Sicherung angelegt: ${fertig.name}`
-      + (fertig.weg ? ` · ${zahl(fertig.weg,"alte Datei","alte Dateien")} entfernt` : ""));
+    if(fertig) kurzHinweis(txt("Sicherung angelegt: {name}", {name:fertig.name})
+      + (fertig.weg ? " · " + txt("{dateien} entfernt", {dateien:zahl(fertig.weg,"alte Datei","alte Dateien")}) : ""));
   }catch(e){}
 }
+
 
 /* =====================================================================
    Anleitung
@@ -2723,9 +3322,23 @@ async function autoSicherung(){
    und Suche entstehen dadurch aus derselben Quelle und können nicht
    auseinanderlaufen. Der Inhalt ist Quelltext, keine Nutzereingabe — er
    darf deshalb Markup enthalten und geht nicht durch esc().
+
+   Jeder Abschnitt trägt beide Sprachen. Kennung, Reihenfolge und Aufbau
+   sind dadurch nur einmal vorhanden und können nicht auseinanderlaufen;
+   HILFE selbst ist die Fassung in der gerade eingestellten Sprache.
    ===================================================================== */
-const HILFE = [
+const HILFE_QUELLE = [
 {id:"was", teil:"Erste Schritte", titel:"Was diese App ist", worte:"überblick zweck",
+ teilEn:"Getting started", titelEn:"What this app is", worteEn:"overview purpose",
+ textEn:`<p>A timetable for your phone that shows what school portals usually hide:
+   <b>real clock times</b>, every course in <b>one</b> view, plus homework,
+   exams, grades, handouts and absences.</p>
+  <p>Nothing here is tailored to a particular school. Subjects, rooms, teachers
+   and times come solely from what you enter.</p>
+  <p class="hWarn"><b>The most important thing:</b> all data lives exclusively in
+   your browser's storage. There is no server, no account, no recovery. If you
+   clear the site data, everything is gone — not even the developer can bring it
+   back. So: back up regularly (see <i>Backup</i>).</p>`,
  text:`<p>Ein Stundenplan fürs Handy, der zeigt, was Schulportale meist verschweigen:
    <b>echte Uhrzeiten</b>, alle Kurse in <b>einer</b> Ansicht, dazu Hausaufgaben,
    Klausuren, Noten, Merkblätter und Fehlzeiten.</p>
@@ -2737,6 +3350,18 @@ const HILFE = [
    zurückholen. Deshalb: regelmäßig sichern (siehe <i>Sicherung</i>).</p>`},
 
 {id:"installieren", teil:"Erste Schritte", titel:"Auf den Startbildschirm legen", worte:"installieren pwa app icon homescreen",
+ teilEn:"Getting started", titelEn:"Put it on your home screen", worteEn:"install pwa app icon homescreen",
+ textEn:`<p>The app runs in the browser but can be placed like a real app.
+   After that it starts without a browser bar and works offline.</p>
+  <ul>
+   <li><b>Android, Chrome:</b> open the address, menu ⋮, <i>Install app</i>
+     or <i>Install and create shortcut</i>.</li>
+   <li><b>iPhone, Safari:</b> open the address, share button, <i>Add to Home Screen</i>.</li>
+   <li><b>Desktop:</b> the install icon at the right of the address bar.</li>
+  </ul>
+  <p class="hWarn"><b>Especially important on iPhone:</b> if you only open the app as
+   a bookmark in Safari, Safari deletes the data by itself after seven days without
+   use. On the home screen it stays.</p>`,
  text:`<p>Die App läuft im Browser, lässt sich aber wie eine richtige App ablegen.
    Danach startet sie ohne Browserleiste und funktioniert offline.</p>
   <ul>
@@ -2750,6 +3375,19 @@ const HILFE = [
    von selbst. Auf dem Startbildschirm bleiben sie.</p>`},
 
 {id:"einrichten", teil:"Erste Schritte", titel:"Einrichten in zehn Minuten", worte:"anfang setup erste schritte klasse",
+ teilEn:"Getting started", titelEn:"Set up in ten minutes", worteEn:"start setup first steps class",
+ textEn:`<ol>
+   <li>Open <b>⚙ at the top right</b>. A menu of sections appears; each one states
+     its current setting underneath.</li>
+   <li><b>School and period grid</b>: enter your class — it later appears in small
+     type above the weekday. Check the grid; two templates are one tap away,
+     otherwise add rows by hand. If your school has A and B weeks, tick the box.</li>
+   <li><b>Holidays and public holidays</b>: pick a German state, <i>Load holidays</i>.</li>
+   <li>Optionally <b>Appearance</b>: accent colour, light mode, typeface.</li>
+   <li><b>Save</b>, then enter your timetable (see <i>The timetable</i>).</li>
+  </ol>
+  <p class="hHinweis">Everything is saved at once. You can move back and forth
+   between the sections and only tap <b>Save</b> at the end.</p>`,
  text:`<ol>
    <li><b>⚙ oben rechts</b> öffnen. Es erscheint ein Menü der Bereiche; jeder
      nennt darunter seinen jetzigen Stand.</li>
@@ -2763,7 +3401,62 @@ const HILFE = [
   <p class="hHinweis">Gespeichert wird alles auf einmal. Du kannst zwischen den
    Bereichen hin und her gehen und erst am Ende auf <b>Speichern</b> tippen.</p>`},
 
+{id:"sprache", teil:"Erste Schritte", titel:"Deutsch oder Englisch", worte:"sprache englisch english umstellen übersetzung",
+ teilEn:"Getting started", titelEn:"German or English", worteEn:"language english german switch translation",
+ textEn:`<p>The interface is available in <b>German and English</b>. The choice sits
+   at the very top of ⚙, labelled in both languages, and takes effect immediately —
+   there is no need to tap <i>Save</i> for it.</p>
+  <ul>
+   <li><b>Automatic</b> follows the language of the device. This is what a newly
+     created profile starts with.</li>
+   <li><b>Deutsch</b> and <b>English</b> fix the choice, whatever the device says.</li>
+  </ul>
+  <p>The setting belongs to the profile, so siblings sharing one device can each
+   read the app in their own language.</p>
+  <p>What is translated is the interface, including this guide. <b>Your own text is
+   not</b>: subjects, rooms, teacher names, notes and handouts stay exactly as you
+   typed them. Holiday names come from the data service and are fetched in the
+   chosen language where it has them.</p>
+  <p class="hHinweis">Backups are unaffected. What is stored stays German
+   internally, so a file written on an English device reads back on a German one
+   and the other way round.</p>`,
+ text:`<p>Die Oberfläche gibt es auf <b>Deutsch und Englisch</b>. Die Wahl steht ganz
+   oben unter ⚙, zweisprachig beschriftet, und wirkt sofort — dafür muss man nicht
+   erst auf <i>Speichern</i> tippen.</p>
+  <ul>
+   <li><b>Automatisch</b> richtet sich nach der Sprache des Geräts. Damit beginnt
+     ein neu angelegtes Profil.</li>
+   <li><b>Deutsch</b> und <b>English</b> legen sie fest, unabhängig vom Gerät.</li>
+  </ul>
+  <p>Die Einstellung gehört zum Profil. Geschwister an einem Gerät können die App
+   deshalb jeweils in ihrer Sprache lesen.</p>
+  <p>Übersetzt ist die Oberfläche, diese Anleitung eingeschlossen. <b>Deine eigenen
+   Texte nicht</b>: Fächer, Räume, Lehrernamen, Notizen und Merkblätter bleiben
+   genau so stehen, wie du sie getippt hast. Ferienbezeichnungen kommen vom
+   Datendienst und werden in der gewählten Sprache abgerufen, soweit er sie hat.</p>
+  <p class="hHinweis">Sicherungen sind davon unberührt. Gespeichert wird intern
+   weiter Deutsch; eine auf einem englischen Gerät geschriebene Datei lässt sich
+   deshalb auf einem deutschen einlesen und umgekehrt.</p>`},
+
 {id:"einstellungen", teil:"Erste Schritte", titel:"Wie die Einstellungen aufgebaut sind", worte:"einstellungen menü bereiche zahnrad struktur",
+ teilEn:"Getting started", titelEn:"How the settings are organised", worteEn:"settings menu sections gear structure",
+ textEn:`<p>Behind ⚙ there are eight sections. Instead of one long scroll there is
+   first a <b>menu</b> — like in the <i>Entries</i> tab. Under each name, small type
+   says how it is currently set, so most questions are answered without opening it.</p>
+  <table class="hTab">
+   <tr><th>Section</th><th>What is in it</th></tr>
+   <tr><td><b>Appearance</b></td><td>accent colour, light/dark, typeface, profile picker at start</td></tr>
+   <tr><td><b>School and period grid</b></td><td>class, lesson times, A/B weeks</td></tr>
+   <tr><td><b>Grades and report card</b></td><td>grading system, oral/written ratio, order of subjects</td></tr>
+   <tr><td><b>Absences and archive</b></td><td>lessons per school day, how long the archive keeps things</td></tr>
+   <tr><td><b>Reminders and calendar</b></td><td>reminder on opening, calendar export</td></tr>
+   <tr><td><b>Holidays and public holidays</b></td><td>German state and loaded periods</td></tr>
+   <tr><td><b>Subjects and teachers</b></td><td>full names, separating by teacher</td></tr>
+   <tr><td><b>Backup and storage</b></td><td>back up, import, share, folder, storage used</td></tr>
+  </table>
+  <p><b>‹ All settings</b> leads back to the menu. <b>Save</b> applies to everything
+   at once, no matter which section you are standing in — the fields of the others
+   keep their contents the whole time.</p>`,
  text:`<p>Hinter ⚙ liegen acht Bereiche. Statt einer langen Rolle steht dort erst
    ein <b>Menü</b> — wie im Reiter <i>Einträge</i>. Unter jedem Namen steht in
    kleiner Schrift, wie er gerade eingestellt ist, sodass man das Meiste
@@ -2784,6 +3477,20 @@ const HILFE = [
    anderen bleiben die ganze Zeit über bestehen.</p>`},
 
 {id:"raster", teil:"Der Stundenplan", titel:"Stundenraster einstellen", worte:"zeiten stunden block doppelstunde pause slots",
+ teilEn:"The timetable", titelEn:"Setting the period grid", worteEn:"times lessons block double period break slots",
+ textEn:`<p>One row per slot in the day view. Under <b>No.</b> are the lesson numbers
+   this slot covers — for double lessons separated by a comma.</p>
+  <table class="hTab">
+   <tr><th>No.</th><th>from</th><th>to</th></tr>
+   <tr><td>1,2</td><td>08:00</td><td>09:30</td></tr>
+   <tr><td>3,4</td><td>09:50</td><td>11:20</td></tr>
+   <tr><td>5,6</td><td>11:40</td><td>13:10</td></tr>
+  </table>
+  <p>No double lessons? Then put <code>1</code>, <code>2</code>, <code>3</code> …
+   in separate rows. The grid may have as many slots as you like.</p>
+  <p class="hWarn"><b>Careful when shortening it:</b> if you remove rows, the lessons
+   at the end of each day disappear. The app asks first and names the number of
+   lessons affected.</p>`,
  text:`<p>Eine Zeile pro Feld im Tagesplan. Unter <b>Std.</b> stehen die
    Stundennummern, die dieses Feld abdeckt — bei Doppelstunden mit Komma.</p>
   <table class="hTab">
@@ -2799,6 +3506,14 @@ const HILFE = [
    der betroffenen Stunden.</p>`},
 
 {id:"handeintragen", teil:"Der Stundenplan", titel:"Plan von Hand eintragen", worte:"bearbeiten stift fach raum lehrer",
+ teilEn:"The timetable", titelEn:"Entering the plan by hand", worteEn:"edit pencil subject room teacher",
+ textEn:`<p><b>Tap ✎ at the top</b> — to the left of the profile and ⚙ — to switch
+   editing on; a note under the plan shows this. Now tapping a lesson opens the
+   fields <i>Subject</i>, <i>Room</i>, <i>Teacher</i>.</p>
+  <p>Subjects are always stored in <b>capitals</b>, however you type them. Otherwise
+   “Ch” and “CH” would count as two subjects and the grade average would fall apart.</p>
+  <p>Tapping ✎ again ends editing. One week takes less than five minutes —
+   <b>a timetable repeats itself</b>, one week is enough, two with A/B weeks.</p>`,
  text:`<p><b>✎ oben antippen</b> — links neben Profil und ⚙ — schaltet das
    Bearbeiten ein; ein Hinweis unter dem Plan zeigt das an. Jetzt öffnet ein Tipp
    auf eine Stunde die Felder <i>Fach</i>, <i>Raum</i>, <i>Lehrkraft</i>.</p>
@@ -2809,6 +3524,25 @@ const HILFE = [
    bei A/B-Wochen zwei.</p>`},
 
 {id:"import", teil:"Der Stundenplan", titel:"Plan aus dem Schulportal einfügen", worte:"import kopieren zwischenablage einfügen portal",
+ teilEn:"The timetable", titelEn:"Pasting a plan from the school portal", worteEn:"import copy clipboard paste portal",
+ textEn:`<p>⚙ → <b>Paste plan</b>. Choose day and week, paste the copied table into
+   <i>Fill from the clipboard</i>, tap <b>Copy into the table</b>, check it,
+   <b>Save</b>.</p>
+  <p>Expected is one line per lesson in the format
+   <code>SUBJECT, ROOM (TEACHER)</code>, preceded by the lesson number:</p>
+  <pre class="hCode">1
+CH, B005 (MUEL)
+2
+CH, B005 (MUEL)
+3
+MA, B006 (SCHM)</pre>
+  <p>Square brackets are recognised too; in many portals they hold the class rather
+   than the teacher.</p>
+  <p class="hWarn">Many portals can switch between subject, room and teacher views.
+   What is needed is the view in which <b>the subject comes first</b> — otherwise
+   teacher names end up as subjects in your plan.</p>
+  <p>If your school's format does not fit at all: the expression is in
+   <code>app.js</code>, in the function <code>parseZelle</code>.</p>`,
  text:`<p>⚙ → <b>Plan einfügen</b>. Tag und Woche wählen, die kopierte Tabelle in
    <i>Aus der Zwischenablage füllen</i> einsetzen, <b>In die Tabelle übernehmen</b>,
    prüfen, <b>Speichern</b>.</p>
@@ -2829,6 +3563,14 @@ MA, B006 (SCHM)</pre>
    <code>app.js</code> in der Funktion <code>parseZelle</code>.</p>`},
 
 {id:"abwoche", teil:"Der Stundenplan", titel:"A- und B-Wochen", worte:"wechselwoche gerade ungerade kalenderwoche",
+ teilEn:"The timetable", titelEn:"A and B weeks", worteEn:"alternating week odd even calendar week",
+ textEn:`<p>Fixed rule: <b>odd calendar week = A, even = B.</b> Which one is running
+   is shown at the top next to the week number and in the settings.</p>
+  <p>If your school has it the other way round, simply enter your A week as the
+   B week — the rule itself is not adjustable, the result is.</p>
+  <p>If the weeks differ in only a few lessons: ⚙ → <b>Week change</b> →
+   <i>A week → B week</i> copies everything over, and then you change the
+   exceptions.</p>`,
  text:`<p>Feste Regel: <b>ungerade Kalenderwoche = A, gerade = B.</b> Welche gerade
    läuft, steht oben neben der Kalenderwoche und in den Einstellungen.</p>
   <p>Passt es bei deiner Schule andersherum, trag deine A-Woche einfach als
@@ -2838,6 +3580,15 @@ MA, B006 (SCHM)</pre>
    Abweichungen.</p>`},
 
 {id:"namen", teil:"Der Stundenplan", titel:"Kürzel und ausgeschriebene Namen", worte:"lehrer fachnamen abkürzung",
+ teilEn:"The timetable", titelEn:"Abbreviations and full names", worteEn:"teacher subject names abbreviation",
+ textEn:`<p>Under ⚙ → <b>Teachers</b> and <b>Subject names</b>, one line per
+   abbreviation and name, separated by an equals sign:</p>
+  <pre class="hCode">WZET = Ms Wietzet
+CH = Chemistry
+MA = Maths</pre>
+  <p>The plan keeps showing the abbreviations — otherwise it would not fit on the
+   screen. The full names appear in the subject info, in the report card and in
+   search: anyone searching for “Chemistry” also finds entries that only carry “CH”.</p>`,
  text:`<p>Unter ⚙ → <b>Lehrkräfte</b> und <b>Fachnamen</b> je Zeile ein Kürzel und
    der Name, getrennt durch ein Gleichheitszeichen:</p>
   <pre class="hCode">WZET = Frau Wietzet
@@ -2848,6 +3599,31 @@ MA = Mathematik</pre>
    Wer „Chemie“ sucht, findet auch Einträge, die nur „CH“ tragen.</p>`},
 
 {id:"nachlehrer", teil:"Der Stundenplan", titel:"Fächer nach Lehrkraft trennen", worte:"lehrer kurs parallelkurs trennen unterpunkte",
+ teilEn:"The timetable", titelEn:"Separating subjects by teacher", worteEn:"teacher course parallel course separate sub-entries",
+ textEn:`<p>If you have the same subject with <b>two teachers</b> — say sport in two
+   courses or maths in alternation — tick <i>Separate subjects by teacher</i> under
+   ⚙ → <b>Teachers</b>. Without the tick nothing changes.</p>
+  <ul>
+   <li><b>Up next</b> skips lessons in the same subject with a different teacher.
+     Homework you are given on Monday by Ms Müller falls due in her next lesson —
+     not on Tuesday with Mr Schmidt.</li>
+   <li>The <b>entry dialog</b> gains a <i>Teacher</i> field. If you come from a
+     tapped lesson, it is already filled in.</li>
+   <li>The <b>report card</b> shows, under every affected subject, a separate
+     average per teacher, each calculated with <i>their</i> ratio. The subject's
+     own row stays and keeps averaging over everything. Both rows can be tapped and
+     lead to ratio and target grade — one for the subject, the other for the teacher.</li>
+   <li><b>Ratio and target grade</b> are therefore available per teacher: in the
+     settings under <i>Ratio per subject</i> as an indented row, on the grade card
+     as its own chip.</li>
+   <li><b>Notes</b> and <b>handouts</b> gain subheadings per teacher.</li>
+   <li><b>Absences</b> are broken down per course, not just per subject.</li>
+   <li>The <b>red dots</b> in the date picker follow this too.</li>
+  </ul>
+  <p class="hHinweis">As a rule: wherever the app offers something <i>per subject</i>,
+   this setting also offers it <i>per teacher</i>.</p>
+  <p class="hHinweis">The tick can be removed again at any time. Whatever has been
+   assigned stays stored and reappears when you tick it again.</p>`,
  text:`<p>Hast du dasselbe Fach bei <b>zwei Lehrkräften</b> — etwa Sport bei zwei
    Kursen oder Mathe im Wechsel —, setz unter ⚙ → <b>Lehrkräfte</b> den Haken
    <i>Fächer nach Lehrkraft trennen</i>. Ohne den Haken ändert sich nichts.</p>
@@ -2876,6 +3652,28 @@ MA = Mathematik</pre>
    zugeordnet ist, bleibt gespeichert und taucht beim erneuten Setzen wieder auf.</p>`},
 
 {id:"reiter", teil:"Täglich benutzen", titel:"Die vier Reiter", worte:"navigation wischen ansicht tag kalender einträge zeugnis",
+ teilEn:"Everyday use", titelEn:"The four tabs", worteEn:"navigation swipe view day calendar entries report card",
+ textEn:`<table class="hTab">
+   <tr><th>Tab</th><th>Contents</th></tr>
+   <tr><td><b>Day</b></td><td>the day's plan with clock times, current lesson, progress bar</td></tr>
+   <tr><td><b>Calendar</b></td><td>month overview with markers, the selected day below it</td></tr>
+   <tr><td><b>Entries</b></td><td>search and all lists including the archive</td></tr>
+   <tr><td><b>Report</b></td><td>all subjects with average and rounded grade</td></tr>
+  </table>
+  <p>Switch by tapping, by tapping the four dots at the bottom, or by
+   <b>swiping anywhere below the content</b> — even in the middle of the page if
+   nothing is there any more. If a sub-list is open, the first swipe returns to
+   the menu.</p>
+  <p>In the day view you can also swipe <b>day by day</b>, in the calendar
+   <b>month by month</b>.</p>
+  <p>On a computer there is no swiping — there the <b>arrow keys ← →</b> do it:
+   day by day in the day view, month by month in the calendar, week by week in the
+   week grid. <b>/</b> jumps into the search. While a field is being typed in, the
+   keys stay quiet.</p>
+  <p>To the left of the profile and ⚙ there is <b>one place for the pencil ✎</b>.
+   What it does depends on the view: in <b>Day</b> it edits the plan, in the
+   <b>Entries</b> menu it reorders the tiles. In the other views it stays empty —
+   the place itself remains so the tab bar does not jump.</p>`,
  text:`<table class="hTab">
    <tr><th>Reiter</th><th>Inhalt</th></tr>
    <tr><td><b>Tag</b></td><td>Plan des Tages mit Uhrzeiten, laufender Stunde, Fortschrittsbalken</td></tr>
@@ -2899,6 +3697,22 @@ MA = Mathematik</pre>
    er leer — der Platz selbst bleibt, damit die Reiterleiste nicht springt.</p>`},
 
 {id:"woche", teil:"Täglich benutzen", titel:"Die ganze Woche auf einmal", worte:"wochenansicht übersicht raster woche",
+ teilEn:"Everyday use", titelEn:"The whole week at once", worteEn:"week view overview grid week",
+ textEn:`<p>In the day view, next to the week number, there is <b>Week</b>. That opens
+   the grid: rows are the lessons, columns Monday to Friday.</p>
+  <ul>
+   <li><b>Today</b> is highlighted.</li>
+   <li>What is <b>cancelled</b> is struck through; cover lessons appear with their
+     own title.</li>
+   <li><b>Holidays and free days</b> are hatched and named below the grid.</li>
+   <li>A small <b>K</b> or <b>H</b> in a cell means: an exam or an open piece of
+     homework is due there.</li>
+   <li>Empty lessons at the end of the day are missing, just as in the day plan.</li>
+  </ul>
+  <p>‹ and › page week by week, on a computer the <b>arrow keys</b> do too.
+   Tapping a lesson jumps to its day.</p>
+  <p class="hHinweis">Why not a tab of its own: on narrow phones the tab bar is
+   already full with four labels. A fifth button would break it onto two lines.</p>`,
  text:`<p>In der Tagesansicht neben der Kalenderwoche steht <b>Woche</b>. Das öffnet
    das Raster: Zeilen sind die Stunden, Spalten Montag bis Freitag.</p>
   <ul>
@@ -2918,6 +3732,27 @@ MA = Mathematik</pre>
    würde sie umbrechen.</p>`},
 
 {id:"stundeantippen", teil:"Täglich benutzen", titel:"Eine Stunde antippen", worte:"schnellauswahl hausaufgabe fällt aus vertretung fachinfo",
+ teilEn:"Everyday use", titelEn:"Tapping a lesson", worteEn:"quick menu homework cancelled cover subject info",
+ textEn:`<p><b>A short tap</b> opens the quick menu for that lesson:</p>
+  <ul>
+   <li><b>Homework</b> — the due date is already set to the
+     <i>next lesson in this subject</i>. If chemistry is on Tuesday and Friday, a
+     tap on Tuesday automatically gives Friday. With ⚙ →
+     <i>Separate subjects by teacher</i> only the next lesson with the same teacher
+     counts.</li>
+   <li><b>Note</b> — free text for this day.</li>
+   <li><b>Exam</b> — a date.</li>
+   <li><b>Absence</b> — the number of lessons in the block is already filled in.</li>
+   <li><b>Cancelled</b> — only on this one day, the subject is struck through.</li>
+   <li><b>Cover lesson</b> — a different subject or room, only on this day.</li>
+   <li><b>Other event</b> — everything else.</li>
+   <li><b>Subject info</b> — the same as a long press.</li>
+  </ul>
+  <p><b>Press and hold</b> opens the subject info directly: full name, teacher,
+   room, lessons per week, next date (tappable, jumps into the calendar), grade
+   average, number of handouts and what is still open.</p>
+  <p class="hHinweis"><i>Cancelled</i>, <i>cover lesson</i> and events apply
+   <b>only on that one day</b>. The regular plan is left untouched.</p>`,
  text:`<p><b>Kurz antippen</b> öffnet die Schnellauswahl für diese Stunde:</p>
   <ul>
    <li><b>Hausaufgabe</b> — das Fälligkeitsdatum ist schon auf die
@@ -2940,6 +3775,25 @@ MA = Mathematik</pre>
    <b>nur an diesem einen Tag</b>. Der Regelplan bleibt unangetastet.</p>`},
 
 {id:"eintragsknopf", teil:"Täglich benutzen", titel:"Der Eintragsknopf", worte:"plus neu anlegen art typ",
+ teilEn:"Everyday use", titelEn:"The entry button", worteEn:"plus new create kind type",
+ textEn:`<p>One button for everything, at the bottom of the screen. The kind follows
+   where you currently are — if you are in the grades, “Grade” is preselected.</p>
+  <table class="hTab">
+   <tr><th>Kind</th><th>What for</th><th>Example</th></tr>
+   <tr><td>Homework</td><td>with a due date, tickable</td><td>MA — p. 42 no. 1–7</td></tr>
+   <tr><td>Exam</td><td>a date, tickable</td><td>CH — redox reactions</td></tr>
+   <tr><td>Note</td><td>free text for a day</td><td>presentation discussed</td></tr>
+   <tr><td>Event</td><td>one-off, all day or a single lesson</td><td>dentist, 3rd/4th lesson</td></tr>
+   <tr><td>Grade</td><td>oral/written, what for, notes</td><td>2.3 written</td></tr>
+   <tr><td>Handout</td><td>formulas, rules, vocabulary, with images</td><td>quadratic formula</td></tr>
+   <tr><td>Absence</td><td>counted in lessons; subject optional, prefilled from a lesson</td><td>2 lessons excused</td></tr>
+  </table>
+  <p>A <b>subject is never preselected</b> — unless you come from a tapped lesson.
+   That prevents entries from quietly landing on the wrong subject.</p>
+  <p>In the date picker every day on which the chosen subject appears in the plan
+   gets a <b>red dot</b>. That way you find the next lesson without paging.
+   If <i>Separate subjects by teacher</i> is on, only the days with the chosen
+   teacher count.</p>`,
  text:`<p>Ein Knopf für alles, unten am Bildschirm. Die Art richtet sich danach, wo
    du gerade bist — bist du in den Noten, ist „Note“ vorausgewählt.</p>
   <table class="hTab">
@@ -2960,6 +3814,14 @@ MA = Mathematik</pre>
    bei der gewählten Lehrkraft.</p>`},
 
 {id:"kalendermenue", teil:"Täglich benutzen", titel:"Im Kalender eintragen", worte:"doppeltippen gedrückt halten tagesmenü termin freier tag",
+ teilEn:"Everyday use", titelEn:"Adding things in the calendar", worteEn:"double tap press and hold day menu appointment free day",
+ textEn:`<p><b>Double-tapping</b> a calendar cell or <b>pressing and holding</b> it
+   (right-click on a computer) opens the day menu: appointment, homework, exam,
+   note, absence or free day.</p>
+  <p>At the top of the menu it says what is already entered for that day and
+   whether it is marked as free. If it is, the button reads <i>Change free day</i>
+   and shows its label.</p>
+  <p>A single tap still only selects the day — below it appears what is due on it.</p>`,
  text:`<p>Ein Kalenderfeld <b>doppelt antippen</b> oder <b>gedrückt halten</b>
    (am Rechner auch Rechtsklick) öffnet das Tagesmenü: Termin, Hausaufgabe,
    Klausur, Notiz, Fehlzeit oder freier Tag.</p>
@@ -2970,6 +3832,19 @@ MA = Mathematik</pre>
    an ihm ansteht.</p>`},
 
 {id:"reihe", teil:"Täglich benutzen", titel:"Etwas jede Woche eintragen", worte:"wiederholen serie reihe wöchentlich ag vokabeltest",
+ teilEn:"Everyday use", titelEn:"Entering something every week", worteEn:"repeat series recurring weekly club vocabulary test",
+ textEn:`<p>For <b>homework</b>, <b>exam</b>, <b>note</b> and <b>event</b> the entry
+   dialog offers <i>Repeat</i>: once, every week or every two weeks, plus a date up
+   to which. Below it says how many dates that makes and when the last one falls.</p>
+  <p>On saving, <b>real individual entries</b> are created, one per date — not a
+   rule that generates dates in the background. That costs a little storage and in
+   return gives exactly what matters: you can <b>tick off each date separately</b>,
+   move it or delete it, and search, calendar, archive and the calendar export
+   treat them like everything else.</p>
+  <p>When <b>deleting</b>, the app asks whether only this date or the whole series
+   should go. In the lists such entries are marked <i>Series</i>.</p>
+  <p class="hHinweis">At most 60 dates at a time. Without an end date the app
+   suggests three months — a number you can still take in while entering it.</p>`,
  text:`<p>Bei <b>Hausaufgabe</b>, <b>Klausur</b>, <b>Notiz</b> und <b>Ereignis</b>
    steht im Eintragsdialog <i>Wiederholen</i>: einmalig, jede Woche oder alle zwei
    Wochen, dazu ein Datum, bis wann. Darunter steht, wie viele Termine daraus
@@ -2985,6 +3860,17 @@ MA = Mathematik</pre>
    App drei Monate vor — eine Zahl, die man beim Eintragen noch überblickt.</p>`},
 
 {id:"kacheln", teil:"Täglich benutzen", titel:"Das Einträge-Menü umsortieren", worte:"kacheln reihenfolge sortieren stift pfeile",
+ teilEn:"Everyday use", titelEn:"Reordering the entries menu", worteEn:"tiles order sort pencil arrows",
+ textEn:`<p>In the <b>Entries</b> tab all lists sit as tiles below one another:
+   homework, exams, notes, events, grades, handouts, absences, archive. Each names
+   its current state under its title.</p>
+  <p><b>Tapping ✎ at the top</b> switches reordering on — the same place in the
+   header where the plan pencil sits in the day view. Next to every tile <b>↑</b>
+   and <b>↓</b> appear; while sorting, tapping a tile does not open a list. Tapping
+   ✎ again ends it.</p>
+  <p>The order applies to this profile and is remembered. The order of the
+   <i>subjects</i> in the report card is set separately under ⚙ →
+   <b>Order of subjects</b>.</p>`,
  text:`<p>Im Reiter <b>Einträge</b> stehen alle Listen als Kacheln untereinander:
    Hausaufgaben, Klausuren, Notizen, Ereignisse, Noten, Merkblätter, Fehlzeiten,
    Archiv. Jede nennt unter dem Namen ihren Stand.</p>
@@ -2997,6 +3883,12 @@ MA = Mathematik</pre>
    <b>Reihenfolge der Fächer</b> ein.</p>`},
 
 {id:"suchen", teil:"Täglich benutzen", titel:"Suchen", worte:"finden filter",
+ teilEn:"Everyday use", titelEn:"Searching", worteEn:"find filter",
+ textEn:`<p>At the very top of the <b>Entries</b> tab. The search covers subject,
+   title, note and room — across events, grades, homework, exams, notes and
+   handouts at the same time.</p>
+  <p>An abbreviation and its full name count as the same thing, as long as the name
+   is stored under ⚙. At most 40 hits, newest first.</p>`,
  text:`<p>Im Reiter <b>Einträge</b> ganz oben. Gesucht wird über Fach, Titel, Notiz
    und Raum — bei Ereignissen, Noten, Hausaufgaben, Klausuren, Notizen und
    Merkblättern gleichzeitig.</p>
@@ -3004,6 +3896,20 @@ MA = Mathematik</pre>
    ⚙ hinterlegt ist. Höchstens 40 Treffer, neueste zuerst.</p>`},
 
 {id:"archiv", teil:"Täglich benutzen", titel:"Archiv und Löschen", worte:"papierkorb wiederherstellen zurückholen",
+ teilEn:"Everyday use", titelEn:"Archive and deleting", worteEn:"bin trash restore recover",
+ textEn:`<p>Deleted things do not vanish at once but land in the <b>archive</b> —
+   entries, events and grades alike. From there you can bring them back or remove
+   them for good. A second deletion is irreversible and is confirmed first.</p>
+  <p>Ticked-off homework and exams move to the archive automatically after
+   <b>seven days</b>. Notes, handouts and absences stay — those you want to keep.</p>
+  <p><b>How long the archive keeps things</b> is set under ⚙ → <b>Archive</b>:
+   forever (the default), 30 days, 3, 6 or 12 months. If a limit is set, the note at
+   the top of the archive states it, and every row shows how long it still has.
+   The last week is highlighted in colour.</p>
+  <p class="hWarn">A limit removes entries <b>for good</b> — after that only a backup
+   helps. The clock starts on the day of deletion; for everything that was already
+   in the archive before this version it starts when you first open the app, not
+   retroactively.</p>`,
  text:`<p>Gelöschtes verschwindet nicht sofort, sondern landet im <b>Archiv</b> —
    Einträge, Ereignisse und Noten gleichermaßen. Von dort zurückholen oder
    endgültig entfernen. Ein zweites Löschen ist unwiderruflich und wird
@@ -3021,12 +3927,40 @@ MA = Mathematik</pre>
    rückwirkend.</p>`},
 
 {id:"noten", teil:"Noten und Zeugnis", titel:"Noten eintragen", worte:"note punkte system 1-6 0-15",
+ teilEn:"Grades and report card", titelEn:"Entering grades", worteEn:"grade points system 1-6 0-15",
+ textEn:`<p>Under ⚙ → <b>Grades</b> you choose between <b>grades 1–6</b> and
+   <b>points 0–15</b>. The input accepts both a comma and a point, so 2,3 as well
+   as 2.3.</p>
+  <p>Every grade is either <b>oral</b> or <b>written</b>. The two are averaged
+   separately and only then combined.</p>
+  <p class="hHinweis">The German system runs from 1 (best) to 6 (worst); the points
+   scale from 0 (worst) to 15 (best) is used in the upper years.</p>`,
  text:`<p>Unter ⚙ → <b>Noten</b> wählst du zwischen <b>Noten 1–6</b> und
    <b>Punkten 0–15</b>. Die Eingabe akzeptiert Komma und Punkt, also 2,3 wie 2.3.</p>
   <p>Jede Note ist entweder <b>mündlich</b> oder <b>schriftlich</b>. Beide werden
    getrennt gemittelt und erst danach verrechnet.</p>`},
 
 {id:"verhaeltnis", teil:"Noten und Zeugnis", titel:"Verhältnis mündlich zu schriftlich", worte:"gewichtung anteil prozent",
+ teilEn:"Grades and report card", titelEn:"Ratio of oral to written", worteEn:"weighting share percent",
+ textEn:`<p>Three levels, each overriding the one above:</p>
+  <ol>
+   <li>the <b>default</b> for all subjects (⚙ → Grades → <i>oral %</i>),</li>
+   <li>the value of a <b>subject</b>,</li>
+   <li>with <i>Separate subjects by teacher</i>, the value of a <b>teacher in that
+     subject</b>.</li>
+  </ol>
+  <p>Set it under ⚙ → <i>Ratio per subject</i> — there, under every subject with
+   several teachers, is one indented row each — or by tapping a row in the report
+   card: the subject row sets the subject, the row below it the teacher. If a row is
+   left empty, the level above applies; the grey value in the field shows which one
+   that currently is.</p>
+  <p class="hHinweis">Separating two courses of the same subject is worth it above
+   all when they weight <i>differently</i> — which is why every sub-row in the
+   report card uses its own ratio, not the subject's.</p>
+  <p><b>Worked example.</b> Oral 3.0 · written 2.0 · ratio 40 % oral:</p>
+  <pre class="hCode">3.0 × 0.40  +  2.0 × 0.60  =  1.2 + 1.2  =  2.40</pre>
+  <p>If there is only one kind of grade, that one counts alone — the ratio then has
+   no effect.</p>`,
  text:`<p>Drei Stufen, jede sticht die darüber:</p>
   <ol>
    <li>der <b>Standard</b> für alle Fächer (⚙ → Noten → <i>mündlich %</i>),</li>
@@ -3048,6 +3982,15 @@ MA = Mathematik</pre>
    ohne Wirkung.</p>`},
 
 {id:"zielnote", teil:"Noten und Zeugnis", titel:"Zielnoten-Rechner", worte:"was muss ich schreiben ziel rechner",
+ teilEn:"Grades and report card", titelEn:"Target grade calculator", worteEn:"what do i need target calculator",
+ textEn:`<p>Tap a subject row in the report card, enter a <b>target grade</b> at the
+   bottom and choose the kind. The app works out what the <i>next</i> grade of that
+   kind would have to be for the average to reach the target.</p>
+  <p><b>Example.</b> Two written grades, 3.0 and 3.0, target 2.5 written, no oral
+   grades. We are looking for x with</p>
+  <pre class="hCode">(3.0 + 3.0 + x) / 3 = 2.5   →   x = 1.5</pre>
+  <p>If the result lies outside the scale, the app says so plainly: “Not reachable
+   with a single grade” — together with the arithmetic value.</p>`,
  text:`<p>Eine Fachzeile im Zeugnis antippen, unten <b>Zielnote</b> eintragen und die
    Art wählen. Die App rechnet aus, was die <i>nächste</i> Note dieser Art bringen
    müsste, damit der Schnitt das Ziel erreicht.</p>
@@ -3058,6 +4001,13 @@ MA = Mathematik</pre>
    einzelnen Note nicht erreichbar“ — samt dem rechnerischen Wert.</p>`},
 
 {id:"zeugnis", teil:"Noten und Zeugnis", titel:"Die Zeugnis-Ansicht", worte:"schnitt gerundet durchschnitt",
+ teilEn:"Grades and report card", titelEn:"The report card view", worteEn:"average rounded mean",
+ textEn:`<p>Every subject with its average and rounded grade, and at the top the
+   overall average across all subjects that have grades. The order of the subjects
+   can be rearranged under ⚙.</p>
+  <p class="hWarn"><b>This is an estimate, not an official statement.</b> The app
+   weights all grades of one kind equally. Teachers often calculate differently —
+   an exam rarely counts as little as a short test.</p>`,
  text:`<p>Jedes Fach mit Schnitt und gerundeter Note, dazu oben der Gesamtschnitt
    über alle Fächer, die Noten haben. Die Reihenfolge der Fächer ist unter ⚙
    umsortierbar.</p>
@@ -3065,6 +4015,17 @@ MA = Mathematik</pre>
    alle Noten einer Art gleich. Lehrkräfte rechnen oft anders — eine Klausur zählt
    selten so viel wie ein Test.</p>`},
 {id:"merkblatt", teil:"Merkblätter, Fehlzeiten, Ferien", titel:"Merkblätter", worte:"formeln vokabeln bilder foto tafelbild lehrkraft",
+ teilEn:"Handouts, absences, holidays", titelEn:"Handouts", worteEn:"formulas vocabulary images photo blackboard teacher",
+ textEn:`<p>As many per subject as you like, each with date and time. Line breaks and
+   indentation are preserved and shown in a monospaced font — which keeps formulas
+   aligned.</p>
+  <p><b>Images</b> can be added, for instance of the blackboard. They are
+   automatically scaled down to 1000 px and compressed as JPEG.</p>
+  <p class="hWarn">Browser storage holds about 5 MB for everything together. Under
+   ⚙ → <b>Storage</b> you can see how much is used as a percentage; from 80 % on the
+   app warns you, while there is still time for a backup.</p>
+  <p class="hHinweis">Think about what you photograph — pictures of classmates
+   belong here only with their consent.</p>`,
  text:`<p>Beliebig viele je Fach, jedes mit Datum und Uhrzeit. Zeilenumbrüche und
    Einrückungen bleiben erhalten, dargestellt wird in Monospace — Formeln bleiben
    dadurch ausgerichtet.</p>
@@ -3077,6 +4038,18 @@ MA = Mathematik</pre>
    und Mitschülern gehören nur mit deren Einverständnis dorthin.</p>`},
 
 {id:"fehlzeiten", teil:"Merkblätter, Fehlzeiten, Ferien", titel:"Fehlzeiten", worte:"fehlstunden versäumt entschuldigt unentschuldigt verspätet fach",
+ teilEn:"Handouts, absences, holidays", titelEn:"Absences", worteEn:"missed lessons excused unexcused late subject",
+ textEn:`<p>Counted in <b>lessons</b> — that is how it appears on the report card
+   too. Three kinds: excused, unexcused, late.</p>
+  <p>On top of that every absence remembers its <b>subject</b>. If you come via a
+   tapped lesson, it is already there. The list shows it per entry, and above the
+   list it says how many lessons fall on which subject — for the note to school and
+   for the question of where you have to catch up. This changes nothing on the
+   report card: there only the lessons count.</p>
+  <p>Under ⚙ → <b>Absences</b> you set how many lessons a school day has. From that
+   the report card works out the days missed.</p>
+  <p><b>Example.</b> 8 lessons per school day, 20 missed lessons make
+   <code>20 / 8 = 2.5 days</code>.</p>`,
  text:`<p>Gezählt wird in <b>Unterrichtsstunden</b> — so steht es auch auf dem
    Zeugnis. Drei Arten: entschuldigt, unentschuldigt, verspätet.</p>
   <p>Dazu merkt sich jede Fehlzeit ihr <b>Fach</b>. Kommst du über eine angetippte
@@ -3090,6 +4063,17 @@ MA = Mathematik</pre>
    <code>20 / 8 = 2,5 Tage</code>.</p>`},
 
 {id:"ferien", teil:"Merkblätter, Fehlzeiten, Ferien", titel:"Ferien und eigene freie Tage", worte:"feiertage bundesland openholidays praktikum ausflug",
+ teilEn:"Handouts, absences, holidays", titelEn:"Holidays and your own free days", worteEn:"public holidays german state openholidays work experience trip",
+ textEn:`<p>⚙ → <b>Holidays and public holidays</b> → choose a German state →
+   <b>Load holidays</b>. The dates come from openholidaysapi.org, an open data
+   project. All that is transmitted is which state and which period are being asked
+   for — none of your data. After that they are held locally.</p>
+  <p class="hHinweis">The app is built around the German school year, so the
+   holiday list covers the sixteen German states. If your school is elsewhere, enter
+   free days yourself through the day menu — everything else works the same.</p>
+  <p><b>Your own free days</b> you enter in the calendar through the day menu:
+   work experience, a trip, a floating holiday, also across several days. They are
+   shown in grey like holidays and <b>survive reloading</b> the official dates.</p>`,
  text:`<p>⚙ → <b>Ferien und Feiertage</b> → Bundesland wählen → <b>Ferien laden</b>.
    Die Termine kommen von openholidaysapi.org, einem offenen Datenprojekt.
    Übertragen wird nur, welches Bundesland und welcher Zeitraum gefragt sind —
@@ -3100,6 +4084,17 @@ MA = Mathematik</pre>
    offiziellen Termine.</p>`},
 
 {id:"warumsichern", teil:"Sicherung", titel:"Warum du sichern musst", worte:"datenverlust backup verloren",
+ teilEn:"Backup", titelEn:"Why you have to back up", worteEn:"data loss backup lost",
+ textEn:`<p class="hWarn">Your data lives on this device only. In concrete terms:</p>
+  <ul>
+   <li>If you clear <b>cookies and site data</b> in Chrome, the whole plan is gone —
+     along with grades, homework and handouts.</li>
+   <li>If you uninstall the app or change phones, everything is gone.</li>
+   <li>Private browsing forgets everything when it closes.</li>
+   <li>In Safari the system deletes the data after seven days without use if the
+     app is not on the home screen.</li>
+   <li><b>Nobody can restore anything</b> — the data was never anywhere else.</li>
+  </ul>`,
  text:`<p class="hWarn">Deine Daten liegen nur auf diesem Gerät. Das heißt konkret:</p>
   <ul>
    <li>Löschst du in Chrome die <b>Cookies und Websitedaten</b>, ist der komplette
@@ -3113,6 +4108,23 @@ MA = Mathematik</pre>
   </ul>`},
 
 {id:"sichernwie", teil:"Sicherung", titel:"Sichern und wieder einlesen", worte:"datei json export import teilen",
+ teilEn:"Backup", titelEn:"Backing up and reading back in", worteEn:"file json export import share",
+ textEn:`<p>⚙ → <b>Backup</b>:</p>
+  <ul>
+   <li><b>Save as file</b> — a JSON file of this profile into your downloads.</li>
+   <li><b>Back up all profiles</b> — a single file for the whole device.
+     Appears only from two profiles on.</li>
+   <li><b>Share</b> — through the system share menu, for example to yourself by
+     mail. If the device cannot share files, the backup is downloaded instead; a
+     cancelled share does not count as a backup.</li>
+   <li><b>Read file</b> — restores.</li>
+  </ul>
+  <p class="hWarn"><b>Reading in replaces, it does not merge.</b> The entire plan of
+   the profile is overwritten. The app asks first and tells you when the last backup
+   was made.</p>
+  <p>Only what the app writes itself is read back in: every field is checked for
+   form and range, everything unknown is discarded. A foreign or damaged file
+   therefore cannot confuse the app.</p>`,
  text:`<p>⚙ → <b>Sicherung</b>:</p>
   <ul>
    <li><b>Als Datei sichern</b> — eine JSON-Datei dieses Profils in die Downloads.</li>
@@ -3131,6 +4143,21 @@ MA = Mathematik</pre>
    beschädigte Datei kann die App dadurch nicht durcheinanderbringen.</p>`},
 
 {id:"ordner", teil:"Sicherung", titel:"Sicherungsordner und Automatik", worte:"automatisch ordner rhythmus erinnerung haltefrist",
+ teilEn:"Backup", titelEn:"Backup folder and automation", worteEn:"automatic folder rhythm reminder retention",
+ textEn:`<p><b>On a computer (Chrome, Edge):</b> ⚙ → <b>Backup folder</b> → choose a
+   folder once. After that the app always puts its backups there without asking.
+   With the tick <i>Back up automatically on opening</i> this happens by itself as
+   soon as it is due.</p>
+  <p><b>Retention:</b> the folder keeps the last 1, 3, 6 or 12 months. Older backups
+   are cleared away by the app — but <b>only its own</b>, recognised by their name
+   pattern. Other files in the folder are left untouched.</p>
+  <p><b>Rhythm:</b> ⚙ → <i>Reminder</i> → every 7, 14, 28 days, every 3 months or
+   never. When it is due, a banner appears at the top of the day view with
+   <i>Back up now</i> and <i>Not today</i>.</p>
+  <p class="hHinweis"><b>On a phone there is no folder choice</b> — no mobile
+   browser lets a page write into a folder permanently. Backups go to the downloads
+   there. If you want them tidy, switch on <i>Ask where to save files</i> in Chrome
+   under <i>⋮ → Settings → Downloads</i>.</p>`,
  text:`<p><b>Am Rechner (Chrome, Edge):</b> ⚙ → <b>Sicherungsordner</b> → einmal einen
    Ordner wählen. Danach legt die App ihre Sicherungen immer dort ab, ohne zu
    fragen. Mit dem Häkchen <i>Beim Öffnen automatisch sichern</i> passiert das von
@@ -3148,6 +4175,16 @@ MA = Mathematik</pre>
    <i>Speicherort für Dateien abfragen</i> ein.</p>`},
 
 {id:"profile", teil:"Sicherung", titel:"Profile", worte:"mehrere personen geschwister wechseln",
+ teilEn:"Backup", titelEn:"Profiles", worteEn:"several people siblings switch",
+ textEn:`<p>Several data sets on one device. Every profile has its own plan, its own
+   entries, grades, handouts and settings — <b>nothing is shared</b>, the language
+   included.</p>
+  <p>On opening, the picker comes first, even with only one profile: that way you
+   always see which data set you are about to write into. Under ⚙ → <i>On opening</i>
+   this can be changed to <i>only with several profiles</i> or <i>straight into the
+   plan</i>.</p>
+  <p>It is reachable at any time through the letter at the top right. <i>Manage</i>
+   is there too, for creating, renaming and deleting.</p>`,
  text:`<p>Mehrere Datensätze auf einem Gerät. Jedes Profil hat eigenen Plan, eigene
    Einträge, Noten, Merkblätter und Einstellungen — <b>nichts wird geteilt</b>.</p>
   <p>Beim Öffnen steht die Auswahl am Anfang, auch bei nur einem Profil: So siehst
@@ -3157,6 +4194,16 @@ MA = Mathematik</pre>
    zum Anlegen, Umbenennen und Löschen.</p>`},
 
 {id:"erinnerungen", teil:"Erinnerungen", titel:"Warum sich die App nicht selbst weckt", worte:"benachrichtigung push melden",
+ teilEn:"Reminders", titelEn:"Why the app cannot wake itself", worteEn:"notification push alert",
+ textEn:`<p>A web app cannot wake itself. So there are two routes:</p>
+  <ol>
+   <li><b>On opening.</b> The app tells you when something is coming up — on Sundays
+     with an overview of the week, on the day before an exam, and for exams in the
+     next three days. At most once a day. Permission under ⚙ → Reminders.</li>
+   <li><b>Calendar export.</b> The reliable route — see the next section.</li>
+  </ol>
+  <p class="hHinweis">On iPhone there are notifications only if the app is on the
+   home screen.</p>`,
  text:`<p>Eine Web-App kann sich nicht selbst wecken. Es gibt deshalb zwei Wege:</p>
   <ol>
    <li><b>Beim Öffnen.</b> Die App meldet sich, wenn etwas ansteht — sonntags mit
@@ -3168,6 +4215,28 @@ MA = Mathematik</pre>
    auf dem Startbildschirm liegt.</p>`},
 
 {id:"ics", teil:"Erinnerungen", titel:"Kalender-Export (.ics)", worte:"google apple outlook termine wecker stundenplan serie",
+ teilEn:"Reminders", titelEn:"Calendar export (.ics)", worteEn:"google apple outlook appointments alarm timetable series",
+ textEn:`<p>⚙ → Reminders. There are <b>two</b> buttons there, and they produce two
+   different files. You import both into Google Calendar, Apple Calendar or Outlook;
+   there you get <b>real reminders</b>, even when the app is closed.</p>
+  <p><b>Appointments as .ics</b> — what is coming up:</p>
+  <ul>
+   <li>Homework and exams: all-day, reminder <b>15 hours before</b> — so the
+     evening before, around nine.</li>
+   <li>Events with a fixed lesson: as a timed appointment, <b>30 minutes before</b>.</li>
+   <li>“Cancelled” is not exported, that would only clutter the calendar.</li>
+  </ul>
+  <p><b>Timetable as .ics</b> — the lessons themselves, one recurring appointment
+   per lesson over <b>one year</b>, with the room as location and the teacher in the
+   description. With A/B weeks the series runs fortnightly. <b>Holidays and free
+   days are excluded</b> — otherwise the calendar would claim lessons during the
+   summer holidays, and then you stop believing it. Without alarms: nobody wants
+   thirty reminders a week.</p>
+  <p class="hHinweis">Two files instead of one, because in a phone calendar they
+   become two calendars. You can hide or delete the lessons without losing the exam
+   reminders.</p>
+  <p>On a repeated import the same appointments are updated instead of duplicated —
+   each carries a fixed identifier.</p>`,
  text:`<p>⚙ → Erinnerungen. Dort liegen <b>zwei</b> Knöpfe, und sie erzeugen zwei
    verschiedene Dateien. Beide importierst du in Google Kalender, Apple Kalender
    oder Outlook; dort bekommst du <b>echte Erinnerungen</b>, auch wenn die App
@@ -3191,6 +4260,17 @@ MA = Mathematik</pre>
   <p>Bei einem erneuten Import werden dieselben Termine aktualisiert statt
    verdoppelt — jeder trägt eine feste Kennung.</p>`},
 {id:"planteilen", teil:"Sicherung", titel:"Den Plan an Mitschüler geben", worte:"teilen weitergeben klasse mitschüler datenschutz",
+ teilEn:"Backup", titelEn:"Giving the plan to classmates", worteEn:"share pass on class classmates privacy",
+ textEn:`<p>⚙ → <b>Pass on the timetable</b> → <i>Share the plan only</i>. The file
+   contains the period grid, subjects, rooms, teachers and their full names —
+   nothing else.</p>
+  <p class="hWarn">The <b>Share</b> button further up is something different: it
+   passes on the <b>complete backup</b>, including grades, absences and photos in
+   handouts. For classmates, the plan button is always the one you want.</p>
+  <p>When reading in, the app recognises such a file and replaces <b>only the
+   timetable</b>. Entries, grades, absences and handouts stay, as do colour, grading
+   system and all other settings. Foreign subject and teacher names are added; your
+   own keep priority.</p>`,
  text:`<p>⚙ → <b>Stundenplan weitergeben</b> → <i>Nur den Plan teilen</i>. Die Datei
    enthält Stundenraster, Fächer, Räume, Lehrkräfte und deren ausgeschriebene
    Namen — sonst nichts.</p>
@@ -3203,6 +4283,19 @@ MA = Mathematik</pre>
    Lehrernamen kommen dazu, deine eigenen behalten Vorrang.</p>`},
 
 {id:"aufbau", teil:"Technik: wie es funktioniert", titel:"Aufbau — drei Dateien, kein Server", worte:"architektur html js quelltext",
+ teilEn:"Technical: how it works", titelEn:"Structure — three files, no server", worteEn:"architecture html js source code",
+ textEn:`<p>The whole app consists of three text files and two images:</p>
+  <table class="hTab">
+   <tr><th>File</th><th>Contents</th></tr>
+   <tr><td><code>index.html</code></td><td>structure and all the CSS, all dialogs</td></tr>
+   <tr><td><code>app.js</code></td><td>the entire logic, including this text here</td></tr>
+   <tr><td><code>sw.js</code></td><td>offline storage, version number, file list</td></tr>
+  </table>
+  <p><b>No server, no database, no build step, no libraries.</b>
+   Nothing is fetched at runtime. It is delivered through GitHub Pages, which only
+   sends finished files and computes nothing itself.</p>
+  <p>Going without is deliberate: the app stays editable from a phone, and what does
+   not exist cannot fail, go out of date or be switched off.</p>`,
  text:`<p>Die ganze App besteht aus drei Textdateien und zwei Bildern:</p>
   <table class="hTab">
    <tr><th>Datei</th><th>Inhalt</th></tr>
@@ -3217,6 +4310,27 @@ MA = Mathematik</pre>
    es nicht gibt, kann nicht ausfallen, veralten oder abgeschaltet werden.</p>`},
 
 {id:"speicher", teil:"Technik: wie es funktioniert", titel:"Wo die Daten liegen", worte:"localstorage speicher schlüssel json",
+ teilEn:"Technical: how it works", titelEn:"Where the data lives", worteEn:"localstorage storage keys json",
+ textEn:`<p>Everything in the browser's <code>localStorage</code> — a store that
+   belongs to exactly one web address and never leaves the device. One set of keys
+   per profile, with the prefix <code>p&lt;id&gt;_</code>:</p>
+  <table class="hTab">
+   <tr><th>Key</th><th>Contents</th></tr>
+   <tr><td><code>cfg</code></td><td>settings, period grid, abbreviation tables</td></tr>
+   <tr><td><code>plan</code></td><td><code>plan[A|B][MO..FR][slot]</code> = subject, room, teacher</td></tr>
+   <tr><td><code>eintraege</code></td><td>homework H, exams K, notes N, handouts M, absences F</td></tr>
+   <tr><td><code>sonder</code></td><td>one-off events, cancellations, cover lessons</td></tr>
+   <tr><td><code>noten</code></td><td>all grades</td></tr>
+   <tr><td><code>ferien</code></td><td>holidays, public holidays and your own free days</td></tr>
+  </table>
+  <p>All as JSON. Deleted things only get the marker
+   <code>geloescht: true</code> and stay in the archive until removed for good.</p>
+  <p><code>cfg.fassung</code> holds the <b>data version</b>. If an older app meets
+   newer data, it says so instead of quietly trimming it.</p>
+  <p>The keys and the values stored in them are German — <code>MO</code> to
+   <code>FR</code>, <code>entschuldigt</code>, and so on. That is deliberate: a
+   backup written in English stays readable on a German device and the other way
+   round, because only the display is translated, never the data.</p>`,
  text:`<p>Alles im <code>localStorage</code> des Browsers — einem Speicher, der zu
    genau einer Webadresse gehört und das Gerät nicht verlässt. Je Profil ein
    Satz Schlüssel mit dem Präfix <code>p&lt;id&gt;_</code>:</p>
@@ -3235,6 +4349,16 @@ MA = Mathematik</pre>
    auf neuere Daten, sagt sie das, statt sie stillschweigend zu beschneiden.</p>`},
 
 {id:"zeichnen", teil:"Technik: wie es funktioniert", titel:"Wie die Anzeige entsteht", worte:"rendern zeichne neu aufbauen",
+ teilEn:"Technical: how it works", titelEn:"How the display is built", worteEn:"render draw rebuild",
+ textEn:`<p>There is no framework and no data binding. After every change a function
+   <code>zeichne()</code> runs and rebuilds the visible area completely. Before that
+   <code>normalisiere()</code> tidies the data: fill in missing fields, capitalise
+   subjects, archive ticked-off tasks after seven days.</p>
+  <p>That is deliberately blunt. The entire state sits in a handful of variables,
+   and every view is a pure function of it — there is no intermediate state that
+   could go stale.</p>
+  <p>A timer runs every 30 seconds and refreshes the progress bar and the countdown;
+   if the date changes while it does, the app jumps to the new day.</p>`,
  text:`<p>Es gibt kein Framework und keine Datenbindung. Nach jeder Änderung läuft
    eine Funktion <code>zeichne()</code>, die den sichtbaren Bereich komplett neu
    aufbaut. Davor räumt <code>normalisiere()</code> die Daten auf: fehlende Felder
@@ -3246,6 +4370,19 @@ MA = Mathematik</pre>
    Countdown; wechselt dabei das Datum, springt die App auf den neuen Tag.</p>`},
 
 {id:"offline", teil:"Technik: wie es funktioniert", titel:"Offline und Aktualisieren", worte:"service worker cache update version zwischenspeicher",
+ teilEn:"Technical: how it works", titelEn:"Offline and updating", worteEn:"service worker cache update version",
+ textEn:`<p>A <b>service worker</b> puts the five files into a cache on the first
+   visit. After that requests are answered <b>from the cache first</b> and refreshed
+   in the background. That is why the app starts instantly, even without a network
+   and even on poor Wi-Fi.</p>
+  <p>The <b>version number</b> lives in exactly one place in <code>sw.js</code> and
+   is visible at the bottom under the four dots. The app asks the service worker
+   which version is running and compares it with the one on the server; if they
+   differ, <i>tap to update</i> appears there.</p>
+  <p>When installing, the service worker fetches its files explicitly from the
+   network. Without that the browser could serve some of them from its own cache —
+   then a new <code>index.html</code> would meet an old <code>app.js</code> and the
+   app would break. That happened once.</p>`,
  text:`<p>Ein <b>Service Worker</b> legt die fünf Dateien beim ersten Besuch in einen
    Zwischenspeicher. Danach werden Anfragen <b>zuerst daraus</b> beantwortet und im
    Hintergrund erneuert. Deshalb startet die App sofort, auch ohne Netz und auch
@@ -3260,6 +4397,21 @@ MA = Mathematik</pre>
    <code>app.js</code> und die App bräche ab. Genau das ist einmal passiert.</p>`},
 
 {id:"sicherheit", teil:"Technik: wie es funktioniert", titel:"Sicherheit", worte:"xss esc sanitizer csp schutz",
+ teilEn:"Technical: how it works", titelEn:"Security", worteEn:"xss esc sanitizer csp protection",
+ textEn:`<p>The app displays a lot of text you typed yourself. Three layers keep that
+   from turning into executable code:</p>
+  <ol>
+   <li><b><code>esc()</code></b> — every value from the data is escaped before it
+     goes into the HTML. An angle bracket becomes text, not an element.</li>
+   <li><b>Checking on import</b> — a backup file can come from anywhere. Only what
+     is known is taken over, and only in the expected form: dates as dates, colours
+     as hex values, images only as embedded image data.</li>
+   <li><b>Content Security Policy</b> — the page may not load code from foreign
+     addresses and may not execute any from the document itself. What the app does
+     not need, it cannot do either.</li>
+  </ol>
+  <p>There are no credentials, no keys and no sign-in — so there is nothing that
+   could be stolen.</p>`,
  text:`<p>Die App zeigt viel selbst eingegebenen Text an. Drei Schichten verhindern,
    dass daraus ausführbarer Code wird:</p>
   <ol>
@@ -3277,6 +4429,13 @@ MA = Mathematik</pre>
    nichts, was gestohlen werden könnte.</p>`},
 
 {id:"kalenderwoche", teil:"Technik: wie es funktioniert", titel:"Datum, Kalenderwoche, A/B", worte:"zeitzone iso woche berechnung",
+ teilEn:"Technical: how it works", titelEn:"Date, week number, A/B", worteEn:"time zone iso week calculation",
+ textEn:`<p>Dates are kept as <code>YYYY-MM-DD</code> and always read as
+   <b>local time</b>. The obvious route through the built-in ISO conversion would
+   shift the time zone and, depending on the hour, hand back the previous day —
+   which is why the app does the arithmetic itself.</p>
+  <p>The week number follows the ISO rule: week 1 is the one with the first Thursday
+   of the year. The A/B week follows from its parity.</p>`,
  text:`<p>Datumsangaben werden als <code>JJJJ-MM-TT</code> geführt und stets als
    <b>lokale Zeit</b> gelesen. Der naheliegende Weg über die eingebaute
    ISO-Umwandlung würde die Zeitzone verschieben und je nach Uhrzeit den Vortag
@@ -3285,6 +4444,17 @@ MA = Mathematik</pre>
    Donnerstag des Jahres. Daraus folgt die A/B-Woche über die Parität.</p>`},
 
 {id:"grenzen", teil:"Technik: wie es funktioniert", titel:"Grenzen und warum es sie gibt", worte:"portal abruf same-origin speicherplatz",
+ teilEn:"Technical: how it works", titelEn:"Limits and why they exist", worteEn:"portal fetch same-origin storage space",
+ textEn:`<p><b>Why no automatic fetch from the school portal?</b> The app sits on a
+   different address from your portal. The browser forbids access across domain
+   boundaries unless the other side explicitly allows it. This <i>same-origin
+   rule</i> cannot be programmed away. It would take an intermediary service or a
+   script on the portal's page — both need credentials or the school's consent.</p>
+  <p>In practice it hardly matters: the plan holds for half a year. Only cover
+   lessons have to be looked up, and those you enter with two taps.</p>
+  <p><b>Why about 5 MB?</b> That is the usual limit of browser storage. Browsers
+   count in two-byte characters, which is why the display under ⚙ → Storage counts
+   the same way. Images in handouts are by far the largest item.</p>`,
  text:`<p><b>Warum kein automatischer Abruf vom Schulportal?</b> Die App liegt auf
    einer anderen Adresse als dein Portal. Der Browser verbietet Zugriffe über
    Domaingrenzen hinweg, solange die Gegenseite das nicht ausdrücklich erlaubt.
@@ -3299,6 +4469,15 @@ MA = Mathematik</pre>
    größte Posten.</p>`},
 
 {id:"nichttut", teil:"Technik: wie es funktioniert", titel:"Was die App nie tut", worte:"datenschutz tracking werbung server",
+ teilEn:"Technical: how it works", titelEn:"What the app never does", worteEn:"privacy tracking advertising server",
+ textEn:`<ul>
+   <li>It sends none of your data anywhere.</li>
+   <li>It has no account, no password, no sign-in.</li>
+   <li>It does not track, advertise or analyse.</li>
+   <li>It loads no foreign code; everything is in the source.</li>
+  </ul>
+  <p>The <b>only</b> connection to the outside is the voluntary fetch of the holiday
+   dates. The service does not even learn which page the request comes from.</p>`,
  text:`<ul>
    <li>Sie sendet keine deiner Daten irgendwohin.</li>
    <li>Sie hat kein Konto, kein Passwort, keine Anmeldung.</li>
@@ -3310,6 +4489,15 @@ MA = Mathematik</pre>
    Anfrage kommt.</p>`},
 
 {id:"fehlerkasten", teil:"Wenn etwas klemmt", titel:"Der rote Fehlerkasten", worte:"absturz fehler meldung neu laden",
+ teilEn:"When something goes wrong", titelEn:"The red error box", worteEn:"crash error message reload",
+ textEn:`<p>If something breaks off, a red box appears at the top with the message,
+   the place in the source, the version and details about the device. <b>Your data
+   is not affected</b> — the display crashed, not the storage.</p>
+  <p>In the box there is a <b>Reload app</b> button. It empties the caches and
+   restarts without touching the data. That fixes the most common cause: a
+   half-updated version.</p>
+  <p>If it stays that way, pass the text on — it contains everything needed to look
+   into it. Without a server there is no log; your report is the only source.</p>`,
  text:`<p>Bricht etwas ab, erscheint oben ein roter Kasten mit der Meldung, der
    Stelle im Quelltext, der Version und Angaben zum Gerät. <b>Deine Daten sind
    dabei nicht betroffen</b> — die Anzeige ist abgestürzt, nicht der Speicher.</p>
@@ -3320,6 +4508,17 @@ MA = Mathematik</pre>
    ist. Ohne Server gibt es kein Protokoll; deine Meldung ist die einzige Quelle.</p>`},
 
 {id:"problemdaten", teil:"Wenn etwas klemmt", titel:"Häufige Fälle", worte:"probleme hilfe funktioniert nicht leer",
+ teilEn:"When something goes wrong", titelEn:"Common cases", worteEn:"problems help does not work empty",
+ textEn:`<table class="hTab">
+   <tr><th>What you see</th><th>Cause and remedy</th></tr>
+   <tr><td>Plan is empty</td><td>A different profile active? Check the letter at the top right.</td></tr>
+   <tr><td>Everything gone</td><td>Site data cleared or storage reclaimed by the system. Without a backup it cannot be restored.</td></tr>
+   <tr><td>“Storage full”</td><td>Remove images from old handouts, back up first.</td></tr>
+   <tr><td>No reminders</td><td>Check the permission under ⚙. On iPhone only if the app is on the home screen. The calendar export is the reliable route.</td></tr>
+   <tr><td>New version does not arrive</td><td>⚙ → <i>Check for update</i>, otherwise close the app and open it again.</td></tr>
+   <tr><td>Loading holidays fails</td><td>Check your internet. If the service does not answer, the app gives up after 15 seconds and says so.</td></tr>
+   <tr><td>Subject appears twice in the report</td><td>Should not happen any more; subjects are unified on opening. If it does, please report it.</td></tr>
+  </table>`,
  text:`<table class="hTab">
    <tr><th>Beobachtung</th><th>Ursache und Abhilfe</th></tr>
    <tr><td>Plan ist leer</td><td>Anderes Profil aktiv? Buchstabe oben rechts prüfen.</td></tr>
@@ -3332,6 +4531,24 @@ MA = Mathematik</pre>
   </table>`}
 
 ];
+
+/* Die Anleitung in der eingestellten Sprache. Fehlt eine Übersetzung,
+   steht dort der deutsche Abschnitt — lieber ein Text, den man notfalls
+   übersetzen lassen muss, als eine Lücke im Inhaltsverzeichnis. */
+let HILFE = [];
+function hilfeAufbauen(){
+  const en = istEnglisch();
+  HILFE = HILFE_QUELLE.map(a => ({
+    id:    a.id,
+    teil:  (en && a.teilEn)  || a.teil,
+    titel: (en && a.titelEn) || a.titel,
+    /* Auf Englisch zählen beide Stichwortlisten: wer „Sicherung" sucht,
+       weil er den Begriff von der deutschen Fassung kennt, soll ihn finden. */
+    worte: en ? ((a.worteEn || "") + " " + (a.worte || "")) : (a.worte || ""),
+    text:  (en && a.textEn)  || a.text
+  }));
+}
+hilfeAufbauen();
 
 /* Sucht nur in den Textknoten. Über den fertigen HTML-Text zu ersetzen
    würde Treffer mitten in Attributnamen markieren und das Markup zerreissen. */
@@ -3371,7 +4588,7 @@ function hilfeZeichnen(){
   verz.classList.toggle("hidden", !!klein);
   if(!klein){
     let letzterTeil = null;
-    verz.innerHTML = "<div class=\"eyebrow\">Inhalt</div>" + HILFE.map(a => {
+    verz.innerHTML = `<div class="eyebrow">${txt("Inhalt|Verzeichnis")}</div>` + HILFE.map(a => {
       const kopf = a.teil !== letzterTeil
         ? `<div class="hvTeil">${esc(a.teil)}</div>` : "";
       letzterTeil = a.teil;
@@ -3380,8 +4597,9 @@ function hilfeZeichnen(){
   }
 
   $("#hilfeStand").textContent = klein
-    ? (treffer.length ? `${zahl(treffer.length,"Abschnitt","Abschnitte")} zu „${wort}“`
-                      : `Nichts zu „${wort}“ gefunden.`)
+    ? (treffer.length
+        ? txt("{anzahl} zu „{wort}“", {anzahl:zahl(treffer.length,"Abschnitt","Abschnitte"), wort})
+        : txt("Nichts zu „{wort}“ gefunden.", {wort}))
     : `${zahl(HILFE.length,"Abschnitt","Abschnitte")}`;
 
   let letzter = null;
@@ -3418,7 +4636,7 @@ function slotEditorZeichnen(slots){
     <input type="text" value="${esc(s.std)}" data-feld="std" inputmode="numeric">
     <input type="time" value="${esc(s.von)}" data-feld="von">
     <input type="time" value="${esc(s.bis)}" data-feld="bis">
-    <button type="button" data-slotweg="${i}" aria-label="Zeile löschen">×</button></div>`).join("");
+    <button type="button" data-slotweg="${i}" aria-label="${txt("Zeile löschen")}">×</button></div>`).join("");
 }
 const slotsAuslesen = () => [...document.querySelectorAll("#slotEditor .slot")].map(z => ({
   std:z.querySelector('[data-feld=std]').value.trim(),
@@ -3451,8 +4669,8 @@ function textPaare(t){
 function reiheZeichnen(sel, liste, beschriften){
   $(sel).innerHTML = liste.map((k,i) => `<div class="reihezeile">
     <span class="rname">${esc(beschriften(k))}</span>
-    <button type="button" data-hoch="${i}" ${i === 0 ? "disabled style=opacity:.3" : ""} aria-label="nach oben">↑</button>
-    <button type="button" data-runter="${i}" ${i === liste.length-1 ? "disabled style=opacity:.3" : ""} aria-label="nach unten">↓</button>
+    <button type="button" data-hoch="${i}" ${i === 0 ? "disabled style=opacity:.3" : ""} aria-label="${txt("nach oben")}">↑</button>
+    <button type="button" data-runter="${i}" ${i === liste.length-1 ? "disabled style=opacity:.3" : ""} aria-label="${txt("nach unten")}">↓</button>
   </div>`).join("");
 }
 let reiheFachListe = [];
@@ -3476,7 +4694,7 @@ $("#sReiheFach").onclick = e => {
 function anteilFaecherZeichnen(){
   const liste = alleFaecher();
   if(!liste.length){
-    $("#sAnteilFaecher").innerHTML = `<p class="hinweis">Sobald Fächer im Plan stehen, erscheinen sie hier.</p>`;
+    $("#sAnteilFaecher").innerHTML = `<p class="hinweis">${txt("Sobald Fächer im Plan stehen, erscheinen sie hier.")}</p>`;
     return;
   }
   $("#sAnteilFaecher").innerHTML = liste.map(f => {
@@ -3505,11 +4723,11 @@ const anteilFaecherLesen = () => anteilFelderLesen("anteilfach");
 const anteilLehrerLesen  = () => anteilFelderLesen("anteillkfach");
 const anteilHinweis = () => {
   const m = Math.max(0, Math.min(100, Number(sAnteilM.value)||0));
-  $("#sAnteilHinweis").textContent = `${m} % mündlich, ${100-m} % schriftlich.`;
+  $("#sAnteilHinweis").textContent = txt("{m} % mündlich, {s} % schriftlich.", {m, s:100-m});
 };
 sAnteilM.oninput = anteilHinweis;
 sNotenSystem.onchange = () => {
-  $("#eWertLabel").textContent = sNotenSystem.value === "punkte15" ? "Punkte 0–15" : "Note 1–6";
+  $("#eWertLabel").textContent = sNotenSystem.value === "punkte15" ? txt("Punkte 0–15") : txt("Note 1–6");
 };
 /* Browser rechnen den Speicher in UTF-16-Einheiten ab: zwei Byte je Zeichen.
    Wer nur Zeichen zählt, meldet die Hälfte und wundert sich, warum bei
@@ -3524,31 +4742,33 @@ function belegteKb(){
 const speicherAnteil = () => Math.min(100, Math.round(belegteKb() / GRENZE_KB * 100));
 const speicherWarnung = () => {
   const a = speicherAnteil();
-  return a >= 80 ? `Der Speicher ist zu ${a} % voll. Lege eine Sicherung an und `
-    + `entferne alte Bilder aus Merkblättern, sonst gehen neue Einträge verloren.` : "";
+  return a >= 80 ? txt("Der Speicher ist zu {n} % voll. Lege eine Sicherung an und "
+    + "entferne alte Bilder aus Merkblättern, sonst gehen neue Einträge verloren.", {n:a}) : "";
 };
 function speicherStand(){
   const kb = belegteKb(), warn = speicherWarnung();
   const bilderZahl = eintraege.reduce((s,e) => s + ((e.bilder||[]).length), 0);
   const el = $("#sSpeicher");
-  el.textContent = `${kb} kB von rund ${GRENZE_KB} kB belegt (${speicherAnteil()} %) · `
-    + `${zahl(bilderZahl,"Bild","Bilder")} in Merkblättern.` + (warn ? " " + warn : "");
+  el.textContent = txt("{kb} kB von rund {grenze} kB belegt ({anteil} %) · {bilder} in Merkblättern.",
+    {kb, grenze:GRENZE_KB, anteil:speicherAnteil(), bilder:zahl(bilderZahl,"Bild","Bilder")})
+    + (warn ? " " + warn : "");
   el.style.color = warn ? "var(--akzent)" : "";
 }
 function sicherungStand(){
   const l = sicherungDatum(), alter = sicherungAlter();
   const el = $("#sSicherStand");
-  if(!l){ el.textContent = "Noch nie gesichert. Jetzt wäre ein guter Zeitpunkt."; return; }
+  if(!l){ el.textContent = txt("Noch nie gesichert. Jetzt wäre ein guter Zeitpunkt."); return; }
   el.textContent = sicherungFaellig()
-    ? `Letzte Sicherung vor ${zahl(alter,"Tag","Tagen")} — Zeit für eine neue.`
-    : `Letzte Sicherung: ${zeigDatum(l)}${alter ? ` (vor ${zahl(alter,"Tag","Tagen")})` : " (heute)"}.`;
+    ? txt("Letzte Sicherung vor {dauer} — Zeit für eine neue.", {dauer:zahl(alter,"Tag","Tagen")})
+    : txt("Letzte Sicherung: {datum}{zusatz}.", {datum:zeigDatum(l), zusatz: alter
+        ? " " + txt("(vor {dauer})", {dauer:zahl(alter,"Tag","Tagen")}) : " " + txt("(heute)")});
 }
 function archivHinweisEinstellung(){
   const tage = Math.max(0, Number(sArchivTage.value) || 0);
   const el = $("#sArchivHinweis");
   if(!tage){
-    el.textContent = "Nichts wird von selbst entfernt. Das Archiv wächst, bis du "
-      + "einzelne Einträge endgültig löschst.";
+    el.textContent = txt("Nichts wird von selbst entfernt. Das Archiv wächst, bis du "
+      + "einzelne Einträge endgültig löschst.");
     el.style.color = "";
     return;
   }
@@ -3558,9 +4778,10 @@ function archivHinweisEinstellung(){
     const alter = Math.round((new Date() - new Date(a.seit+"T12:00"))/864e5);
     return alter >= tage;
   }).length;
-  el.textContent = `Gelöschtes wird ${zahl(tage,"Tag","Tage")} nach dem Löschen `
-    + "endgültig entfernt — das lässt sich nicht rückgängig machen."
-    + (weg ? ` Beim Speichern verschwinden dadurch sofort ${zahl(weg,"Eintrag","Einträge")}.` : "");
+  el.textContent = txt("Gelöschtes wird {dauer} nach dem Löschen endgültig entfernt — "
+    + "das lässt sich nicht rückgängig machen.", {dauer:zahl(tage,"Tag","Tage")})
+    + (weg ? " " + txt("Beim Speichern verschwinden dadurch sofort {n}.",
+        {n:zahl(weg,"Eintrag","Einträge")}) : "");
   el.style.color = weg ? "var(--akzent)" : "";
 }
 sArchivTage.onchange = archivHinweisEinstellung;
@@ -3569,11 +4790,12 @@ function rhythmusHinweis(){
   const tage = Math.max(0, Number(sRhythmus.value) || 0);
   const monate = Math.max(0, Number(sHalten.value) || 0);
   $("#sRhythmusHinweis").textContent = (tage
-    ? `Die App erinnert dich alle ${zahl(tage,"Tag","Tage")} in der Tagesansicht.`
-    : "Es wird nicht erinnert. Ans Sichern denkst du dann selbst.")
-    + (monate
-      ? ` Im Sicherungsordner bleiben die letzten ${zahl(monate,"Monat","Monate")}; ältere Sicherungen der App werden dort gelöscht.`
-      : " Im Sicherungsordner bleibt alles liegen.");
+    ? txt("Die App erinnert dich alle {dauer} in der Tagesansicht.", {dauer:zahl(tage,"Tag","Tage")})
+    : txt("Es wird nicht erinnert. Ans Sichern denkst du dann selbst."))
+    + " " + (monate
+      ? txt("Im Sicherungsordner bleiben die letzten {dauer}; ältere Sicherungen der App "
+          + "werden dort gelöscht.", {dauer:zahl(monate,"Monat","Monate")})
+      : txt("Im Sicherungsordner bleibt alles liegen."));
 }
 sRhythmus.onchange = rhythmusHinweis;
 sHalten.onchange = rhythmusHinweis;
@@ -3582,7 +4804,7 @@ sHalten.onchange = rhythmusHinweis;
 async function ordnerStand(){
   const el = $("#sOrdnerStand");
   if(!el) return;
-  if(!ordner){ el.textContent = "Noch kein Ordner gewählt. Sicherungen gehen in die Downloads."; return; }
+  if(!ordner){ el.textContent = txt("Noch kein Ordner gewählt. Sicherungen gehen in die Downloads."); return; }
   const frei = await ordnerBereit(false);
   let zusatz = "";
   if(frei){
@@ -3590,12 +4812,12 @@ async function ordnerStand(){
       const liste = await ordnerSicherungen();
       const grenze = haltegrenze();
       const alt = grenze ? liste.filter(x => x.datum < grenze).length : 0;
-      zusatz = ` · ${zahl(liste.length,"Sicherung","Sicherungen")} darin`
-        + (alt ? `, ${alt} davon älter als die Haltefrist` : "");
+      zusatz = " · " + txt("{anzahl} darin", {anzahl:zahl(liste.length,"Sicherung","Sicherungen")})
+        + (alt ? ", " + txt("{n} davon älter als die Haltefrist", {n:alt}) : "");
     }catch(e){}
   }
-  el.textContent = `Ordner: ${ordner.name}`
-    + (frei ? "" : " · Zugriff muss beim nächsten Sichern einmal bestätigt werden")
+  el.textContent = txt("Ordner: {name}", {name:ordner.name})
+    + (frei ? "" : " · " + txt("Zugriff muss beim nächsten Sichern einmal bestätigt werden"))
     + zusatz;
 }
 $("#sOrdnerWahl").onclick = async () => {
@@ -3612,7 +4834,7 @@ $("#sOrdnerWeg").onclick = async () => {
   ordnerStand();
 };
 $("#sOrdnerJetzt").onclick = async () => {
-  if(!ordner) return alert("Wähle zuerst einen Ordner.");
+  if(!ordner) return alert(txt("Wähle zuerst einen Ordner."));
   await jetztSichern(true);
   ordnerStand();
 };
@@ -3627,37 +4849,49 @@ $("#sOrdnerJetzt").onclick = async () => {
    gar nichts mehr. So sieht man in dem Fall die alte lange Liste. */
 const EINST_TEILE = [
   {id:"darstellung",  titel:"Darstellung",
-   stand: () => [cfg.modus === "hell" ? "hell" : "dunkel",
-                 {mono:"Monospace", serif:"Serife"}[cfg.schrift] || "Systemschrift",
+   stand: () => [txt(cfg.modus === "hell" ? "hell" : "dunkel"),
+                 txt({mono:"Monospace", serif:"Serife"}[cfg.schrift] || "Systemschrift"),
                  cfg.akzent].join(" · ")},
   {id:"schule",       titel:"Schule und Stundenraster",
    stand: () => (cfg.klasse ? cfg.klasse + " · " : "")
      + zahl(cfg.slots.length, "Stunde", "Stunden")
-     + (cfg.zweiWochen ? " · A/B-Wochen" : "")},
+     + (cfg.zweiWochen ? " · " + txt("A/B-Wochen") : "")},
   {id:"noten",        titel:"Noten und Zeugnis",
-   stand: () => (cfg.notenSystem === "punkte15" ? "Punkte 0–15" : "Noten 1–6")
-     + ` · ${Number(cfg.anteilM)||0} % mündlich`
+   stand: () => txt(cfg.notenSystem === "punkte15" ? "Punkte 0–15" : "Noten 1–6")
+     + " · " + txt("{n} % mündlich", {n:Number(cfg.anteilM)||0})
      + (Object.keys(cfg.anteile||{}).length + Object.keys(cfg.anteileLk||{}).length
-        ? " · eigene Verhältnisse" : "")},
+        ? " · " + txt("eigene Verhältnisse") : "")},
   {id:"fehlzeiten",   titel:"Fehlzeiten und Archiv",
-   stand: () => `${cfg.stdProTag} Stunden je Schultag · Archiv `
-     + (archivFrist() ? zahl(archivFrist(), "Tag", "Tage") : "für immer")},
+   stand: () => txt("{n} Stunden je Schultag", {n:cfg.stdProTag}) + " · " + txt("Archiv") + " "
+     + (archivFrist() ? zahl(archivFrist(), "Tag", "Tage") : txt("für immer"))},
   {id:"erinnerungen", titel:"Erinnerungen und Kalender",
-   stand: () => cfg.melden ? "beim Öffnen erinnern" : "keine Erinnerung beim Öffnen"},
+   stand: () => txt(cfg.melden ? "beim Öffnen erinnern" : "keine Erinnerung beim Öffnen")},
   {id:"ferien",       titel:"Ferien und Feiertage",
    stand: () => { const n = ferien.filter(f => f.typ !== "eigen").length;
      return n ? zahl(n, "Zeitraum geladen", "Zeiträume geladen")
-              : (LAENDER[cfg.land] || "kein Bundesland gewählt"); }},
+              : (LAENDER[cfg.land] || txt("kein Bundesland gewählt")); }},
   {id:"namen",        titel:"Fächer und Lehrkräfte",
    stand: () => `${zahl(alleFaecher().length, "Fach", "Fächer")} · `
      + zahl(alleLehrer().length, "Lehrkraft", "Lehrkräfte")
-     + (cfg.nachLehrer ? " · getrennt" : "")},
+     + (cfg.nachLehrer ? " · " + txt("getrennt") : "")},
   {id:"sicherung",    titel:"Sicherung und Speicher",
    stand: () => { const a = sicherungAlter();
-     return a === null ? "noch nie gesichert"
-          : a === 0 ? "heute gesichert"
-          : "zuletzt vor " + zahl(a, "Tag", "Tagen"); }}
+     return a === null ? txt("noch nie gesichert")
+          : a === 0 ? txt("heute gesichert")
+          : txt("zuletzt vor {dauer}", {dauer:zahl(a, "Tag", "Tagen")}); }}
 ];
+/* Beides wird auch nach einem Sprachwechsel neu gesetzt — deshalb je eine
+   Funktion statt zweier Stellen, die auseinanderlaufen können. */
+function laenderFuellen(wert){
+  sLand.innerHTML = `<option value="">— ${txt("wählen")} —</option>` +
+    Object.entries(LAENDER).map(([k,v]) =>
+      `<option value="${k}" ${wert === k ? "selected":""}>${v}</option>`).join("");
+}
+function ankerStand(){
+  const kw = kalenderwoche(new Date());
+  $("#ankerJetzt").textContent = txt("Diese Woche ist KW {kw}, also {woche}.",
+    {kw, woche: kw % 2 === 1 ? "A" : "B"});
+}
 let einstTeil = null;
 function einstZeigen(id){
   einstTeil = id;
@@ -3665,10 +4899,12 @@ function einstZeigen(id){
   $("#einstZurueckZeile").classList.toggle("hidden", id === null);
   $("#einstTeilTitel").classList.toggle("hidden", id === null);
   /* Die Anleitung gehört zur obersten Ebene — in einem Bereich wäre sie nur
-     ein Knopf, der von ihm wegführt. */
+     ein Knopf, der von ihm wegführt. Für die Sprachwahl gilt dasselbe, und
+     sie steht bewusst vor allem anderen. */
   $("#einstHilfeZeile").classList.toggle("hidden", id !== null);
+  $("#einstSprachZeile").classList.toggle("hidden", id !== null);
   const teil = EINST_TEILE.find(t => t.id === id);
-  $("#einstTeilTitel").textContent = teil ? teil.titel : "";
+  $("#einstTeilTitel").textContent = teil ? txt(teil.titel) : "";
   document.querySelectorAll(".einstTeil").forEach(el => {
     el.classList.toggle("hidden", el.dataset.einst !== id);
     /* „Noten und Zeugnis" über „Noten" liest sich wie ein Stottern. Die erste
@@ -3677,7 +4913,7 @@ function einstZeigen(id){
        ist (altes app.js, neues index.html). */
     const erste = el.querySelector(".eyebrow");
     if(erste) erste.classList.toggle("hidden",
-      el.dataset.einst === id && teil && teil.titel.startsWith(erste.textContent.trim()));
+      el.dataset.einst === id && teil && txt(teil.titel).startsWith(erste.textContent.trim()));
   });
   if(id === null) einstMenuZeichnen();
   /* Nach dem Wechsel oben anfangen — sonst steht man mitten im neuen Bereich. */
@@ -3689,7 +4925,7 @@ function einstMenuZeichnen(){
     /* Ein Bereich, dessen Stand nicht zu ermitteln ist, darf nicht den
        ganzen Dialog mitreissen. */
     try{ stand = t.stand(); }catch(e){ stand = ""; }
-    return `<button type="button" data-einstteil="${t.id}">${esc(t.titel)}<small>${esc(stand)}</small></button>`;
+    return `<button type="button" data-einstteil="${t.id}">${esc(txt(t.titel))}<small>${esc(stand)}</small></button>`;
   }).join("");
 }
 $("#einstMenu").onclick = e => {
@@ -3702,8 +4938,10 @@ $("#bEinstZurueck").onclick = () => einstZeigen(null);
    verglichen — nur dann fragt die App nach. */
 let einstStand = null;
 function einstFelder(){
+  /* Die Sprache wird sofort gespeichert, sobald sie gewählt ist. Sie darf
+     deshalb nicht als ungesicherte Änderung gelten. */
   return [...dlgEinst.querySelectorAll("input,select,textarea")]
-    .filter(el => el.id && el.type !== "file")
+    .filter(el => el.id && el.type !== "file" && el.id !== "sSprache")
     .map(el => el.id + "=" + (el.type === "checkbox" ? el.checked : el.value)).join("\u0001")
     + "\u0001reihe=" + (reiheFachListe || []).join(",");
 }
@@ -3727,14 +4965,14 @@ function einstellungenOeffnen(teil){
   archivHinweisEinstellung();
   reiheFachListe = fachReihenfolge().slice();
   reihenZeichnen();
+  sSprache.value = SPRACHEN[cfg.sprache] ? cfg.sprache : "";
   sMelden.checked = !!cfg.melden; meldeStand();
   sNachLehrer.checked = !!cfg.nachLehrer;
   /* Alle im Plan vorkommenden Kürzel stehen schon da — eingetragen werden
      muss nur der Name dahinter. Vorhandene Zuordnungen bleiben erhalten. */
   sLehrer.value  = paareVorbelegt(cfg.lehrer, alleLehrer());
   sFaecher.value = paareVorbelegt(cfg.fachnamen, alleFaecher());
-  sLand.innerHTML = `<option value="">— wählen —</option>` +
-    Object.entries(LAENDER).map(([k,v]) => `<option value="${k}" ${cfg.land === k ? "selected":""}>${v}</option>`).join("");
+  laenderFuellen(cfg.land);
   ferienStand();
   /* Ein Wert, den die Auswahl nicht kennt, lässt selectedIndex auf -1 fallen. */
   sRhythmus.value = String(Math.max(0, Number(cfg.sicherTage) || 0));
@@ -3747,7 +4985,7 @@ function einstellungenOeffnen(teil){
   $("#sOrdnerGehtNicht").classList.toggle("hidden", ordnerMoeglich());
   if(ordnerMoeglich()) ordnerLaden().then(ordnerStand);
   sDaten.value = sicherungsText();
-  $("#ankerJetzt").textContent = `Diese Woche ist KW ${kalenderwoche(new Date())}, also ${kalenderwoche(new Date())%2===1?"A":"B"}.`;
+  ankerStand();
   $("#ankerWrap").classList.toggle("hidden", !cfg.zweiWochen);
   $("#sWocheKopieren").classList.toggle("hidden", !cfg.zweiWochen);
   $("#sWocheStand").textContent = "";
@@ -3758,12 +4996,46 @@ function einstellungenOeffnen(teil){
   einstStand = einstFelder();
 }
 $("#btnEinst").onclick = einstellungenOeffnen;
+/* Die Sprache wirkt sofort und wird sofort gespeichert. Ein Wechsel ist
+   meist das Erste, was jemand tut — ihn bis zum „Speichern" aufzuheben
+   hieße, die halbe Oberfläche in einer Sprache zu lassen, die der oder
+   die Betreffende gerade nicht lesen kann. */
+sSprache.onchange = () => {
+  cfg.sprache = SPRACHEN[sSprache.value] ? sSprache.value : "";
+  sichern();
+  zeichne();
+  einstTexteAuffrischen();
+};
+/* Nach dem Wechsel stehen die festen Beschriftungen schon in der neuen
+   Sprache; die berechneten Texte im Dialog werden hier nachgezogen. Was
+   getippt, aber noch nicht gespeichert wurde, bleibt dabei stehen. */
+function einstTexteAuffrischen(){
+  const fachWerte = anteilFaecherLesen(), lkWerte = anteilLehrerLesen();
+  const land = sLand.value;
+  einstZeigen(einstTeil);
+  anteilHinweis(); archivHinweisEinstellung(); rhythmusHinweis();
+  meldeStand(); ferienStand(); sicherungStand(); speicherStand();
+  anteilFaecherZeichnen();
+  document.querySelectorAll("[data-anteilfach]").forEach(el => {
+    const v = fachWerte[el.dataset.anteilfach];
+    if(v !== undefined) el.value = v;
+  });
+  document.querySelectorAll("[data-anteillkfach]").forEach(el => {
+    const v = lkWerte[el.dataset.anteillkfach];
+    if(v !== undefined) el.value = v;
+  });
+  reihenZeichnen();
+  laenderFuellen(land);
+  ankerStand();
+  if(ordnerMoeglich()) ordnerStand();
+}
 
 /* Schließen mit ungesicherten Änderungen: fragen statt verwerfen.
    Betrifft Zurück-Geste, Hintergrundtipp und Wischen gleichermaßen. */
 function einstSchliessen(){
   if(!einstGeaendert()){ einstStand = null; dlgEinst.close(); return; }
-  if(confirm("Es gibt ungespeicherte Änderungen.\n\nOK = speichern und schließen\nAbbrechen = verwerfen")){
+  if(confirm(txt("Es gibt ungespeicherte Änderungen.") + "\n\n"
+    + txt("OK = speichern und schließen") + "\n" + txt("Abbrechen = verwerfen"))){
     $("#bEinstSpeichern").click();
   } else {
     einstStand = null; dlgEinst.close();
@@ -3784,11 +5056,12 @@ $("#sImport").onclick = () => { zurueckZuEinst = true; einstStand = null; dlgEin
 $("#sWocheKopieren").onclick = e => {
   const b = e.target.closest("[data-kopiere]"); if(!b) return;
   const von = b.dataset.kopiere[0], nach = b.dataset.kopiere[1];
-  if(!confirm(`Die ${nach}-Woche wird vollständig durch die ${von}-Woche ersetzt. Fortfahren?`)) return;
+  if(!confirm(txt("Die {nach}-Woche wird vollständig durch die {von}-Woche ersetzt. Fortfahren?",
+    {nach, von}))) return;
   TAGE.forEach(t => plan[nach][t] = ((plan[von] && plan[von][t]) || [])
     .map(x => x ? Object.assign({}, x) : null));
   sichern(); zeichne();
-  $("#sWocheStand").textContent = `${von}-Woche in die ${nach}-Woche übernommen.`;
+  $("#sWocheStand").textContent = txt("{von}-Woche in die {nach}-Woche übernommen.", {von, nach});
 };
 $("#slotEditor").onclick = e => {
   const b = e.target.closest("[data-slotweg]"); if(!b) return;
@@ -3862,13 +5135,13 @@ sDateiLesen.onchange = () => {
   const f = sDateiLesen.files && sDateiLesen.files[0]; if(!f) return;
   const leser = new FileReader();
   leser.onload = () => { sDaten.value = leser.result; $("#sLaden").click(); };
-  leser.onerror = () => alert("Datei ließ sich nicht lesen.");
+  leser.onerror = () => alert(txt("Datei ließ sich nicht lesen."));
   leser.readAsText(f); sDateiLesen.value = "";
 };
 $("#sTeilen").onclick = async () => {
   await weitergeben(profile.length > 1 ? sicherungAlleText() : sicherungsText(),
     `stundenplan-${profile.length > 1 ? "alle" : dateiName()}-${iso(new Date())}.json`,
-    "Stundenplan-Sicherung", true);
+    txt("Stundenplan-Sicherung"), true);
 };
 /* Teilen oder als Datei speichern. Ein Plan muss am Ende immer als echte
    .json-Datei herauskommen: Text in der Zwischenablage ist für Mitschüler
@@ -3896,9 +5169,9 @@ async function weitergeben(text, name, titel, istSicherung){
   try{
     herunterladen(text, name, "application/json");
     if(istSicherung) sicherungNotiert();
-    else kurzHinweis("Teilen ist hier nicht verfügbar — Plan-Datei heruntergeladen.");
+    else kurzHinweis(txt("Teilen ist hier nicht verfügbar — Plan-Datei heruntergeladen."));
   }catch(e){
-    zeigeFehler("Datei konnte nicht ausgegeben werden: " + ((e && e.message) || e));
+    zeigeFehler(txt("Datei konnte nicht ausgegeben werden") + ": " + ((e && e.message) || e));
   }
 }
 /* Ersetzt sämtliche Profile des Geräts durch die aus der Datei. */
@@ -3909,8 +5182,8 @@ function alleProfileUebernehmen(liste){
   const begrenzt = liste.slice(0, 20);
   const neuerStand = begrenzt.reduce((m,p) => Math.max(m, paketDatenstand(p)), 0);
   if(neuerStand > SCHEMA) return alert(neuereDatenText(neuerStand));
-  if(!confirm("Diese Sicherung enthält alle Profile. Sämtliche Profile auf diesem "
-    + "Gerät werden dadurch ersetzt. Fortfahren?")) return;
+  if(!confirm(txt("Diese Sicherung enthält alle Profile. Sämtliche Profile auf diesem "
+    + "Gerät werden dadurch ersetzt. Fortfahren?"))) return;
   const vorher = profile.map(p => p.id), neu = [];
   begrenzt.forEach((p, i) => {
     const id = alsId(p && p.id);
@@ -3924,9 +5197,9 @@ function alleProfileUebernehmen(liste){
                  : (k === "cfg" || k === "plan") ? {} : [];
       try{ localStorage.setItem("p"+id+"_"+k, JSON.stringify(wert)); }catch(e){}
     });
-    neu.push({id, name: alsText(p && p.name, 40).trim() || "Profil " + (i+1)});
+    neu.push({id, name: alsText(p && p.name, 40).trim() || txt("Profil {n}", {n:i+1})});
   });
-  if(!neu.length) return alert("In der Datei stecken keine lesbaren Profile.");
+  if(!neu.length) return alert(txt("In der Datei stecken keine lesbaren Profile."));
   /* Was vorher da war und in der Sicherung nicht vorkommt, wäre sonst
      unerreichbarer Ballast im Speicher. */
   vorher.filter(id => !neu.some(x => x.id === id))
@@ -3938,21 +5211,22 @@ function alleProfileUebernehmen(liste){
 $("#sLaden").onclick = () => {
   let d;
   try{ d = JSON.parse(sDaten.value); }
-  catch(e){ return alert("Der Text lässt sich nicht lesen. Ist es wirklich eine Sicherungsdatei?"); }
+  catch(e){ return alert(txt("Der Text lässt sich nicht lesen. Ist es wirklich eine Sicherungsdatei?")); }
   if(d && Array.isArray(d.profile)) return alleProfileUebernehmen(d.profile);
   if(d && d.art === "plan") return planUebernehmen(d);
   if(paketZuNeu(d)) return alert(neuereDatenText(paketDatenstand(d)));
   const teil = paketSaeubern(d);
-  if(!Object.keys(teil).length) return alert("In der Datei steckt kein erkennbarer Stundenplan.");
+  if(!Object.keys(teil).length) return alert(txt("In der Datei steckt kein erkennbarer Stundenplan."));
   /* Einlesen ersetzt, es ergänzt nicht. Wer das übersieht, verliert einen
      Plan, den es nirgends sonst gibt. */
   if(hatEchteDaten()){
     const alter = sicherungAlter();
-    if(!confirm("Das ersetzt den gesamten Plan dieses Profils — Einträge, Noten, "
-      + "Merkblätter und Archiv.\n"
-      + (alter === null ? "Von den jetzigen Daten gibt es noch keine Sicherung."
-                        : `Letzte Sicherung der jetzigen Daten: vor ${zahl(alter,"Tag","Tagen")}.`)
-      + "\n\nFortfahren?")) return;
+    if(!confirm(txt("Das ersetzt den gesamten Plan dieses Profils — Einträge, Noten, "
+      + "Merkblätter und Archiv.") + "\n"
+      + (alter === null ? txt("Von den jetzigen Daten gibt es noch keine Sicherung.")
+                        : txt("Letzte Sicherung der jetzigen Daten: vor {dauer}.",
+                              {dauer:zahl(alter,"Tag","Tagen")}))
+      + "\n\n" + txt("Fortfahren?"))) return;
   }
   if(teil.cfg)       cfg       = teil.cfg;
   if(teil.plan)      plan      = teil.plan;
@@ -3967,13 +5241,13 @@ $("#sLaden").onclick = () => {
    Notensystem, Farbe, Verhältnisse, alles. */
 function planUebernehmen(d){
   const teil = paketSaeubern(d);
-  if(!teil.plan) return alert("In der Datei steckt kein erkennbarer Stundenplan.");
+  if(!teil.plan) return alert(txt("In der Datei steckt kein erkennbarer Stundenplan."));
   const roh = (d.cfg && typeof d.cfg === "object") ? d.cfg : {};
   const wochen = roh.zweiWochen ? ["A","B"] : ["A"];
   const belegt = wochen.flatMap(w => Object.values(teil.plan[w] || {}))
     .flat().filter(Boolean).length;
-  if(!confirm(`Das ersetzt den Stundenplan durch ${zahl(belegt,"belegte Stunde","belegte Stunden")}.\n`
-    + "Einträge, Noten, Fehlzeiten und Merkblätter bleiben unberührt.\n\nFortfahren?")) return;
+  if(!confirm(txt("Das ersetzt den Stundenplan durch {stunden}.", {stunden:zahl(belegt,"belegte Stunde","belegte Stunden")}) + "\n"
+    + txt("Einträge, Noten, Fehlzeiten und Merkblätter bleiben unberührt.") + "\n\n" + txt("Fortfahren?"))) return;
   const c = cfgSaeubern(Object.assign({}, cfg, {
     slots: roh.slots, zweiWochen: roh.zweiWochen,
     /* Zusammenführen statt ersetzen: eigene Namen sind mehr wert als fremde. */
@@ -3982,15 +5256,15 @@ function planUebernehmen(d){
   }));
   cfg = c; plan = teil.plan;
   normalisiere(); sichern(); dlgEinst.close(); zeichne();
-  kurzHinweis("Stundenplan übernommen. Deine Einträge und Noten sind unverändert.");
+  kurzHinweis(txt("Stundenplan übernommen. Deine Einträge und Noten sind unverändert."));
 }
 $("#sTeilenPlan").onclick = async () => {
-  if(!faecher().length) return alert("Trag zuerst deinen Stundenplan ein.");
+  if(!faecher().length) return alert(txt("Trag zuerst deinen Stundenplan ein."));
   await weitergeben(planText(), `stundenplan-nur-plan-${iso(new Date())}.json`,
-                    "Stundenplan", false);
+                    txt("Stundenplan"), false);
 };
 $("#sReset").onclick = () => {
-  if(!confirm("Plan, Einträge, Noten, Merkblätter und Archiv dieses Profils löschen?")) return;
+  if(!confirm(txt("Plan, Einträge, Noten, Merkblätter und Archiv dieses Profils löschen?"))) return;
   /* Auch die Nebenschlüssel — sonst bleibt etwa der Merker „heute schon
      erinnert" stehen und das frische Profil schweigt. */
   profilSchluessel(profilId).forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
@@ -4001,7 +5275,7 @@ $("#sReset").onclick = () => {
 $("#sUpdate").onclick = async () => {
   const s = await versionPruefen();
   if(s && s.veraltet) aktualisieren();
-  else alert("Du bist auf dem neuesten Stand" + (s && s.laeuft ? " (" + s.laeuft + ")." : "."));
+  else alert(txt("Du bist auf dem neuesten Stand") + (s && s.laeuft ? " (" + s.laeuft + ")." : "."));
 };
 $("#bEinstSpeichern").onclick = () => {
   const neu = slotsAuslesen();
@@ -4011,9 +5285,8 @@ $("#bEinstSpeichern").onclick = () => {
     let verlust = 0;
     ["A","B"].forEach(w => TAGE.forEach(t =>
       ((plan[w] && plan[w][t]) || []).slice(neu.length).forEach(x => { if(x) verlust++; })));
-    if(verlust && !confirm(`Das Raster wird kürzer. Dabei gehen `
-      + `${zahl(verlust,"belegte Stunde","belegte Stunden")} am Ende der Tage verloren. `
-      + `Trotzdem speichern?`)) return;
+    if(verlust && !confirm(txt("Das Raster wird kürzer. Dabei gehen {stunden} am Ende der Tage verloren.",
+      {stunden:zahl(verlust,"belegte Stunde","belegte Stunden")}) + " " + txt("Trotzdem speichern?"))) return;
   }
   cfg.klasse = sKlasse.value.trim();
   cfg.zweiWochen = sZweiWochen.checked;
@@ -4064,20 +5337,28 @@ async function serverVersion(){
     return m ? m[1] : null;
   }catch(e){ return null; }
 }
-async function versionPruefen(){
-  const [laeuft, server] = await Promise.all([laufendeVersion(), serverVersion()]);
-  BUILD = laeuft || server || "—";
-  const veraltet = laeuft && server && laeuft !== server;
+/* Was die letzte Prüfung ergeben hat. Ein Sprachwechsel muss denselben
+   Stand noch einmal schreiben können, ohne erneut ans Netz zu gehen. */
+let versionStand = {laeuft:null, server:null, veraltet:false};
+function wischTextSetzen(){
+  const {laeuft, server, veraltet} = versionStand;
   const w = $("#wischText");
   if(w){
-    w.textContent = veraltet ? `${laeuft} · ${server} verfügbar — tippen zum Aktualisieren`
-                             : "Wischen wechselt die Ansicht · " + BUILD;
+    w.textContent = veraltet
+      ? txt("{laeuft} · {server} verfügbar — tippen zum Aktualisieren", {laeuft, server})
+      : txt("Wischen wechselt die Ansicht") + " · " + BUILD;
     w.style.color = veraltet ? "var(--akzent)" : "";
     w.onclick = veraltet ? aktualisieren : null;
   }
   const v = $("#sVersion");
-  if(v) v.textContent = veraltet ? `${laeuft} (neu: ${server})` : BUILD;
-  return {laeuft, server, veraltet};
+  if(v) v.textContent = veraltet ? txt("{laeuft} (neu: {server})", {laeuft, server}) : BUILD;
+}
+async function versionPruefen(){
+  const [laeuft, server] = await Promise.all([laufendeVersion(), serverVersion()]);
+  BUILD = laeuft || server || "—";
+  versionStand = {laeuft, server, veraltet: !!(laeuft && server && laeuft !== server)};
+  wischTextSetzen();
+  return versionStand;
 }
 async function aktualisieren(){
   try{
@@ -4121,12 +5402,12 @@ window.addEventListener("storage", e => {
    als Knöpfe, die stumm bleiben. */
 function browserPruefen(){
   const fehlt = [];
-  if(!window.HTMLDialogElement || !HTMLDialogElement.prototype.showModal) fehlt.push("Dialogfenster");
-  try{ if(!window.localStorage) fehlt.push("Speicher"); }catch(e){ fehlt.push("Speicher"); }
+  if(!window.HTMLDialogElement || !HTMLDialogElement.prototype.showModal) fehlt.push(txt("Dialogfenster"));
+  try{ if(!window.localStorage) fehlt.push(txt("Speicher")); }catch(e){ fehlt.push(txt("Speicher")); }
   if(!fehlt.length) return true;
-  zeigeFehler("Dieser Browser ist zu alt für die App — es fehlt: " + fehlt.join(", ")
-    + ".\nAuf dem iPhone braucht es iOS 15.4 oder neuer, sonst einen aktuellen "
-    + "Chrome, Firefox, Edge oder Safari.");
+  zeigeFehler(txt("Dieser Browser ist zu alt für die App — es fehlt: {fehlt}.", {fehlt:fehlt.join(", ")})
+    + "\n" + txt("Auf dem iPhone braucht es iOS 15.4 oder neuer, sonst einen aktuellen "
+    + "Chrome, Firefox, Edge oder Safari."));
   return false;
 }
 
@@ -4137,6 +5418,7 @@ function starten(){
     cfg.slots = STANDARD.slots.slice();
   }
   browserPruefen();
+  spracheAnwenden();
   themaAnwenden();
   startAnsicht();
   normalisiere();

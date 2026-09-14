@@ -15,7 +15,7 @@ Alles, was du einträgst — Stundenplan, Hausaufgaben, Klausuren, Notizen, Note
 
 ## Die einzige Verbindung nach außen
 
-Wenn du unter **⚙ → Ferien laden** ein Bundesland wählst, ruft die App einmalig [openholidaysapi.org](https://openholidaysapi.org) auf, ein offenes Datenprojekt. Übertragen wird dabei nur, welches Bundesland und welcher Zeitraum gefragt sind — keine deiner Daten. Danach liegen die Termine lokal, ein erneuter Abruf ist nicht nötig.
+Wenn du unter **⚙ → Ferien laden** ein Bundesland wählst, ruft die App einmalig [openholidaysapi.org](https://openholidaysapi.org) auf, ein offenes Datenprojekt. Übertragen wird dabei nur, welches Bundesland, welcher Zeitraum und welche Sprache gefragt sind — keine deiner Daten. Danach liegen die Termine lokal, ein erneuter Abruf ist nicht nötig.
 
 Die Seite selbst wird von GitHub Pages ausgeliefert. GitHub verarbeitet dabei technisch bedingt IP-Adressen, wie jeder Webserver. Nach dem Installieren lädt die App aus dem eigenen Zwischenspeicher.
 

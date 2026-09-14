@@ -17,7 +17,10 @@ await page.evaluate(() => {
 /* --- Kein Feld darf beim Umbau verlorengegangen sein --- */
 const heimatlos = await page.evaluate(() => {
   const alle = [...dlgEinst.querySelectorAll("input,select,textarea,button")]
+    /* Was bewusst auf der obersten Ebene steht: die Anleitung, die
+       Sprachwahl und die Knöpfe, die für alle Bereiche zusammen gelten. */
     .filter(el => el.id && el.type !== "file" && el.id !== "btnHilfe"
+                  && el.id !== "sSprache"
                   && el.id !== "bEinstZurueck" && el.id !== "bEinstSpeichern"
                   && el.id !== "sUpdate");
   return alle.filter(el => !el.closest(".einstTeil")).map(el => el.id);

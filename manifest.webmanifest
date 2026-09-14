@@ -1,7 +1,7 @@
 {
   "name": "Stundenplan",
   "short_name": "Plan",
-  "description": "Stundenplan mit Hausaufgaben, Klausuren, Noten und Merkblättern. Offline, ohne Konto.",
+  "description": "Stundenplan mit Hausaufgaben, Klausuren, Noten und Merkblättern. Offline, ohne Konto. — Timetable with homework, exams, grades and handouts. Offline, no account.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
