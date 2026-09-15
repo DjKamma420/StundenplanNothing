@@ -27,6 +27,10 @@ desktop.ini
 .env.*
 !.env.example
 
+# Arbeitsnotizen. Die abgeschlossene Aufgabenhistorie wurde einmal bewusst
+# aus dem Repository entfernt; sie soll auch nicht wieder hineinwachsen.
+tasks/
+
 # Protokolle
 *.log
 

@@ -420,28 +420,28 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 <!-- PROFILAUSWAHL -->
 <div id="profilStart" class="hidden">
   <div class="pInhalt">
-    <div class="pKopf"><div class="eyebrow">Stundenplan</div><h1 id="pFrage">Wer bist du?</h1></div>
+    <div class="pKopf"><div class="eyebrow" data-t>Stundenplan</div><h1 id="pFrage">Wer bist du?</h1></div>
     <div class="pGitter" id="pGitter"></div>
     <div class="pFuss">
       <button class="mini" id="pVerwalten">Verwalten</button>
-      <button class="mini hidden" id="pZurueck">Zurück</button>
+      <button class="mini hidden" id="pZurueck" data-t>Zurück</button>
     </div>
   </div>
 </div>
 
 <div class="top">
-  <div class="reiter" role="group" aria-label="Ansicht">
-    <button type="button" id="rTag" aria-pressed="true">Tag</button>
-    <button type="button" id="rKal" aria-pressed="false">Kalender</button>
-    <button type="button" id="rEin" aria-pressed="false">Einträge</button>
-    <button type="button" id="rZeu" aria-pressed="false">Zeugnis</button>
+  <div class="reiter" role="group" aria-label="Ansicht" data-t-al>
+    <button type="button" id="rTag" aria-pressed="true" data-t>Tag</button>
+    <button type="button" id="rKal" aria-pressed="false" data-t>Kalender</button>
+    <button type="button" id="rEin" aria-pressed="false" data-t>Einträge</button>
+    <button type="button" id="rZeu" aria-pressed="false" data-t>Zeugnis</button>
   </div>
   <div class="stift">
-    <button class="ikon" id="btnEdit" aria-pressed="false" aria-label="Plan bearbeiten">✎</button>
-    <button class="ikon hidden" id="btnSort" aria-pressed="false" aria-label="Kacheln umsortieren">✎</button>
+    <button class="ikon" id="btnEdit" aria-pressed="false" aria-label="Plan bearbeiten" data-t-al>✎</button>
+    <button class="ikon hidden" id="btnSort" aria-pressed="false" aria-label="Kacheln umsortieren" data-t-al>✎</button>
   </div>
   <button class="ikon" id="btnProfil" aria-label="Profil wechseln">–</button>
-  <button class="ikon" id="btnEinst" aria-label="Einstellungen">⚙</button>
+  <button class="ikon" id="btnEinst" aria-label="Einstellungen" data-t-al>⚙</button>
 </div>
 
 <!-- TAG -->
@@ -451,12 +451,12 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <h1 id="titel">—</h1>
     <div class="countdown" id="countdown"></div>
     <div class="kw">
-      <button type="button" id="wocheZurueck" aria-label="Woche zurück">‹</button>
-      <button type="button" id="wocheVor" aria-label="Woche vor">›</button>
+      <button type="button" id="wocheZurueck" aria-label="Woche zurück" data-t-al>‹</button>
+      <button type="button" id="wocheVor" aria-label="Woche vor" data-t-al>›</button>
       <span class="label" id="kwLabel"></span>
       <span class="ab hidden" id="abLabel">A</span>
-      <button type="button" id="btnWoche" style="margin-left:auto;width:auto;padding:0 12px">Woche</button>
-      <button type="button" id="btnHeute" style="width:auto;padding:0 12px">Heute</button>
+      <button type="button" id="btnWoche" style="margin-left:auto;width:auto;padding:0 12px" data-t>Woche</button>
+      <button type="button" id="btnHeute" style="width:auto;padding:0 12px" data-t>Heute</button>
     </div>
   </header>
   <div class="fortschritt hidden" id="fortschritt">
@@ -465,43 +465,43 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
   <div class="frei-banner hidden" id="freiBanner"></div>
   <div class="frei-banner hidden" id="sicherBanner"></div>
-  <nav class="tage" id="tage" aria-label="Wochentag"></nav>
+  <nav class="tage" id="tage" aria-label="Wochentag" data-t-al></nav>
   <div id="plan"></div>
-  <p class="hinweis hidden" id="editHinweis">Bearbeiten ist an: Antippen ändert Fach, Raum und Lehrkraft.
+  <p class="hinweis hidden" id="editHinweis" data-t>Bearbeiten ist an: Antippen ändert Fach, Raum und Lehrkraft.
      Nochmal auf ✎ oben tippen, wenn du fertig bist.</p>
   <section>
-    <div class="eyebrow">An diesem Tag</div>
+    <div class="eyebrow" data-t>An diesem Tag</div>
     <ul class="liste" id="tagListe"></ul>
-    <p class="nix" id="tagNix" hidden>Nichts eingetragen.</p>
+    <p class="nix" id="tagNix" hidden data-t>Nichts eingetragen.</p>
   </section>
 </div>
 
 <!-- KALENDER -->
 <div id="ansichtKal" class="hidden">
   <div class="monat">
-    <div class="mLinks"><button class="ikon" id="monatMinus" aria-label="Monat zurück">‹</button></div>
+    <div class="mLinks"><button class="ikon" id="monatMinus" aria-label="Monat zurück" data-t-al>‹</button></div>
     <b id="monatLabel"></b>
     <div class="mRechts">
-      <button class="ikon" id="monatPlus" aria-label="Monat vor">›</button>
-      <button class="mini" id="kalHeute">Heute</button>
+      <button class="ikon" id="monatPlus" aria-label="Monat vor" data-t-al>›</button>
+      <button class="mini" id="kalHeute" data-t>Heute</button>
     </div>
   </div>
   <div class="gitter" id="gitter"></div>
-  <p class="hinweis">Ein Feld gedrückt halten oder doppelt antippen, um etwas einzutragen.</p>
+  <p class="hinweis" data-t>Ein Feld gedrückt halten oder doppelt antippen, um etwas einzutragen.</p>
   <section>
     <div class="eyebrow" id="kalTagLabel"></div>
     <p class="hinweis hidden" id="kalFerien"></p>
     <ul class="liste" id="kalListe"></ul>
-    <p class="nix" id="kalNix" hidden>Nichts an diesem Tag.</p>
+    <p class="nix" id="kalNix" hidden data-t>Nichts an diesem Tag.</p>
   </section>
 </div>
 
 <!-- EINTRÄGE -->
 <div id="ansichtEin" class="hidden">
   <div id="einMenu">
-    <label style="margin-top:0"><span>Suche</span>
-      <input type="text" id="suchFeld" placeholder="Fach, Aufgabe, Notiz …"></label>
-    <p class="hinweis hidden" id="sortHinweis">Sortieren ist an: Mit den Pfeilen umstellen.
+    <label style="margin-top:0"><span data-t>Suche</span>
+      <input type="text" id="suchFeld" placeholder="Fach, Aufgabe, Notiz …" data-t-ph></label>
+    <p class="hinweis hidden" id="sortHinweis" data-t>Sortieren ist an: Mit den Pfeilen umstellen.
       Nochmal auf ✎ oben tippen, wenn du fertig bist.</p>
     <div class="stapel" id="einKacheln"></div>
     <ul class="liste" id="suchListe"></ul>
@@ -521,14 +521,14 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 <!-- ZEUGNIS -->
 <div id="ansichtZeu" class="hidden">
   <header style="margin-bottom:18px">
-    <div class="eyebrow">Stand heute</div>
-    <h1>Zeugnis <span id="zeuSchnitt"></span></h1>
+    <div class="eyebrow" data-t>Stand heute</div>
+    <h1><span data-t>Zeugnis</span> <span id="zeuSchnitt"></span></h1>
   </header>
   <p class="hinweis" id="zeuHinweis"></p>
-  <p class="hinweis" style="color:var(--akzent)">Nur eine Schätzung. Die App gewichtet alle Noten einer
+  <p class="hinweis" style="color:var(--akzent)" data-t>Nur eine Schätzung. Die App gewichtet alle Noten einer
      Art gleich; Lehrkräfte rechnen oft anders. Keine amtliche Auskunft.</p>
   <div id="zeuListe"></div>
-  <p class="nix" id="zeuNix" hidden>Trag zuerst deinen Stundenplan ein — dann erscheinen hier die Fächer.</p>
+  <p class="nix" id="zeuNix" hidden data-t>Trag zuerst deinen Stundenplan ein — dann erscheinen hier die Fächer.</p>
 </div>
 
 <div id="leerraum"></div>
@@ -536,7 +536,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 <div id="toast" class="hidden"></div>
 
 <div id="fuss">
-  <button class="gross" id="btnEintrag">+ Eintrag</button>
+  <button class="gross" id="btnEintrag" data-t>+ Eintrag</button>
   <div class="wischzone" id="wischzone">
     <div class="punkte" id="wischPunkte"><i></i><i></i><i></i><i></i></div>
     <span id="wischText">Wischen wechselt die Ansicht</span>
@@ -547,16 +547,16 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 <dialog id="dlgBlock"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <h2 id="dlgBlockTitel">Block</h2>
   <div class="eyebrow" id="dlgBlockZeit"></div>
-  <label><span>Fach</span><input type="text" id="fFach" placeholder="Fach" autocapitalize="characters"></label>
+  <label><span data-t>Fach</span><input type="text" id="fFach" placeholder="Fach" autocapitalize="characters" data-t-ph></label>
   <div class="zwei">
-    <label><span>Raum</span><input type="text" id="fRaum" placeholder="Raum" autocapitalize="characters"></label>
-    <label><span>Lehrkraft</span><input type="text" id="fLK" placeholder="Lehrer" autocapitalize="characters"></label>
+    <label><span data-t>Raum</span><input type="text" id="fRaum" placeholder="Raum" autocapitalize="characters" data-t-ph></label>
+    <label><span data-t>Lehrkraft</span><input type="text" id="fLK" placeholder="Lehrer" autocapitalize="characters" data-t-ph></label>
   </div>
   <p class="hinweis hidden" id="hinweisWoche"></p>
   <div class="reihe">
     <button type="button" class="weg" id="bBlockLeeren">×</button>
-    <button type="button" id="bBlockAb">Zurück</button>
-    <button type="button" class="haupt" id="bBlockSpeichern">Speichern</button>
+    <button type="button" id="bBlockAb" data-t>Zurück</button>
+    <button type="button" class="haupt" id="bBlockSpeichern" data-t>Speichern</button>
   </div>
 </dialog>
 
@@ -565,14 +565,14 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <h2 id="schnellTitel" class="mitte">Fach</h2>
   <div class="eyebrow mitte" id="schnellZeit"></div>
   <div class="stapel">
-    <button type="button" id="bSchnellHA">Hausaufgabe<small id="bSchnellHAZiel"></small></button>
-    <button type="button" id="bSchnellNotiz">Notiz<small>was heute dran war</small></button>
-    <button type="button" id="bSchnellKlausur">Klausur<small>Termin eintragen</small></button>
-    <button type="button" id="bSchnellFehl">Fehlzeit<small>diese Stunde versäumt</small></button>
-    <button type="button" id="bSchnellAusfall">Fällt aus<small>nur an diesem Tag</small></button>
-    <button type="button" id="bSchnellVertretung">Vertretung<small>anderes Fach oder Raum</small></button>
-    <button type="button" id="bSchnellErsatz">Sonstiges Ereignis<small>nur an diesem Tag</small></button>
-    <button type="button" id="bSchnellInfo">Fach-Info<small>Lehrkraft, Raum, Schnitt, Offenes</small></button>
+    <button type="button" id="bSchnellHA" data-t>Hausaufgabe<small id="bSchnellHAZiel"></small></button>
+    <button type="button" id="bSchnellNotiz" data-t>Notiz<small data-t>was heute dran war</small></button>
+    <button type="button" id="bSchnellKlausur" data-t>Klausur<small data-t>Termin eintragen</small></button>
+    <button type="button" id="bSchnellFehl" data-t>Fehlzeit<small data-t>diese Stunde versäumt</small></button>
+    <button type="button" id="bSchnellAusfall" data-t>Fällt aus<small data-t>nur an diesem Tag</small></button>
+    <button type="button" id="bSchnellVertretung" data-t>Vertretung<small data-t>anderes Fach oder Raum</small></button>
+    <button type="button" id="bSchnellErsatz" data-t>Sonstiges Ereignis<small data-t>nur an diesem Tag</small></button>
+    <button type="button" id="bSchnellInfo" data-t>Fach-Info<small data-t>Lehrkraft, Raum, Schnitt, Offenes</small></button>
   </div>
 </dialog>
 
@@ -580,68 +580,68 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 <dialog id="dlgEintrag"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <h2 id="dlgEintragTitel">Eintrag</h2>
   <div class="zwei">
-    <label><span>Art</span>
+    <label><span data-t>Art</span>
       <select id="eTyp">
-        <option value="H">Hausaufgabe</option>
-        <option value="K">Klausur</option>
-        <option value="N">Notiz</option>
-        <option value="E">Ereignis</option>
-        <option value="G">Note</option>
-        <option value="M">Merkblatt</option>
-        <option value="F">Fehlzeit</option>
+        <option value="H" data-t>Hausaufgabe</option>
+        <option value="K" data-t>Klausur</option>
+        <option value="N" data-t>Notiz</option>
+        <option value="E" data-t>Ereignis</option>
+        <option value="G" data-t>Note</option>
+        <option value="M" data-t>Merkblatt</option>
+        <option value="F" data-t>Fehlzeit</option>
       </select>
     </label>
-    <label id="eFachWrap"><span>Fach</span><select id="eFach"></select></label>
+    <label id="eFachWrap"><span data-t>Fach</span><select id="eFach"></select></label>
   </div>
-  <label class="hidden" id="eFachFreiWrap"><span>Fach eintippen</span>
+  <label class="hidden" id="eFachFreiWrap"><span data-t>Fach eintippen</span>
     <input type="text" id="eFachFrei" autocapitalize="characters"></label>
-  <label class="hidden" id="eLkWrap"><span>Lehrkraft</span><select id="eLk"></select></label>
+  <label class="hidden" id="eLkWrap"><span data-t>Lehrkraft</span><select id="eLk"></select></label>
   <div class="zwei hidden" id="eNoteWrap">
-    <label><span id="eWertLabel">Note</span><input type="text" id="eWert" inputmode="decimal" placeholder="2,3"></label>
-    <label><span>Art</span>
-      <select id="eNArt"><option value="s">schriftlich</option><option value="m">mündlich</option></select></label>
+    <label><span id="eWertLabel">Note</span><input type="text" id="eWert" inputmode="decimal" placeholder="2,3" data-t-ph></label>
+    <label><span data-t>Art</span>
+      <select id="eNArt"><option value="s" data-t>schriftlich</option><option value="m" data-t>mündlich</option></select></label>
   </div>
   <div class="zwei hidden" id="eEreignisWrap">
-    <label><span>Wo</span><input type="text" id="eOrt" placeholder="Raum oder Ort"></label>
-    <label><span>Stunde</span><select id="eStunde"></select></label>
+    <label><span data-t>Wo</span><input type="text" id="eOrt" placeholder="Raum oder Ort" data-t-ph></label>
+    <label><span data-t>Stunde</span><select id="eStunde"></select></label>
   </div>
   <div class="zwei hidden" id="eFehlWrap">
-    <label><span>Art</span>
+    <label><span data-t>Art</span>
       <select id="eFehlArt">
-        <option value="entschuldigt">entschuldigt</option>
-        <option value="unentschuldigt">unentschuldigt</option>
-        <option value="verspätet">verspätet</option>
+        <option value="entschuldigt" data-t>entschuldigt</option>
+        <option value="unentschuldigt" data-t>unentschuldigt</option>
+        <option value="verspätet" data-t>verspätet</option>
       </select></label>
-    <label><span>Stunden</span><input type="number" id="eFehlStd" min="1" max="20" step="1" value="1"></label>
+    <label><span data-t>Stunden</span><input type="number" id="eFehlStd" min="1" max="20" step="1" value="1"></label>
   </div>
-  <label id="eDatumWrap"><span>Datum</span>
+  <label id="eDatumWrap"><span data-t>Datum</span>
     <input type="hidden" id="eDatum">
     <button type="button" class="datumfeld" id="eDatumFeld" aria-expanded="false">—</button>
   </label>
   <div class="datumwahl hidden" id="eDatumWahl">
     <div class="monat klein">
-      <div class="mLinks"><button type="button" class="ikon" id="eMonatMinus" aria-label="Monat zurück">‹</button></div>
+      <div class="mLinks"><button type="button" class="ikon" id="eMonatMinus" aria-label="Monat zurück" data-t-al>‹</button></div>
       <b id="eMonatLabel"></b>
-      <div class="mRechts"><button type="button" class="ikon" id="eMonatPlus" aria-label="Monat vor">›</button></div>
+      <div class="mRechts"><button type="button" class="ikon" id="eMonatPlus" aria-label="Monat vor" data-t-al>›</button></div>
     </div>
     <div class="gitter" id="eGitter"></div>
     <p class="hinweis" id="eGitterHinweis"></p>
   </div>
   <div class="hidden" id="eWdhWrap">
-    <label><span>Wiederholen</span>
+    <label><span data-t>Wiederholen</span>
       <select id="eWdh">
-        <option value="0">einmalig</option>
-        <option value="1">jede Woche</option>
-        <option value="2">alle zwei Wochen</option>
+        <option value="0" data-t>einmalig</option>
+        <option value="1" data-t>jede Woche</option>
+        <option value="2" data-t>alle zwei Wochen</option>
       </select></label>
-    <label id="eWdhBisWrap"><span>Wiederholen bis</span><input type="date" id="eWdhBis"></label>
+    <label id="eWdhBisWrap"><span data-t>Wiederholen bis</span><input type="date" id="eWdhBis"></label>
     <p class="hinweis" id="eWdhStand"></p>
   </div>
-  <label id="eTextWrap"><span id="eTextLabel">Was</span><input type="text" id="eText" placeholder="Aufgabe"></label>
-  <label><span id="eNotizLabel">Notizen</span><textarea id="eNotiz" placeholder="Details"></textarea></label>
+  <label id="eTextWrap"><span id="eTextLabel">Was</span><input type="text" id="eText" placeholder="Aufgabe" data-t-ph></label>
+  <label><span id="eNotizLabel">Notizen</span><textarea id="eNotiz" placeholder="Details" data-t-ph></textarea></label>
   <div class="hidden" id="eBildWrap">
     <div class="chips">
-      <button type="button" id="bBildWahl">Bild hinzufügen</button>
+      <button type="button" id="bBildWahl" data-t>Bild hinzufügen</button>
       <span class="hinweis" id="bildStand" style="margin:0;align-self:center"></span>
     </div>
     <input type="file" id="bildDatei" accept="image/*" multiple style="display:none">
@@ -649,8 +649,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   </div>
   <div class="reihe">
     <button type="button" class="weg hidden" id="bEintragWeg">×</button>
-    <button type="button" id="bEintragAb">Zurück</button>
-    <button type="button" class="haupt" id="bEintragSpeichern">Speichern</button>
+    <button type="button" id="bEintragAb" data-t>Zurück</button>
+    <button type="button" class="haupt" id="bEintragSpeichern" data-t>Speichern</button>
   </div>
 </dialog>
 
@@ -661,8 +661,8 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <div class="merkschau" id="schauText"></div>
   <div class="bilder" id="schauBilder"></div>
   <div class="reihe">
-    <button type="button" id="bSchauBearbeiten">Bearbeiten</button>
-    <button type="button" class="haupt" id="bSchauAb">Fertig</button>
+    <button type="button" id="bSchauBearbeiten" data-t>Bearbeiten</button>
+    <button type="button" class="haupt" id="bSchauAb" data-t>Fertig</button>
   </div>
 </dialog>
 
@@ -671,50 +671,50 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <h2 id="kmTitel" class="mitte">Tag</h2>
   <div class="eyebrow mitte" id="kmStand"></div>
   <div class="stapel">
-    <button type="button" id="bKmTermin">Termin<small>ganzer Tag oder eine bestimmte Stunde</small></button>
-    <button type="button" id="bKmHA">Hausaufgabe<small>mit Fälligkeit an diesem Tag</small></button>
-    <button type="button" id="bKmKlausur">Klausur<small>Termin eintragen</small></button>
-    <button type="button" id="bKmNotiz">Notiz<small>freier Text zu diesem Tag</small></button>
-    <button type="button" id="bKmFehl">Fehlzeit<small>versäumte Stunden</small></button>
+    <button type="button" id="bKmTermin" data-t>Termin<small data-t>ganzer Tag oder eine bestimmte Stunde</small></button>
+    <button type="button" id="bKmHA" data-t>Hausaufgabe<small data-t>mit Fälligkeit an diesem Tag</small></button>
+    <button type="button" id="bKmKlausur" data-t>Klausur<small data-t>Termin eintragen</small></button>
+    <button type="button" id="bKmNotiz" data-t>Notiz<small data-t>freier Text zu diesem Tag</small></button>
+    <button type="button" id="bKmFehl" data-t>Fehlzeit<small data-t>versäumte Stunden</small></button>
     <button type="button" id="bKmFrei"><span id="bKmFreiText">Freier Tag</span><small id="bKmFreiKlein"></small></button>
   </div>
   <div class="reihe">
-    <button type="button" class="haupt" id="bKmAb">Zurück</button>
+    <button type="button" class="haupt" id="bKmAb" data-t>Zurück</button>
   </div>
 </dialog>
 
 <!-- Freier Tag -->
 <dialog id="dlgTagFrei"><button class="fangfokus" autofocus aria-hidden="true"></button>
-  <h2 class="mitte">Tag markieren</h2>
+  <h2 class="mitte" data-t>Tag markieren</h2>
   <div class="eyebrow mitte" id="tfDatum"></div>
-  <p class="hinweis">Für schuleigene freie Tage, Praktika oder Ausflüge. Der Tag wird grau
+  <p class="hinweis" data-t>Für schuleigene freie Tage, Praktika oder Ausflüge. Der Tag wird grau
      dargestellt und aus dem Unterricht herausgenommen.</p>
-  <label><span>Bezeichnung</span><input type="text" id="tfName" placeholder="Beweglicher Ferientag"></label>
-  <label><span>bis einschließlich</span><input type="date" id="tfBis"></label>
+  <label><span data-t>Bezeichnung</span><input type="text" id="tfName" placeholder="Beweglicher Ferientag" data-t-ph></label>
+  <label><span data-t>bis einschließlich</span><input type="date" id="tfBis"></label>
   <div class="reihe">
     <button type="button" class="weg hidden" id="bTagFreiWeg">×</button>
-    <button type="button" id="bTagFreiAb">Zurück</button>
-    <button type="button" class="haupt" id="bTagFreiSpeichern">Speichern</button>
+    <button type="button" id="bTagFreiAb" data-t>Zurück</button>
+    <button type="button" class="haupt" id="bTagFreiSpeichern" data-t>Speichern</button>
   </div>
 </dialog>
 
 <!-- Verhältnis je Fach -->
 <dialog id="dlgAnteil"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <h2 id="anTitel">Verhältnis</h2>
-  <p class="hinweis">Wie stark zählt die mündliche Note in diesem Fach?</p>
-  <label><span>mündlich %</span><input type="number" id="anWert" min="0" max="100" step="5"></label>
+  <p class="hinweis" data-t>Wie stark zählt die mündliche Note in diesem Fach?</p>
+  <label><span data-t>mündlich %</span><input type="number" id="anWert" min="0" max="100" step="5"></label>
   <p class="hinweis" id="anHinweis"></p>
-  <div class="eyebrow" style="margin-top:20px">Zielnote</div>
-  <p class="hinweis">Was müsste die nächste Note sein, um dieses Ziel zu erreichen?</p>
+  <div class="eyebrow" style="margin-top:20px" data-t>Zielnote</div>
+  <p class="hinweis" data-t>Was müsste die nächste Note sein, um dieses Ziel zu erreichen?</p>
   <div class="zwei">
-    <label><span>Ziel</span><input type="text" id="anZiel" inputmode="decimal" placeholder="2,0"></label>
-    <label><span>als</span>
-      <select id="anZielArt"><option value="s">schriftlich</option><option value="m">mündlich</option></select></label>
+    <label><span data-t>Ziel</span><input type="text" id="anZiel" inputmode="decimal" placeholder="2,0" data-t-ph></label>
+    <label><span data-t>als</span>
+      <select id="anZielArt"><option value="s" data-t>schriftlich</option><option value="m" data-t>mündlich</option></select></label>
   </div>
   <p class="hinweis" id="anZielErgebnis"></p>
   <div class="reihe">
-    <button type="button" id="bAnStandard">Standard</button>
-    <button type="button" class="haupt" id="bAnSpeichern">Speichern</button>
+    <button type="button" id="bAnStandard" data-t>Standard</button>
+    <button type="button" class="haupt" id="bAnSpeichern" data-t>Speichern</button>
   </div>
 </dialog>
 
@@ -724,127 +724,135 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <div class="eyebrow mitte" id="fiKuerzel"></div>
   <div id="fiInhalt"></div>
   <div class="reihe">
-    <button type="button" id="bFachMerk">Merkblätter</button>
-    <button type="button" class="haupt" id="bFachAb">Zurück</button>
+    <button type="button" id="bFachMerk" data-t>Merkblätter</button>
+    <button type="button" class="haupt" id="bFachAb" data-t>Zurück</button>
   </div>
 </dialog>
 
 <dialog id="dlgWoche"><button class="fangfokus" autofocus aria-hidden="true"></button>
-  <h2 class="mitte">Woche</h2>
+  <h2 class="mitte" data-t>Woche</h2>
   <div class="monat klein">
-    <div class="mLinks"><button type="button" class="ikon" id="wochenMinus" aria-label="Woche zurück">‹</button></div>
+    <div class="mLinks"><button type="button" class="ikon" id="wochenMinus" aria-label="Woche zurück" data-t-al>‹</button></div>
     <b id="wochenLabel"></b>
-    <div class="mRechts"><button type="button" class="ikon" id="wochenPlus" aria-label="Woche vor">›</button></div>
+    <div class="mRechts"><button type="button" class="ikon" id="wochenPlus" aria-label="Woche vor" data-t-al>›</button></div>
   </div>
   <div class="wochenlauf"><table class="wochentab" id="wochenTab"></table></div>
   <p class="hinweis mitte" id="wochenHinweis"></p>
   <div class="reihe">
-    <button type="button" id="bWocheHeute">Diese Woche</button>
-    <button type="button" class="haupt" id="bWocheAb">Zurück</button>
+    <button type="button" id="bWocheHeute" data-t>Diese Woche</button>
+    <button type="button" class="haupt" id="bWocheAb" data-t>Zurück</button>
   </div>
 </dialog>
 
 <!-- Plan einfügen -->
 <dialog id="dlgImport"><button class="fangfokus" autofocus aria-hidden="true"></button>
-  <h2>Plan einfügen</h2>
+  <h2 data-t>Plan einfügen</h2>
   <div class="zwei">
-    <label><span>Tag</span><select id="iTag"></select></label>
-    <label id="iWocheWrap"><span>Woche</span>
+    <label><span data-t>Tag</span><select id="iTag"></select></label>
+    <label id="iWocheWrap"><span data-t>Woche</span>
       <select id="iWoche"><option value="A">A</option><option value="B">B</option></select></label>
   </div>
-  <div class="kopfzeile vier" style="margin-top:16px"><span>Std.</span><span>Fach</span><span>Raum</span><span>LK</span></div>
+  <div class="kopfzeile vier" style="margin-top:16px"><span data-t>Std.</span><span data-t>Fach</span><span data-t>Raum</span><span data-t>LK</span></div>
   <div id="iTabelle"></div>
   <details style="margin-top:16px">
-    <summary>Aus der Zwischenablage füllen</summary>
-    <p class="hinweis">Erwartet je Stunde eine Zeile im Format <b>FACH, RAUM (LEHRKRAFT)</b>.</p>
-    <textarea id="iText" placeholder="1&#10;FACH, RAUM (LEHRER)"></textarea>
-    <div class="chips"><button type="button" id="bImportText">In die Tabelle übernehmen</button></div>
+    <summary data-t>Aus der Zwischenablage füllen</summary>
+    <p class="hinweis" data-t-html>Erwartet je Stunde eine Zeile im Format <b>FACH, RAUM (LEHRKRAFT)</b>.</p>
+    <textarea id="iText" placeholder="1&#10;FACH, RAUM (LEHRER)" data-t-ph></textarea>
+    <div class="chips"><button type="button" id="bImportText" data-t>In die Tabelle übernehmen</button></div>
     <p class="hinweis" id="iErgebnis"></p>
   </details>
   <div class="reihe">
-    <button type="button" id="bImportAb">Zurück</button>
-    <button type="button" class="haupt" id="bImportSpeichern">Speichern</button>
+    <button type="button" id="bImportAb" data-t>Zurück</button>
+    <button type="button" class="haupt" id="bImportSpeichern" data-t>Speichern</button>
   </div>
 </dialog>
 
 <!-- Anleitung -->
 <dialog id="dlgHilfe"><button class="fangfokus" autofocus aria-hidden="true"></button>
   <div class="hKopf">
-    <h2>Anleitung</h2>
-    <input type="search" id="hilfeSuche" placeholder="Stichwort suchen, etwa „Sicherung“ …"
+    <h2 data-t>Anleitung</h2>
+    <input type="search" id="hilfeSuche" placeholder="Stichwort suchen, etwa „Sicherung“ …" data-t-ph
       autocomplete="off" autocapitalize="none" spellcheck="false">
     <div id="hilfeStand"></div>
   </div>
   <div id="hilfeKoerper">
-    <nav id="hilfeVerzeichnis" aria-label="Inhaltsverzeichnis"></nav>
+    <nav id="hilfeVerzeichnis" aria-label="Inhaltsverzeichnis" data-t-al></nav>
     <div id="hilfeInhalt"></div>
   </div>
   <div class="reihe">
-    <button type="button" id="bHilfeOben">↑ Anfang</button>
-    <button type="button" class="haupt" id="bHilfeAb">Fertig</button>
+    <button type="button" id="bHilfeOben" data-t>↑ Anfang</button>
+    <button type="button" class="haupt" id="bHilfeAb" data-t>Fertig</button>
   </div>
 </dialog>
 
 <!-- Einstellungen -->
 <dialog id="dlgEinst"><button class="fangfokus" autofocus aria-hidden="true"></button>
-  <h2>Einstellungen</h2>
+  <h2 data-t>Einstellungen</h2>
+  <!-- Ganz oben und zweisprachig beschriftet: wer die Oberfläche nicht lesen
+       kann, muss diese eine Zeile trotzdem finden können. -->
+  <label id="einstSprachZeile" style="margin-top:0"><span>Sprache · Language</span>
+    <select id="sSprache">
+      <option value="">Automatisch · Automatic</option>
+      <option value="de">Deutsch</option>
+      <option value="en">English</option>
+    </select></label>
   <div class="chips" id="einstHilfeZeile">
-    <button type="button" id="btnHilfe" style="border-color:var(--akzent);color:var(--akzent)">
+    <button type="button" id="btnHilfe" style="border-color:var(--akzent);color:var(--akzent)" data-t>
       Anleitung und Technik</button>
   </div>
   <div class="chips hidden" id="einstZurueckZeile">
-    <button type="button" id="bEinstZurueck">‹ Alle Einstellungen</button></div>
+    <button type="button" id="bEinstZurueck" data-t>‹ Alle Einstellungen</button></div>
   <div class="eyebrow mitte hidden" id="einstTeilTitel" style="margin-top:14px"></div>
   <div class="stapel hidden" id="einstMenu"></div>
 
   <section class="einstTeil" data-einst="darstellung">
-  <div class="eyebrow" style="margin-top:18px">Darstellung</div>
+  <div class="eyebrow" style="margin-top:18px" data-t>Darstellung</div>
   <div class="zwei">
-    <label><span>Akzentfarbe</span><input type="color" id="sFarbe"></label>
-    <label><span>Hex</span><input type="text" id="sFarbeHex" placeholder="#e5382b"></label>
+    <label><span data-t>Akzentfarbe</span><input type="color" id="sFarbe"></label>
+    <label><span data-t>Hex</span><input type="text" id="sFarbeHex" placeholder="#e5382b"></label>
   </div>
   <div class="chips" id="sFarbVorlagen"></div>
   <div class="zwei">
-    <label><span>Modus</span>
-      <select id="sModus"><option value="dunkel">Dunkel</option><option value="hell">Hell</option></select></label>
-    <label><span>Schrift</span>
+    <label><span data-t>Modus</span>
+      <select id="sModus"><option value="dunkel" data-t>Dunkel</option><option value="hell" data-t>Hell</option></select></label>
+    <label><span data-t>Schrift</span>
       <select id="sSchrift">
-        <option value="system">System</option>
-        <option value="mono">Technisch</option>
-        <option value="serif">Serif</option>
+        <option value="system" data-t>System</option>
+        <option value="mono" data-t>Technisch</option>
+        <option value="serif" data-t>Serif</option>
       </select></label>
   </div>
 
-  <label style="margin-top:14px"><span>Beim Öffnen</span>
+  <label style="margin-top:14px"><span data-t>Beim Öffnen</span>
     <select id="sStartProfil">
-      <option value="immer">immer zur Profilauswahl</option>
-      <option value="mehrere">nur bei mehreren Profilen</option>
-      <option value="nie">gleich in den Plan</option>
+      <option value="immer" data-t>immer zur Profilauswahl</option>
+      <option value="mehrere" data-t>nur bei mehreren Profilen</option>
+      <option value="nie" data-t>gleich in den Plan</option>
     </select></label>
 
   </section>
   <section class="einstTeil" data-einst="schule">
-  <div class="eyebrow" style="margin-top:22px">Schule</div>
-  <label><span>Klasse</span><input type="text" id="sKlasse" placeholder="Deine Klasse"></label>
-  <div class="chips"><button type="button" id="sImport">Plan einfügen</button></div>
+  <div class="eyebrow" style="margin-top:22px" data-t>Schule</div>
+  <label><span data-t>Klasse</span><input type="text" id="sKlasse" placeholder="Deine Klasse" data-t-ph></label>
+  <div class="chips"><button type="button" id="sImport" data-t>Plan einfügen</button></div>
 
-  <div class="eyebrow" style="margin-top:22px">Stundenraster</div>
-  <p class="hinweis">„Std." sind die Stundennummern, die dieses Feld abdeckt.</p>
+  <div class="eyebrow" style="margin-top:22px" data-t>Stundenraster</div>
+  <p class="hinweis" data-t>„Std." sind die Stundennummern, die dieses Feld abdeckt.</p>
   <div class="chips">
-    <button type="button" data-vorlage="block90">4 Blöcke à 90 min</button>
-    <button type="button" data-vorlage="einzel45">8 Einzelstunden</button>
+    <button type="button" data-vorlage="block90" data-t>4 Blöcke à 90 min</button>
+    <button type="button" data-vorlage="einzel45" data-t>8 Einzelstunden</button>
   </div>
-  <div class="kopfzeile"><span>Std.</span><span>von</span><span>bis</span><span></span></div>
+  <div class="kopfzeile"><span data-t>Std.</span><span data-t>von</span><span data-t>bis</span><span></span></div>
   <div id="slotEditor"></div>
-  <div class="chips"><button type="button" id="sSlotPlus">+ Zeile</button></div>
+  <div class="chips"><button type="button" id="sSlotPlus" data-t>+ Zeile</button></div>
 
-  <div class="eyebrow" style="margin-top:22px">Wochenwechsel</div>
+  <div class="eyebrow" style="margin-top:22px" data-t>Wochenwechsel</div>
   <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
     <input type="checkbox" id="sZweiWochen" style="width:18px;flex:none;margin:0">
-    <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)">
+    <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)" data-t>
       A- und B-Woche getrennt führen</span>
   </label>
-  <p class="hinweis" id="ankerWrap">Feste Regel: ungerade Kalenderwoche = <b>A</b>, gerade = <b>B</b>.
+  <p class="hinweis" id="ankerWrap"><span data-t-html>Feste Regel: ungerade Kalenderwoche = <b>A</b>, gerade = <b>B</b>.</span>
      <span id="ankerJetzt"></span></p>
   <div class="chips hidden" id="sWocheKopieren">
     <button type="button" data-kopiere="AB">A-Woche → B-Woche</button>
@@ -854,57 +862,57 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 
   </section>
   <section class="einstTeil" data-einst="noten">
-  <div class="eyebrow" style="margin-top:22px">Noten</div>
+  <div class="eyebrow" style="margin-top:22px" data-t>Noten</div>
   <div class="zwei">
-    <label><span>System</span>
+    <label><span data-t>System</span>
       <select id="sNotenSystem">
-        <option value="note6">Noten 1–6</option>
-        <option value="punkte15">Punkte 0–15</option>
+        <option value="note6" data-t>Noten 1–6</option>
+        <option value="punkte15" data-t>Punkte 0–15</option>
       </select></label>
-    <label><span>mündlich %</span><input type="number" id="sAnteilM" min="0" max="100" step="5"></label>
+    <label><span data-t>mündlich %</span><input type="number" id="sAnteilM" min="0" max="100" step="5"></label>
   </div>
   <p class="hinweis" id="sAnteilHinweis"></p>
-  <div class="eyebrow" style="margin-top:16px">Verhältnis je Fach</div>
-  <p class="hinweis">Leer lassen heißt: Standard von oben.</p>
+  <div class="eyebrow" style="margin-top:16px" data-t>Verhältnis je Fach</div>
+  <p class="hinweis" data-t>Leer lassen heißt: Standard von oben.</p>
   <div id="sAnteilFaecher"></div>
 
-  <div class="eyebrow" style="margin-top:16px">Reihenfolge der Fächer</div>
-  <p class="hinweis">Gilt für das Zeugnis und die Liste darüber.</p>
+  <div class="eyebrow" style="margin-top:16px" data-t>Reihenfolge der Fächer</div>
+  <p class="hinweis" data-t>Gilt für das Zeugnis und die Liste darüber.</p>
   <div id="sReiheFach"></div>
 
   </section>
   <section class="einstTeil" data-einst="fehlzeiten">
-  <div class="eyebrow" style="margin-top:22px">Fehlzeiten</div>
-  <label><span>Stunden je Schultag</span><input type="number" id="sStdProTag" min="1" max="16" step="1"></label>
-  <p class="hinweis">Damit rechnet das Zeugnis versäumte Stunden in Tage um.</p>
+  <div class="eyebrow" style="margin-top:22px" data-t>Fehlzeiten</div>
+  <label><span data-t>Stunden je Schultag</span><input type="number" id="sStdProTag" min="1" max="16" step="1"></label>
+  <p class="hinweis" data-t>Damit rechnet das Zeugnis versäumte Stunden in Tage um.</p>
 
-  <div class="eyebrow" style="margin-top:22px">Archiv</div>
-  <label><span>Gelöschtes aufbewahren</span>
+  <div class="eyebrow" style="margin-top:22px" data-t>Archiv</div>
+  <label><span data-t>Gelöschtes aufbewahren</span>
     <select id="sArchivTage">
-      <option value="0">für immer</option>
-      <option value="30">30 Tage</option>
-      <option value="90">3 Monate</option>
-      <option value="180">6 Monate</option>
-      <option value="365">1 Jahr</option>
+      <option value="0" data-t>für immer</option>
+      <option value="30" data-t>30 Tage</option>
+      <option value="90" data-t>3 Monate</option>
+      <option value="180" data-t>6 Monate</option>
+      <option value="365" data-t>1 Jahr</option>
     </select></label>
   <p class="hinweis" id="sArchivHinweis"></p>
 
   </section>
   <section class="einstTeil" data-einst="erinnerungen">
-  <div class="eyebrow" style="margin-top:22px">Erinnerungen</div>
-  <p class="hinweis">Die App kann sich nicht selbst wecken. Sie meldet sich beim Öffnen —
+  <div class="eyebrow" style="margin-top:22px" data-t>Erinnerungen</div>
+  <p class="hinweis" data-t>Die App kann sich nicht selbst wecken. Sie meldet sich beim Öffnen —
      für echte Wecker nutze den Kalender-Export.</p>
   <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
     <input type="checkbox" id="sMelden" style="width:18px;flex:none;margin:0">
-    <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)">
+    <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)" data-t>
       Beim Öffnen an Klausuren und Hausaufgaben erinnern</span>
   </label>
   <div class="chips">
-    <button type="button" id="sMeldeRecht">Benachrichtigungen erlauben</button>
-    <button type="button" id="sIcs">Termine als .ics</button>
-    <button type="button" id="sIcsPlan">Stundenplan als .ics</button>
+    <button type="button" id="sMeldeRecht" data-t>Benachrichtigungen erlauben</button>
+    <button type="button" id="sIcs" data-t>Termine als .ics</button>
+    <button type="button" id="sIcsPlan" data-t>Stundenplan als .ics</button>
   </div>
-  <p class="hinweis"><b>Termine</b> sind offene Hausaufgaben, Klausuren und Ereignisse,
+  <p class="hinweis" data-t-html><b>Termine</b> sind offene Hausaufgaben, Klausuren und Ereignisse,
      je mit Wecker. <b>Stundenplan</b> ist der Unterricht selbst als Serientermine für
      ein Jahr, Ferien ausgenommen — zwei Dateien, damit im Handykalender zwei Kalender
      entstehen, die du einzeln ausblenden kannst.</p>
@@ -912,89 +920,89 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
 
   </section>
   <section class="einstTeil" data-einst="ferien">
-  <div class="eyebrow" style="margin-top:22px">Ferien und Feiertage</div>
-  <label><span>Bundesland</span><select id="sLand"></select></label>
+  <div class="eyebrow" style="margin-top:22px" data-t>Ferien und Feiertage</div>
+  <label><span data-t>Bundesland</span><select id="sLand"></select></label>
   <div class="chips">
-    <button type="button" id="sFerienLaden">Ferien laden</button>
-    <button type="button" id="sFerienWeg">Entfernen</button>
+    <button type="button" id="sFerienLaden" data-t>Ferien laden</button>
+    <button type="button" id="sFerienWeg" data-t>Entfernen</button>
   </div>
   <p class="hinweis" id="sFerienStand"></p>
 
   </section>
   <section class="einstTeil" data-einst="namen">
-  <div class="eyebrow" style="margin-top:22px">Lehrkräfte</div>
+  <div class="eyebrow" style="margin-top:22px" data-t>Lehrkräfte</div>
   <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
     <input type="checkbox" id="sNachLehrer" style="width:18px;flex:none;margin:0">
-    <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)">
+    <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)" data-t>
       Fächer nach Lehrkraft trennen</span>
   </label>
-  <p class="hinweis">Dann sucht „Als Nächstes“ die nächste Stunde desselben Fachs
+  <p class="hinweis" data-t-html>Dann sucht „Als Nächstes“ die nächste Stunde desselben Fachs
      <i>bei derselben Lehrkraft</i>, Einträge bekommen ein Feld dafür, und Zeugnis
      und Notizen zeigen Unterpunkte je Lehrkraft.</p>
-  <p class="hinweis" style="margin-top:12px">Je Zeile ein Kürzel und der Name, getrennt durch ein Gleichheitszeichen.</p>
-  <textarea id="sLehrer" style="min-height:90px" placeholder="KÜRZEL = Name"></textarea>
-  <div class="eyebrow" style="margin-top:22px">Fachnamen</div>
-  <textarea id="sFaecher" style="min-height:90px" placeholder="KÜRZEL = Fachname"></textarea>
+  <p class="hinweis" style="margin-top:12px" data-t>Je Zeile ein Kürzel und der Name, getrennt durch ein Gleichheitszeichen.</p>
+  <textarea id="sLehrer" style="min-height:90px" placeholder="KÜRZEL = Name" data-t-ph></textarea>
+  <div class="eyebrow" style="margin-top:22px" data-t>Fachnamen</div>
+  <textarea id="sFaecher" style="min-height:90px" placeholder="KÜRZEL = Fachname" data-t-ph></textarea>
 
   </section>
   <section class="einstTeil" data-einst="sicherung">
-  <div class="eyebrow" style="margin-top:22px">Sicherung</div>
+  <div class="eyebrow" style="margin-top:22px" data-t>Sicherung</div>
   <p class="hinweis" id="sSicherStand"></p>
   <div class="chips">
-    <button type="button" id="sDatei">Als Datei sichern</button>
-    <button type="button" id="sDateiAlle">Alle Profile sichern</button>
-    <button type="button" id="sDateiWahl">Datei einlesen</button>
-    <button type="button" id="sTeilen">Teilen</button>
+    <button type="button" id="sDatei" data-t>Als Datei sichern</button>
+    <button type="button" id="sDateiAlle" data-t>Alle Profile sichern</button>
+    <button type="button" id="sDateiWahl" data-t>Datei einlesen</button>
+    <button type="button" id="sTeilen" data-t>Teilen</button>
   </div>
-  <p class="hinweis">„Teilen" gibt <b>alles</b> weiter — auch Noten, Fehlzeiten und
+  <p class="hinweis" data-t-html>„Teilen" gibt <b>alles</b> weiter — auch Noten, Fehlzeiten und
      Merkblätter. Für Mitschüler gibt es darunter den Plan allein.</p>
 
-  <div class="eyebrow" style="margin-top:20px">Stundenplan weitergeben</div>
+  <div class="eyebrow" style="margin-top:20px" data-t>Stundenplan weitergeben</div>
   <div class="chips">
-    <button type="button" id="sTeilenPlan">Nur den Plan teilen</button>
+    <button type="button" id="sTeilenPlan" data-t>Nur den Plan teilen</button>
   </div>
-  <p class="hinweis">Enthält Stundenraster, Fächer, Räume, Lehrkräfte und deren Namen —
+  <p class="hinweis" data-t>Enthält Stundenraster, Fächer, Räume, Lehrkräfte und deren Namen —
      sonst nichts. Beim Einlesen ersetzt eine solche Datei nur den Plan; Einträge,
      Noten und Merkblätter bleiben stehen.</p>
 
-  <div class="eyebrow" style="margin-top:20px">Erinnerung</div>
+  <div class="eyebrow" style="margin-top:20px" data-t>Erinnerung</div>
   <div class="zwei">
-    <label><span>Sichern alle</span>
+    <label><span data-t>Sichern alle</span>
       <select id="sRhythmus">
-        <option value="0">nie erinnern</option>
-        <option value="7">7 Tage</option>
-        <option value="14">14 Tage</option>
-        <option value="28">28 Tage</option>
-        <option value="90">3 Monate</option>
+        <option value="0" data-t>nie erinnern</option>
+        <option value="7" data-t>7 Tage</option>
+        <option value="14" data-t>14 Tage</option>
+        <option value="28" data-t>28 Tage</option>
+        <option value="90" data-t>3 Monate</option>
       </select></label>
-    <label><span>Aufheben</span>
+    <label><span data-t>Aufheben</span>
       <select id="sHalten">
-        <option value="1">1 Monat</option>
-        <option value="3">3 Monate</option>
-        <option value="6">6 Monate</option>
-        <option value="12">1 Jahr</option>
-        <option value="0">alles behalten</option>
+        <option value="1" data-t>1 Monat</option>
+        <option value="3" data-t>3 Monate</option>
+        <option value="6" data-t>6 Monate</option>
+        <option value="12" data-t>1 Jahr</option>
+        <option value="0" data-t>alles behalten</option>
       </select></label>
   </div>
   <p class="hinweis" id="sRhythmusHinweis"></p>
 
-  <div class="eyebrow" style="margin-top:20px">Sicherungsordner</div>
+  <div class="eyebrow" style="margin-top:20px" data-t>Sicherungsordner</div>
   <div id="sOrdnerGeht" class="hidden">
-    <p class="hinweis">Wähle einmal einen Ordner — danach legt die App ihre Sicherungen
+    <p class="hinweis" data-t>Wähle einmal einen Ordner — danach legt die App ihre Sicherungen
        immer dort ab, ohne zu fragen.</p>
     <label style="display:flex;align-items:center;gap:10px;margin-top:10px">
       <input type="checkbox" id="sAuto" style="width:18px;flex:none;margin:0">
-      <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)">
+      <span style="letter-spacing:0;text-transform:none;font-family:var(--sans);font-size:14px;color:var(--text)" data-t>
         Beim Öffnen automatisch in den Ordner sichern, wenn es fällig ist</span>
     </label>
     <div class="chips">
-      <button type="button" id="sOrdnerWahl">Ordner wählen</button>
-      <button type="button" id="sOrdnerJetzt">Jetzt dorthin sichern</button>
-      <button type="button" id="sOrdnerWeg">Ordner lösen</button>
+      <button type="button" id="sOrdnerWahl" data-t>Ordner wählen</button>
+      <button type="button" id="sOrdnerJetzt" data-t>Jetzt dorthin sichern</button>
+      <button type="button" id="sOrdnerWeg" data-t>Ordner lösen</button>
     </div>
     <p class="hinweis" id="sOrdnerStand"></p>
   </div>
-  <p class="hinweis hidden" id="sOrdnerGehtNicht">
+  <p class="hinweis hidden" id="sOrdnerGehtNicht" data-t-html>
      Dieser Browser kann keinen festen Ordner vergeben — das können bislang nur
      Chrome und Edge auf dem Rechner. Sicherungen landen deshalb im normalen
      Download-Ordner.<br><br>
@@ -1004,27 +1012,27 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
   <input type="file" id="sDateiLesen" accept="application/json,.json" style="display:none">
   <textarea id="sDaten"></textarea>
   <div class="chips">
-    <button type="button" id="sLaden">Text übernehmen</button>
-    <button type="button" id="sReset">Alles löschen</button>
+    <button type="button" id="sLaden" data-t>Text übernehmen</button>
+    <button type="button" id="sReset" data-t>Alles löschen</button>
   </div>
 
-  <div class="eyebrow" style="margin-top:22px">Speicher</div>
+  <div class="eyebrow" style="margin-top:22px" data-t>Speicher</div>
   <p class="hinweis" id="sSpeicher"></p>
 
   </section>
   <div class="reihe">
-    <button type="button" id="sUpdate">Nach Update suchen</button>
-    <button type="button" class="haupt" id="bEinstSpeichern">Speichern</button>
+    <button type="button" id="sUpdate" data-t>Nach Update suchen</button>
+    <button type="button" class="haupt" id="bEinstSpeichern" data-t>Speichern</button>
   </div>
 
   <div class="fusszeile">
-    <div>Stundenplan <b id="sVersion">—</b></div>
-    <div>von <a href="https://github.com/DjKamma420" target="_blank" rel="noopener">DjKamma420</a>
+    <div><span data-t>Stundenplan</span> <b id="sVersion">—</b></div>
+    <div data-t-html>von <a href="https://github.com/DjKamma420" target="_blank" rel="noopener">DjKamma420</a>
        · <a href="https://github.com/DjKamma420/StundenplanNothing" target="_blank" rel="noopener">Quellcode</a></div>
-    <div>MIT-Lizenz — Weiterverwendung erlaubt, Urheberhinweis behalten</div>
-    <div>Ferien und Feiertage von
+    <div data-t>MIT-Lizenz — Weiterverwendung erlaubt, Urheberhinweis behalten</div>
+    <div data-t-html>Ferien und Feiertage von
        <a href="https://openholidaysapi.org" target="_blank" rel="noopener">openholidaysapi.org</a></div>
-    <div>Entwickelt mit KI-Unterstützung</div>
+    <div data-t>Entwickelt mit KI-Unterstützung</div>
   </div>
 </dialog>
 

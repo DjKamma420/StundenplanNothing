@@ -2,6 +2,50 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v50
+
+Die App gibt es jetzt auch **auf Englisch** — für Schülerinnen und Schüler,
+die (noch) kein Deutsch lesen.
+
+**Neu**
+- **Sprachwahl** ganz oben unter ⚙, zweisprachig beschriftet („Sprache ·
+  Language") und damit auch ohne Deutschkenntnisse auffindbar. Sie wirkt
+  sofort; man muss dafür nicht erst speichern.
+- Drei Möglichkeiten: **Automatisch** folgt der Sprache des Geräts, **Deutsch**
+  und **English** legen sie fest. Ein frisch angelegtes Profil beginnt
+  automatisch; ein bestehendes bleibt deutsch, damit eine Aktualisierung
+  niemandem die Sprache umstellt.
+- Die Einstellung gehört zum Profil. Geschwister an einem Gerät können die App
+  deshalb jeweils in ihrer Sprache lesen.
+- Übersetzt ist die **gesamte Oberfläche samt Anleitung** — vierundvierzig
+  Abschnitte, Dialoge, Meldungen, Rückfragen und Fehlertexte.
+- Datum, Wochentage, Kalenderwoche und das Dezimaltrennzeichen richten sich
+  nach der Sprache: 04/03/2026 und 2.35 statt 04.03.2026 und 2,35.
+- Ferienbezeichnungen werden beim Laden in der gewählten Sprache abgerufen;
+  wo der Dienst nur deutsche Namen hat, bleiben diese stehen.
+- Eine neue Anleitungsseite **„Deutsch oder Englisch"** erklärt, was übersetzt
+  wird und was nicht.
+
+**Unverändert**
+- **Gespeichert wird weiterhin Deutsch.** Wochentagskürzel, Fehlzeitenarten,
+  Dateinamen und das Sicherungsformat sind Daten, keine Anzeige. Eine
+  Sicherung bleibt dadurch auf jedem Gerät lesbar, gleich in welcher Sprache
+  sie entstanden ist — und ein Plan lässt sich weiter zwischen Mitschülern
+  weitergeben.
+- **Eigene Texte werden nicht übersetzt**: Fächer, Räume, Lehrernamen,
+  Notizen und Merkblätter bleiben so stehen, wie sie eingetragen wurden.
+- Die deutsche Fassung ist Wort für Wort die bisherige.
+
+**Werkzeug**
+- `werkzeug/pruefen.mjs` prüft jetzt, dass zu **jedem** Satz der Oberfläche
+  eine englische Fassung existiert. Wer einen deutschen Satz umformuliert,
+  ohne die Übersetzung nachzuziehen, scheitert an der Prüfung statt an einer
+  stillschweigend halb englischen Oberfläche.
+- `werkzeug/pruefungen/sprache.mjs` prüft das Umschalten im Browser: Reiter,
+  Einstellungen, Anleitung, Datumsformat, dass die Daten deutsch bleiben und
+  dass die längeren englischen Wörter auf einem 390 px breiten Handy noch
+  passen.
+
 ## v49
 
 **Behoben**
