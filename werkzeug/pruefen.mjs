@@ -78,11 +78,19 @@ pruef("Angesprochene Kennungen stehen in index.html", () => {
 
    Nicht erfasst sind Schlüssel, die erst zur Laufzeit entstehen (etwa aus
    einer Zuordnung heraus). Die deckt werkzeug/pruefungen/sprache.mjs ab. */
+/* Der Browser löst Entitäten im Markup selbst auf; hier muss dasselbe
+   herauskommen, sonst passte der Schlüssel aus index.html nicht zu dem, der
+   zur Laufzeit gesucht wird. In *einem* Durchgang: löste man erst &#38; und
+   danach &amp; auf, würde aus „&amp;#39;" fälschlich ein Apostroph statt
+   der Zeichenfolge „&#39;". */
+const BENANNT = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
 const entitaeten = (t) =>
-  String(t)
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-    .replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  String(t).replace(/&(?:#(\d+)|#[xX]([0-9a-fA-F]+)|([A-Za-z]+));/g,
+    (ganz, dez, hex, name) =>
+      dez !== undefined ? String.fromCodePoint(Number(dez))
+      : hex !== undefined ? String.fromCodePoint(parseInt(hex, 16))
+      : Object.prototype.hasOwnProperty.call(BENANNT, name.toLowerCase())
+        ? BENANNT[name.toLowerCase()] : ganz);
 const glatt = (t) => entitaeten(t == null ? "" : t).replace(/\s+/g, " ").trim();
 
 /** txt("eins" + "zwei", …) — aneinandergehängte Zeichenketten sind ein Schlüssel. */
