@@ -1,7 +1,7 @@
 {
-  "name": "Stundenplan",
+  "name": "Stundenplan Nothing PWA",
   "short_name": "Plan",
-  "description": "Stundenplan mit Hausaufgaben, Klausuren, Noten und Merkblättern. Offline, ohne Konto.",
+  "description": "Stundenplan Nothing PWA mit Hausaufgaben, Klausuren, Noten und Merkblättern. Offline, ohne Konto.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
