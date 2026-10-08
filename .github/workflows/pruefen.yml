@@ -27,6 +27,7 @@ jobs:
           else
             node werkzeug/pruefen.mjs
           fi
+          node werkzeug/pruefungen/bilddaten.mjs
 
   browser:
     runs-on: ubuntu-latest

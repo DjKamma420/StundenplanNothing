@@ -39,6 +39,7 @@ for(const typ of ["H","K","N","M","F","E","G"]){
   pruef(typ + " · Bearbeiten behält Bilder", await page.locator("#eBilder img").count() === 2);
   await page.click("#eBilder [data-bildweg='0']");
   await speichere();
+  if(typ === "E") kennungen.E = await page.evaluate(() => sonder.at(-1).id);
 }
 
 const stand = await page.evaluate(() => {

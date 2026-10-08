@@ -51,9 +51,11 @@ Zum Ausprobieren reicht es, `index.html` im Browser zu öffnen. Für Service Wor
 
 ```
 node werkzeug/pruefen.mjs --basis origin/main
+node werkzeug/pruefungen/bilddaten.mjs
 node werkzeug/pruefungen/grund.mjs
 node werkzeug/pruefungen/layout.mjs
 node werkzeug/pruefungen/sprache.mjs
+node werkzeug/pruefungen/bilder.mjs
 ```
 
 ## Vor einem Pull Request
