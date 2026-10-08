@@ -2,6 +2,22 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
+## v51 — Ergänzung zum v50-Pull-Request
+
+- **Bilder bei allen Eintragsarten:** Hausaufgaben, Klausuren, Notizen,
+  Ereignissen, Noten, Merkblättern und Fehlzeiten. Mehrere Fotos auswählen
+  oder aus der Zwischenablage einfügen, Vorschau vergrößern und Bilder entfernen.
+- Bilder werden lokal auf höchstens 1000 px verkleinert und als JPEG
+  gespeichert, bis zu 30 je Eintrag. Profilsicherung und Gesamtsicherung
+  enthalten die Anhänge; „Nur den Plan teilen“ enthält weiterhin nur den Plan.
+- Die Importprüfung übernimmt nur eingebettete Bilddaten. Datenstand 4
+  schützt die neuen Anhänge vor älteren App-Fassungen; alte Sicherungen bleiben
+  einlesbar.
+- Abgebrochene Bildimporte gelangen nicht in einen später geöffneten Eintrag.
+  Speichern wartet auf die Bildverarbeitung. Bei vollem Speicher bleibt der
+  Dialog offen und der bisherige Eintrag erhalten.
+- PWA-Umbenennung aus `main` übernommen und Manifestkonflikt behoben.
+
 ## v50
 
 Die App gibt es jetzt auch **auf Englisch** — für Schülerinnen und Schüler,

@@ -239,8 +239,11 @@ section{margin-top:30px}
   margin-top:14px;text-align:left}
 .bilder{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;margin-top:14px}
 .bilder img{width:100%;border-radius:10px;border:1px solid var(--line);display:block}
+.bildvorschau{padding:0;border:0;background:transparent;width:100%;cursor:zoom-in}
+#dlgBild{width:min(96vw,1000px)}
+#grossBild{display:block;max-width:100%;max-height:75vh;object-fit:contain;margin:auto}
 .bildweg{position:relative}
-.bildweg button{position:absolute;top:5px;right:5px;background:var(--ink);border:1px solid var(--akzent);
+.bildweg button[data-bildweg]{position:absolute;top:5px;right:5px;background:var(--ink);border:1px solid var(--akzent);
   color:var(--akzent);border-radius:8px;width:26px;height:26px;font-size:13px}
 
 /* Fuß */
@@ -645,6 +648,7 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
       <span class="hinweis" id="bildStand" style="margin:0;align-self:center"></span>
     </div>
     <input type="file" id="bildDatei" accept="image/*" multiple style="display:none">
+    <p class="hinweis" data-t>Mehrere Bilder auswählen oder aus der Zwischenablage einfügen. Antippen zum Vergrößern.</p>
     <div class="bilder" id="eBilder"></div>
   </div>
   <div class="reihe">
@@ -664,6 +668,11 @@ details summary{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-
     <button type="button" id="bSchauBearbeiten" data-t>Bearbeiten</button>
     <button type="button" class="haupt" id="bSchauAb" data-t>Fertig</button>
   </div>
+</dialog>
+
+<dialog id="dlgBild" aria-label="Bild ansehen" data-t-al>
+  <img id="grossBild" alt="">
+  <div class="reihe"><button type="button" id="bBildAb" autofocus data-t>Fertig</button></div>
 </dialog>
 
 <!-- Was an diesem Kalendertag? -->

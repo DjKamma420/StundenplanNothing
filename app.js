@@ -57,7 +57,7 @@ window.addEventListener("unhandledrejection", e =>
 /* Fassung der Daten im Speicher — nicht die der App. Sie steigt nur, wenn
    sich die Form der gespeicherten Daten ändert, und gibt späteren
    Umstellungen einen Anker. Ohne sie weiß niemand, was da liegt. */
-const SCHEMA = 3;
+const SCHEMA = 4;
 const datenstandVon = roh => Number(roh && roh.fassung) || 0;
 const neuereDatenText = stand => txt("Diese Daten stammen aus einer neueren Fassung der App "
   + "(Datenstand {stand}, diese App kennt {kennt}). Aktualisiere die App, bevor du weiterarbeitest.",
@@ -165,8 +165,8 @@ const EN = {
   "Ansicht „{name}“":"View “{name}”",
   "Diese Daten stammen aus einer neueren Fassung der App (Datenstand {stand}, diese App kennt {kennt}). Aktualisiere die App, bevor du weiterarbeitest.":
     "This data comes from a newer version of the app (data version {stand}, this app knows {kennt}). Update the app before carrying on.",
-  "Speicher voll. Lösche Bilder aus Merkblättern oder lege eine Sicherung an.":
-    "Storage full. Delete images from handouts or make a backup.",
+  "Speicher voll. Lösche Bilder aus Einträgen oder lege eine Sicherung an.":
+    "Storage full. Delete images from entries or make a backup.",
   "Dialogfenster":"Dialog windows",
   "Dieser Browser ist zu alt für die App — es fehlt: {fehlt}.":
     "This browser is too old for the app — missing: {fehlt}.",
@@ -174,6 +174,14 @@ const EN = {
     "On iPhone it needs iOS 15.4 or newer, otherwise a current Chrome, Firefox, Edge or Safari.",
   "Mein Plan":"My plan", "Profil":"Profile", "Profil {n}":"Profile {n}",
   "Bild ließ sich nicht lesen.":"The image could not be read.",
+  "Bild ansehen":"View image",
+  "Bild":"Image",
+  "Bild entfernen":"Remove image",
+  "Bilder werden verarbeitet …":"Processing images …",
+  "Höchstens {n} Bilder je Eintrag.":"At most {n} images per entry.",
+  "Bitte eine Bilddatei bis 20 MB auswählen.":"Please choose an image file up to 20 MB.",
+  "Mehrere Bilder auswählen oder aus der Zwischenablage einfügen. Antippen zum Vergrößern.":
+    "Select multiple images or paste from the clipboard. Tap to enlarge.",
   "Datei ließ sich nicht lesen.":"The file could not be read.",
   "Datei konnte nicht ausgegeben werden":"The file could not be written",
 
@@ -448,10 +456,10 @@ const EN = {
     "This browser cannot be given a fixed folder — so far only Chrome and Edge on a computer can do that. Backups therefore end up in the normal downloads folder.<br><br> <b>On a phone:</b> in Chrome, under <i>⋮ → Settings → Downloads</i>, switch on <i>Ask where to save files</i>. Then every download asks for the folder, and you can create one of your own there.",
   "Text übernehmen":"Take over text", "Alles löschen":"Delete everything",
   "Speicher":"Storage",
-  "{kb} kB von rund {grenze} kB belegt ({anteil} %) · {bilder} in Merkblättern.":
-    "{kb} kB of about {grenze} kB used ({anteil} %) · {bilder} in handouts.",
-  "Der Speicher ist zu {n} % voll. Lege eine Sicherung an und entferne alte Bilder aus Merkblättern, sonst gehen neue Einträge verloren.":
-    "Storage is {n} % full. Make a backup and remove old images from handouts, otherwise new entries will be lost.",
+  "{kb} kB von rund {grenze} kB belegt ({anteil} %) · {bilder} in Einträgen.":
+    "{kb} kB of about {grenze} kB used ({anteil} %) · {bilder} in entries.",
+  "Der Speicher ist zu {n} % voll. Lege eine Sicherung an und entferne alte Bilder aus Einträgen, sonst gehen neue Einträge verloren.":
+    "Storage is {n} % full. Make a backup and remove old images from entries, otherwise new entries will be lost.",
   "Noch nie gesichert. Jetzt wäre ein guter Zeitpunkt.":
     "Never backed up. Now would be a good moment.",
   "Letzte Sicherung vor {dauer} — Zeit für eine neue.":
@@ -699,10 +707,11 @@ const Speicher = {
     catch(e){ return k in this.puffer ? this.puffer[k] : standard; }
   },
   schreib(k, v){
-    if(datenZuNeu) return;
-    this.puffer[k] = v;
+    if(datenZuNeu) return false;
     try{ localStorage.setItem(this.pfad(k), JSON.stringify(v)); }
-    catch(e){ zeigeFehler(txt("Speicher voll. Lösche Bilder aus Merkblättern oder lege eine Sicherung an.")); }
+    catch(e){ zeigeFehler(txt("Speicher voll. Lösche Bilder aus Einträgen oder lege eine Sicherung an.")); return false; }
+    this.puffer[k] = v;
+    return true;
   },
   entferne(k){
     if(datenZuNeu) return;
@@ -767,7 +776,7 @@ function zustandLaden(){
   if(!datenZuNeu) merkblattUmziehen();
   datenMigrieren();
 }
-/* Bis Fassung 3 erledigen normalisiere() und merkblattUmziehen() die
+/* Bis Fassung 4 erledigen normalisiere() und merkblattUmziehen() die
    Umstellung alter Formen von selbst; hier wird nur festgehalten, worauf
    spätere Schritte aufsetzen. Wichtig ist der umgekehrte Fall: Daten aus
    einer neueren App-Fassung dürfen nicht stillschweigend beschnitten werden. */
@@ -850,7 +859,7 @@ function normalisiere(){
   });
   eintraege.forEach(e => {
     if(e.geloescht === undefined) e.geloescht = false;
-    if(e.typ === "M" && !Array.isArray(e.bilder)) e.bilder = [];
+    if(!Array.isArray(e.bilder)) e.bilder = [];
     if(e.typ === "F" && !e.stunden) e.stunden = 1;   // frühere Fassungen zählten je Fach
     /* Die Art der Fehlzeit steckt im Titel. Steht dort etwas Fremdes, würde
        die Auswahl beim Bearbeiten still auf den ersten Eintrag zurückfallen. */
@@ -1348,7 +1357,7 @@ function listeZeile(e, mitNotiz = true){
         <div class="kopf"><span class="khn ${e.erledigt ? "aus" : ""}">${e.typ}</span>
           <span class="titel">${e.fach ? esc(e.fach)+" — " : ""}${esc(e.titel) || txt(ART[e.typ])}</span></div>
         ${mitNotiz && e.notiz ? `<div class="notiz">${esc(e.notiz)}</div>` : ""}
-        <div class="wann">${d.toLocaleDateString(ORT(),{weekday:"short",day:"2-digit",month:"2-digit"})}${
+        <div class="wann">${d.toLocaleDateString(ORT(),{weekday:"short",day:"2-digit",month:"2-digit"})}${bilderHinweis(e)}${
           e.serie ? " · " + txt("Reihe") : ""}</div>
       </div></li>`;
 }
@@ -1531,7 +1540,7 @@ function zeichneEintraege(){
           <div class="kopf"><span class="einmalig">${o.art === "ausfall" ? txt("Ausfall") : o.art === "vertretung" ? txt("Vertretung") : txt("Ereignis")}</span>
             <span class="titel">${esc(o.titel)}</span></div>
           ${o.notiz ? `<div class="notiz">${esc(o.notiz)}</div>` : ""}
-          <div class="wann">${wann}${o.raum ? " · "+esc(o.raum) : ""}</div></div></li>`;
+          <div class="wann">${wann}${o.raum ? " · "+esc(o.raum) : ""}${bilderHinweis(o)}</div></div></li>`;
     }).join("");
     $("#einNix").textContent = txt("Keine Ereignisse geplant.");
     $("#einNix").hidden = liste.length > 0;
@@ -1571,7 +1580,7 @@ function zeichneNoten(){
       ${eigene.map(n => `<div class="notenzeile" data-note="${n.id}">
         <span class="wert">${notenText(n.wert)}</span>
         <span class="art">${n.art === "m" ? txt("mündl.") : txt("schriftl.")}</span>
-        <span class="wofuer">${esc(n.titel) || "—"}</span>
+        <span class="wofuer">${esc(n.titel) || "—"}${bilderHinweis(n)}</span>
         <span class="tag">${zeigDatum(n.datum)}</span></div>`).join("")}
     </div></li>`;
   }).join("");
@@ -1646,7 +1655,7 @@ function zeichneFehlzeiten(){
         <span class="titel">${e.fach ? esc(e.fach) + (cfg.nachLehrer && e.lk ? " ("+esc(alsLk(e.lk))+")" : "") + " — " : ""}${
           zahl(Number(e.stunden)||1,"Stunde","Stunden")} ${e.titel ? esc(txt(e.titel)) : txt("Fehlzeit")}</span></div>
       ${e.notiz ? `<div class="notiz">${esc(e.notiz)}</div>` : ""}
-      <div class="wann">${zeigDatum(e.datum)}</div></div></li>`).join("");
+      <div class="wann">${zeigDatum(e.datum)}${bilderHinweis(e)}</div></div></li>`).join("");
   $("#einNix").textContent = txt("Keine Fehlzeiten erfasst.");
   $("#einNix").hidden = liste.length > 0;
 }
@@ -2227,7 +2236,7 @@ function artUmschalten(){
   $("#eEreignisWrap").classList.toggle("hidden", !ev);
   $("#eNoteWrap").classList.toggle("hidden", !note);
   $("#eFehlWrap").classList.toggle("hidden", !fehl);
-  $("#eBildWrap").classList.toggle("hidden", !merk);
+  $("#eBildWrap").classList.remove("hidden");
   $("#eTextWrap").classList.toggle("hidden", fehl);
   $("#eTextLabel").textContent = merk ? txt("Überschrift") : txt("Was");
   $("#eNotizLabel").textContent = merk ? txt("Inhalt") : txt("Notizen");
@@ -2279,42 +2288,104 @@ $("#eGitter").onclick = e => {
 };
 
 /* --- Bilder: verkleinern, sonst platzt der Browserspeicher --- */
+const BILDER_MAX = 30;
+const bilderHinweis = e => (e.bilder || []).length
+  ? " · " + zahl(e.bilder.length,"Bild","Bilder") : "";
+let bildSitzung = 0, bilderLaufend = 0;
+function bilderZuruecksetzen(liste = []){
+  bildSitzung++;
+  bilderLaufend = 0;
+  bilder = liste.slice();
+  bildDatei.value = "";
+}
+const bildVorschau = (b, i) => `<button type="button" class="bildvorschau" data-bildschau="${i}"
+  aria-label="${txt("Bild ansehen")}"><img src="${esc(b)}" alt="${txt("Bild")} ${i+1}" loading="lazy"></button>`;
 function bilderZeichnen(){
   $("#eBilder").innerHTML = bilder.map((b,i) =>
-    `<div class="bildweg"><img src="${esc(b)}" alt=""><button type="button" data-bildweg="${i}">×</button></div>`).join("");
+    `<div class="bildweg">${bildVorschau(b,i)}<button type="button" data-bildweg="${i}"
+      aria-label="${txt("Bild entfernen")}">×</button></div>`).join("");
   const kb = Math.round(bilder.reduce((s,b) => s + b.length, 0) / 1024 * 0.75);
   const warn = speicherWarnung();
   $("#bildStand").textContent = (bilder.length
     ? txt("{bilder} · ca. {kb} kB", {bilder:zahl(bilder.length,"Bild","Bilder"), kb}) : "")
     + (warn ? (bilder.length ? " · " : "") + warn : "");
+  if(bilderLaufend) $("#bildStand").textContent += " · " + txt("Bilder werden verarbeitet …");
   $("#bildStand").style.color = warn ? "var(--akzent)" : "";
+  $("#bBildWahl").disabled = bilderLaufend > 0 || bilder.length >= BILDER_MAX;
+  $("#bEintragSpeichern").disabled = bilderLaufend > 0 || speichernSperre !== null;
 }
 $("#eBilder").onclick = e => {
+  const schau = e.target.closest("[data-bildschau]");
+  if(schau){ bildAnsehen(bilder[+schau.dataset.bildschau]); return; }
   const b = e.target.closest("[data-bildweg]"); if(!b) return;
   bilder.splice(+b.dataset.bildweg, 1); bilderZeichnen();
 };
+function bildAnsehen(b){
+  if(!alsBild(b)) return;
+  $("#grossBild").src = b;
+  $("#grossBild").alt = txt("Bild");
+  $("#dlgBild").showModal();
+}
+$("#bBildAb").onclick = () => $("#dlgBild").close();
+$("#dlgBild").addEventListener("close", () => $("#grossBild").removeAttribute("src"));
+dlgEintrag.addEventListener("close", () => { if(!dlgEintrag.open) bilderZuruecksetzen(); });
 $("#bBildWahl").onclick = () => bildDatei.click();
 bildDatei.onchange = () => {
   const dateien = [...(bildDatei.files || [])];
-  dateien.forEach(datei => bildVerkleinern(datei, d => { bilder.push(d); bilderZeichnen(); }));
   bildDatei.value = "";
+  bilderEinfuegen(dateien);
 };
-function bildVerkleinern(datei, fertig){
-  const leser = new FileReader();
-  leser.onload = () => {
-    const bild = new Image();
-    bild.onload = () => {
-      const max = 1000;
-      const skala = Math.min(1, max / Math.max(bild.width, bild.height));
-      const c = document.createElement("canvas");
-      c.width = Math.round(bild.width * skala); c.height = Math.round(bild.height * skala);
-      c.getContext("2d").drawImage(bild, 0, 0, c.width, c.height);
-      fertig(c.toDataURL("image/jpeg", 0.7));
+dlgEintrag.addEventListener("paste", e => {
+  if(!dlgEintrag.open || $("#dlgBild").open) return;
+  const dateien = [...(e.clipboardData && e.clipboardData.items || [])]
+    .filter(x => x.kind === "file" && x.type.startsWith("image/"))
+    .map(x => x.getAsFile()).filter(Boolean);
+  if(dateien.length){ e.preventDefault(); bilderEinfuegen(dateien); }
+});
+async function bilderEinfuegen(dateien){
+  if(!dlgEintrag.open || datenZuNeu) return;
+  const sitzung = bildSitzung, profil = profilId;
+  const aktiv = () => sitzung === bildSitzung && profil === profilId && dlgEintrag.open;
+  const gueltig = dateien.filter(d => d.type.startsWith("image/") && d.size <= 20*1024*1024);
+  if(gueltig.length !== dateien.length) alert(txt("Bitte eine Bilddatei bis 20 MB auswählen."));
+  const auswahl = gueltig.slice(0, Math.max(0, BILDER_MAX - bilder.length - bilderLaufend));
+  if(auswahl.length < gueltig.length) alert(txt("Höchstens {n} Bilder je Eintrag.", {n:BILDER_MAX}));
+  bilderLaufend += auswahl.length;
+  bilderZeichnen();
+  for(const datei of auswahl){
+    if(!aktiv()) break;
+    try{
+      const b = await bildVerkleinern(datei);
+      if(aktiv()) bilder.push(b);
+    }catch(e){ if(aktiv()) alert(txt("Bild ließ sich nicht lesen.")); }
+    finally{ if(aktiv()){ bilderLaufend--; bilderZeichnen(); } }
+  }
+}
+function bildVerkleinern(datei){
+  return new Promise((fertig, fehl) => {
+    const leser = new FileReader();
+    leser.onerror = leser.onabort = () => fehl(new Error("Bild"));
+    leser.onload = () => {
+      const bild = new Image();
+      bild.onload = () => {
+        try{
+          const skala = Math.min(1, 1000 / Math.max(bild.width, bild.height));
+          const c = document.createElement("canvas");
+          c.width = Math.max(1, Math.round(bild.width * skala));
+          c.height = Math.max(1, Math.round(bild.height * skala));
+          const ctx = c.getContext("2d");
+          ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+          ctx.drawImage(bild, 0, 0, c.width, c.height);
+          const b = alsBild(c.toDataURL("image/jpeg", 0.7));
+          if(!b) throw new Error("Bild");
+          fertig(b);
+        }catch(e){ fehl(e); }
+      };
+      bild.onerror = () => fehl(new Error("Bild"));
+      bild.src = leser.result;
     };
-    bild.onerror = () => zeigeFehler(txt("Bild ließ sich nicht lesen."));
-    bild.src = leser.result;
-  };
-  leser.readAsDataURL(datei);
+    leser.readAsDataURL(datei);
+  });
 }
 
 /* --- Öffnen --- */
@@ -2325,7 +2396,7 @@ function standardArt(){
 }
 function eintragOeffnen(e, datum, typ, fach, slot, extra){
   bearbeiteId = e ? e.id : null;
-  ereignisId = null; noteId = null; bilder = [];
+  ereignisId = null; noteId = null;
   ereignisArt = (extra && extra.art) || "ereignis";
   eWert.value = ""; eNArt.value = "s"; eOrt.value = ""; eFehlArt.value = "entschuldigt";
   eFehlStd.value = 1;
@@ -2339,7 +2410,7 @@ function eintragOeffnen(e, datum, typ, fach, slot, extra){
   eDatum.value = e ? e.datum : iso(d);
   eText.value = e ? (e.titel || "") : (vorhanden ? vorhanden.titel : (ereignisArt === "vertretung" ? txt("Vertretung") : ""));
   eNotiz.value = e ? (e.notiz || "") : (vorhanden ? (vorhanden.notiz || "") : "");
-  if(e && e.typ === "M") bilder = (e.bilder || []).slice();
+  bilderZuruecksetzen((e || vorhanden || {}).bilder || []);
   if(e && e.typ === "F"){ eFehlArt.value = e.titel || "entschuldigt"; eFehlStd.value = Number(e.stunden)||1; }
   if(!e && typ === "F" && extra && extra.stunden) eFehlStd.value = extra.stunden;
   if(vorhanden) eOrt.value = vorhanden.raum || "";
@@ -2355,7 +2426,7 @@ function eintragOeffnen(e, datum, typ, fach, slot, extra){
 }
 function ereignisOeffnen(id){
   const o = sonder.find(x => x.id === id); if(!o) return;
-  bearbeiteId = null; noteId = null; ereignisId = id; bilder = [];
+  bearbeiteId = null; noteId = null; ereignisId = id; bilderZuruecksetzen(o.bilder || []);
   eWdh.value = "0"; eWdhBis.value = "";
   ereignisArt = o.art || "ereignis";
   $("#dlgEintragTitel").textContent = txt("Ereignis ändern");
@@ -2371,7 +2442,7 @@ function ereignisOeffnen(id){
 }
 function noteOeffnen(n){
   if(!n) return eintragOeffnen(null, new Date(), "G", "");
-  bearbeiteId = null; ereignisId = null; noteId = n.id; bilder = [];
+  bearbeiteId = null; ereignisId = null; noteId = n.id; bilderZuruecksetzen(n.bilder || []);
   eWdh.value = "0"; eWdhBis.value = "";
   $("#dlgEintragTitel").textContent = txt("Note ändern");
   eTyp.value = "G"; eDatum.value = n.datum;
@@ -2393,10 +2464,20 @@ $("#bEintragAb").onclick = () => dlgEintrag.close();
 let speichernSperre = null;
 function speichernSperreAus(){
   clearTimeout(speichernSperre); speichernSperre = null;
-  $("#bEintragSpeichern").disabled = false;
+  $("#bEintragSpeichern").disabled = bilderLaufend > 0;
+}
+/* Erst den neuen Datensatz schreiben, dann die Ansicht übernehmen. Bilder
+   können den Speicher füllen; ein fehlgeschlagener Versuch muss im Dialog
+   bleiben und darf den bisherigen Eintrag nicht im Arbeitsspeicher ersetzen. */
+function eintragAblegen(key, neu){
+  if(!Speicher.schreib(key, neu)) return;
+  if(key === "eintraege") eintraege = neu;
+  else if(key === "sonder") sonder = neu;
+  else if(key === "noten") noten = neu;
+  dlgEintrag.close(); zeichne();
 }
 $("#bEintragSpeichern").onclick = () => {
-  if(speichernSperre) return;
+  if(speichernSperre || bilderLaufend) return;
   $("#bEintragSpeichern").disabled = true;
   speichernSperre = setTimeout(speichernSperreAus, 600);
   const datum = eDatum.value || iso(new Date());
@@ -2406,15 +2487,16 @@ $("#bEintragSpeichern").onclick = () => {
   if(t === "E"){
     const titel = eText.value.trim();
     const slot = eStunde.value === "" ? null : +eStunde.value;
-    if(ereignisId) sonder = sonder.filter(x => x.id !== ereignisId);
-    else if(slot !== null) sonder = sonder.filter(x => !(x.datum === datum && x.slot === slot));
+    let neu = sonder.slice();
+    if(ereignisId) neu = neu.filter(x => x.id !== ereignisId);
+    else if(slot !== null) neu = neu.filter(x => !(x.datum === datum && x.slot === slot));
     if(titel){
       const tage = serienDatumsListe(datum);
       const serie = tage.length > 1 ? neueId() : null;
-      tage.forEach(d => sonder.push({id:neueId(), serie, datum:d, slot, art:ereignisArt, titel,
-                             raum:eOrt.value.trim(), notiz:eNotiz.value.trim(), geloescht:false}));
+      tage.forEach(d => neu.push({id:neueId(), serie, datum:d, slot, art:ereignisArt, titel,
+        raum:eOrt.value.trim(), notiz:eNotiz.value.trim(), bilder:bilder.slice(), geloescht:false}));
     }
-    sichern(); dlgEintrag.close(); zeichne(); return;
+    eintragAblegen("sonder", neu); return;
   }
   if(t === "G"){
     const wert = parseFloat(String(eWert.value).replace(",", "."));
@@ -2423,32 +2505,33 @@ $("#bEintragSpeichern").onclick = () => {
       return alert(txt("Bitte einen Wert zwischen {a} und {b} eingeben.", {a:grenze[0], b:grenze[1]}));
     if(!fach) return alert(txt("Bitte ein Fach wählen."));
     const nd = {fach, lk:aktuelleLk(), art:eNArt.value, wert, datum,
-                titel:eText.value.trim(), notiz:eNotiz.value.trim()};
+                titel:eText.value.trim(), notiz:eNotiz.value.trim(), bilder:bilder.slice()};
     const alteNote = noteId && noten.find(x => x.id === noteId);
-    if(alteNote) Object.assign(alteNote, nd);
-    else noten.push(Object.assign({id:neueId(), geloescht:false}, nd));
-    sichern(); dlgEintrag.close(); zeichne(); return;
+    const neu = alteNote
+      ? noten.map(x => x.id === noteId ? Object.assign({}, x, nd) : x)
+      : [...noten, Object.assign({id:neueId(), geloescht:false}, nd)];
+    eintragAblegen("noten", neu); return;
   }
   if(!fach && t === "M") return alert(txt("Bitte ein Fach wählen."));
   const jetzt = new Date();
   const daten = {typ:t, fach, lk: aktuelleLk(), datum,
     titel: t === "F" ? eFehlArt.value : eText.value.trim(),
-    notiz: eNotiz.value.trim()};
+    notiz: eNotiz.value.trim(), bilder:bilder.slice()};
   if(t === "F") daten.stunden = Math.max(1, Number(eFehlStd.value) || 1);
   if(t === "M"){
-    daten.bilder = bilder.slice();
     daten.zeit = `${zwei(jetzt.getHours())}:${zwei(jetzt.getMinutes())}`;
     if(!daten.titel) daten.titel = txt("Merkblatt vom {datum}", {datum:zeigDatum(datum)});
   }
   const alter = bearbeiteId && eintraege.find(x => x.id === bearbeiteId);
-  if(alter) Object.assign(alter, daten);
+  let neu = eintraege.slice();
+  if(alter) neu = neu.map(x => x.id === bearbeiteId ? Object.assign({}, x, daten) : x);
   else {
     const tage = serienDatumsListe(datum);
     const serie = tage.length > 1 ? neueId() : null;
-    tage.forEach(d => eintraege.push(Object.assign(
-      {id:neueId(), serie, erledigt:false, geloescht:false}, daten, {datum:d})));
+    tage.forEach(d => neu.push(Object.assign(
+      {id:neueId(), serie, erledigt:false, geloescht:false}, daten, {datum:d, bilder:bilder.slice()})));
   }
-  sichern(); dlgEintrag.close(); zeichne();
+  eintragAblegen("eintraege", neu);
 };
 /* Aus der Einstellung im Dialog werden die Datumsangaben. Ohne Wiederholung
    ist es genau eines — dann läuft alles wie vorher. */
@@ -2483,10 +2566,15 @@ function schauOeffnen(id){
   $("#schauTitel").textContent = e.titel || txt("Merkblatt");
   $("#schauStand").textContent = `${fachName(e.fach)} · ${zeigDatum(e.datum)}${e.zeit ? " · "+e.zeit : ""}`;
   $("#schauText").textContent = e.notiz || "";
-  $("#schauBilder").innerHTML = (e.bilder||[]).map(b => `<img src="${esc(b)}" alt="">`).join("");
+  $("#schauBilder").innerHTML = (e.bilder||[]).map(bildVorschau).join("");
   dlgSchau.showModal();
 }
 $("#bSchauAb").onclick = () => dlgSchau.close();
+$("#schauBilder").onclick = e => {
+  const b = e.target.closest("[data-bildschau]"); if(!b) return;
+  const it = eintraege.find(x => x.id === schauId);
+  if(it) bildAnsehen((it.bilder || [])[+b.dataset.bildschau]);
+};
 $("#bSchauBearbeiten").onclick = () => {
   dlgSchau.close(); eintragOeffnen(eintraege.find(x => x.id === schauId));
 };
@@ -3044,6 +3132,7 @@ const alsId      = v => /^[A-Za-z0-9_-]{1,40}$/.test(String(v)) ? String(v) : ne
    sonst in einem src-Attribut und könnte daraus ausbrechen. */
 const alsBild = v => (typeof v === "string" && v.length < 4e6
   && /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(v)) ? v : null;
+const bilderSaeubern = l => (Array.isArray(l) ? l : []).slice(0, BILDER_MAX).map(alsBild).filter(Boolean);
 
 function paareSaeubern(o){
   const raus = {};
@@ -3131,13 +3220,13 @@ function eintragSaeubern(e){
     datum:  alsDatum(e.datum) || iso(new Date()),
     titel:  alsText(e.titel, 200),
     notiz:  alsText(e.notiz, 20000),
+    bilder: bilderSaeubern(e.bilder),
     erledigt:   !!e.erledigt,
     erledigtAm: alsDatum(e.erledigtAm) || null,
     geloescht:  !!e.geloescht,
     geloeschtAm: alsDatum(e.geloeschtAm) || null
   };
   if(e.typ === "M"){
-    raus.bilder = (Array.isArray(e.bilder) ? e.bilder : []).map(alsBild).filter(Boolean).slice(0, 30);
     raus.zeit   = alsUhrzeit(e.zeit) || "";
   }
   if(e.typ === "F"){
@@ -3160,7 +3249,7 @@ function sonderSaeubern(o){
           slot: (o.slot === null || o.slot === undefined) ? null : alsZahl(o.slot, 0, 23, null),
           art:  EREIGNISARTEN.includes(o.art) ? o.art : "ereignis",
           titel:alsText(o.titel, 200) || txt("Ereignis"),
-          raum: alsText(o.raum, 40), notiz: alsText(o.notiz, 4000),
+          raum: alsText(o.raum, 40), notiz: alsText(o.notiz, 4000), bilder:bilderSaeubern(o.bilder),
           geloescht: !!o.geloescht, geloeschtAm: alsDatum(o.geloeschtAm) || null};
 }
 function noteSaeubern(g){
@@ -3170,7 +3259,7 @@ function noteSaeubern(g){
   return {id:alsId(g.id), fach, lk: alsKuerzel(g.lk), art: g.art === "m" ? "m" : "s",
           wert: Math.max(0, Math.min(15, wert)),
           datum: alsDatum(g.datum) || iso(new Date()),
-          titel: alsText(g.titel, 200), notiz: alsText(g.notiz, 4000),
+          titel: alsText(g.titel, 200), notiz: alsText(g.notiz, 4000), bilder:bilderSaeubern(g.bilder),
           geloescht: !!g.geloescht, geloeschtAm: alsDatum(g.geloeschtAm) || null};
 }
 const paketDatenstand = d => datenstandVon(d && d.cfg);
@@ -3793,7 +3882,14 @@ MA = Mathematik</pre>
   <p>In the date picker every day on which the chosen subject appears in the plan
    gets a <b>red dot</b>. That way you find the next lesson without paging.
    If <i>Separate subjects by teacher</i> is on, only the days with the chosen
-   teacher count.</p>`,
+   teacher count.</p>
+  <p><b>Images</b> can be attached to every kind of entry: homework, exams, notes,
+   events, grades, handouts and absences. Choose <b>Add image</b> to select photos
+   or paste an image from the clipboard. Tap a preview to enlarge it; × removes
+   it from the entry. Save to keep your changes.</p>
+  <p>Up to <b>30 images per entry</b>, each automatically scaled down to 1000 px
+   and compressed as JPEG. They stay on the device and are included in profile
+   and all-profile backups. Sharing only the timetable never includes them.</p>`,
  text:`<p>Ein Knopf für alles, unten am Bildschirm. Die Art richtet sich danach, wo
    du gerade bist — bist du in den Noten, ist „Note“ vorausgewählt.</p>
   <table class="hTab">
@@ -3811,7 +3907,16 @@ MA = Mathematik</pre>
   <p>Bei der Datumsauswahl bekommt jeder Tag einen <b>roten Punkt</b>, an dem das
    gewählte Fach im Plan steht. So findest du die nächste Stunde ohne Blättern.
    Ist <i>Fächer nach Lehrkraft trennen</i> eingeschaltet, zählen nur die Tage
-   bei der gewählten Lehrkraft.</p>`},
+   bei der gewählten Lehrkraft.</p>
+  <p><b>Bilder</b> lassen sich bei jeder Eintragsart anhängen: Hausaufgaben,
+   Klausuren, Notizen, Ereignisse, Noten, Merkblätter und Fehlzeiten.
+   Über <b>Bild hinzufügen</b> Fotos auswählen oder ein Bild aus der
+   Zwischenablage einfügen. Eine Vorschau antippen zum Vergrößern; × entfernt
+   das Bild. Mit Speichern bleiben die Änderungen erhalten.</p>
+  <p>Bis zu <b>30 Bilder je Eintrag</b>, automatisch auf 1000 px verkleinert
+   und als JPEG komprimiert. Sie bleiben auf dem Gerät und gehören zur
+   Profilsicherung und Gesamtsicherung. Beim Teilen nur des Stundenplans
+   werden sie nicht mitgegeben.</p>`},
 
 {id:"kalendermenue", teil:"Täglich benutzen", titel:"Im Kalender eintragen", worte:"doppeltippen gedrückt halten tagesmenü termin freier tag",
  teilEn:"Everyday use", titelEn:"Adding things in the calendar", worteEn:"double tap press and hold day menu appointment free day",
@@ -4265,8 +4370,7 @@ MA = Mathematik</pre>
    contains the period grid, subjects, rooms, teachers and their full names —
    nothing else.</p>
   <p class="hWarn">The <b>Share</b> button further up is something different: it
-   passes on the <b>complete backup</b>, including grades, absences and photos in
-   handouts. For classmates, the plan button is always the one you want.</p>
+   passes on the <b>complete backup</b>, including grades, absences and image attachments. For classmates, the plan button is always the one you want.</p>
   <p>When reading in, the app recognises such a file and replaces <b>only the
    timetable</b>. Entries, grades, absences and handouts stay, as do colour, grading
    system and all other settings. Foreign subject and teacher names are added; your
@@ -4276,7 +4380,7 @@ MA = Mathematik</pre>
    Namen — sonst nichts.</p>
   <p class="hWarn">Der Knopf <b>Teilen</b> weiter oben ist etwas anderes: er gibt
    die <b>vollständige Sicherung</b> weiter, also auch Noten, Fehlzeiten und
-   Merkblattfotos. Für Mitschüler ist immer der Plan-Knopf gemeint.</p>
+   Bildanhänge. Für Mitschüler ist immer der Plan-Knopf gemeint.</p>
   <p>Beim Einlesen erkennt die App eine solche Datei und ersetzt <b>nur den
    Stundenplan</b>. Einträge, Noten, Fehlzeiten und Merkblätter bleiben stehen,
    ebenso Farbe, Notensystem und alle übrigen Einstellungen. Fremde Fach- und
@@ -4513,7 +4617,7 @@ MA = Mathematik</pre>
    <tr><th>What you see</th><th>Cause and remedy</th></tr>
    <tr><td>Plan is empty</td><td>A different profile active? Check the letter at the top right.</td></tr>
    <tr><td>Everything gone</td><td>Site data cleared or storage reclaimed by the system. Without a backup it cannot be restored.</td></tr>
-   <tr><td>“Storage full”</td><td>Remove images from old handouts, back up first.</td></tr>
+   <tr><td>“Storage full”</td><td>Remove images from old entries, back up first.</td></tr>
    <tr><td>No reminders</td><td>Check the permission under ⚙. On iPhone only if the app is on the home screen. The calendar export is the reliable route.</td></tr>
    <tr><td>New version does not arrive</td><td>⚙ → <i>Check for update</i>, otherwise close the app and open it again.</td></tr>
    <tr><td>Loading holidays fails</td><td>Check your internet. If the service does not answer, the app gives up after 15 seconds and says so.</td></tr>
@@ -4523,7 +4627,7 @@ MA = Mathematik</pre>
    <tr><th>Beobachtung</th><th>Ursache und Abhilfe</th></tr>
    <tr><td>Plan ist leer</td><td>Anderes Profil aktiv? Buchstabe oben rechts prüfen.</td></tr>
    <tr><td>Alles weg</td><td>Websitedaten gelöscht oder Speicher vom System geräumt. Ohne Sicherung nicht wiederherstellbar.</td></tr>
-   <tr><td>„Speicher voll“</td><td>Bilder aus alten Merkblättern entfernen, vorher sichern.</td></tr>
+   <tr><td>„Speicher voll“</td><td>Bilder aus alten Einträgen entfernen, vorher sichern.</td></tr>
    <tr><td>Keine Erinnerungen</td><td>Berechtigung unter ⚙ prüfen. Auf dem iPhone nur, wenn die App auf dem Startbildschirm liegt. Verlässlich ist der Kalender-Export.</td></tr>
    <tr><td>Neue Fassung kommt nicht</td><td>⚙ → <i>Nach Update suchen</i>, sonst App schließen und neu öffnen.</td></tr>
    <tr><td>Ferien laden schlägt fehl</td><td>Internet prüfen. Antwortet der Dienst nicht, bricht die App nach 15 Sekunden ab und sagt es.</td></tr>
@@ -4743,13 +4847,13 @@ const speicherAnteil = () => Math.min(100, Math.round(belegteKb() / GRENZE_KB * 
 const speicherWarnung = () => {
   const a = speicherAnteil();
   return a >= 80 ? txt("Der Speicher ist zu {n} % voll. Lege eine Sicherung an und "
-    + "entferne alte Bilder aus Merkblättern, sonst gehen neue Einträge verloren.", {n:a}) : "";
+    + "entferne alte Bilder aus Einträgen, sonst gehen neue Einträge verloren.", {n:a}) : "";
 };
 function speicherStand(){
   const kb = belegteKb(), warn = speicherWarnung();
-  const bilderZahl = eintraege.reduce((s,e) => s + ((e.bilder||[]).length), 0);
+  const bilderZahl = [...eintraege, ...sonder, ...noten].reduce((s,e) => s + ((e.bilder||[]).length), 0);
   const el = $("#sSpeicher");
-  el.textContent = txt("{kb} kB von rund {grenze} kB belegt ({anteil} %) · {bilder} in Merkblättern.",
+  el.textContent = txt("{kb} kB von rund {grenze} kB belegt ({anteil} %) · {bilder} in Einträgen.",
     {kb, grenze:GRENZE_KB, anteil:speicherAnteil(), bilder:zahl(bilderZahl,"Bild","Bilder")})
     + (warn ? " " + warn : "");
   el.style.color = warn ? "var(--akzent)" : "";
@@ -5091,7 +5195,7 @@ const sicherungsText = () => JSON.stringify(
   {fassung:2, art:"profil", erstellt:new Date().toISOString(), profil:profilName(),
    cfg, plan, eintraege, ferien, sonder, noten}, null, 2);
 /* Nur der Stundenplan, für Mitschüler. Eine volle Sicherung enthält Noten,
-   Fehlzeiten und Merkblattfotos — die verschickt man nicht versehentlich,
+   Fehlzeiten und Bildanhänge — die verschickt man nicht versehentlich,
    nur weil jemand nach dem Plan gefragt hat. Namen von Fächern und
    Lehrkräften gehören dagegen dazu, sonst stehen dort nur Kürzel. */
 const planText = () => JSON.stringify(
