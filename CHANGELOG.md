@@ -2,7 +2,7 @@
 
 Die Versionsnummer steht in `sw.js` und ist die einzige Stelle, an der sie gepflegt wird.
 
-## v51 — Ergänzung zum v50-Pull-Request
+## v52 — Ergänzung zum v50-Pull-Request
 
 - **Bilder bei allen Eintragsarten:** Hausaufgaben, Klausuren, Notizen,
   Ereignissen, Noten, Merkblättern und Fehlzeiten. Mehrere Fotos auswählen

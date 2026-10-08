@@ -706,10 +706,13 @@ const Speicher = {
     try{ const v = localStorage.getItem(this.pfad(k)); return v ? JSON.parse(v) : standard; }
     catch(e){ return k in this.puffer ? this.puffer[k] : standard; }
   },
-  schreib(k, v){
+  schreib(k, v, mitFehler = true){
     if(datenZuNeu) return false;
     try{ localStorage.setItem(this.pfad(k), JSON.stringify(v)); }
-    catch(e){ zeigeFehler(txt("Speicher voll. Lösche Bilder aus Einträgen oder lege eine Sicherung an.")); return false; }
+    catch(e){
+      if(mitFehler) zeigeFehler(txt("Speicher voll. Lösche Bilder aus Einträgen oder lege eine Sicherung an."));
+      return false;
+    }
     this.puffer[k] = v;
     return true;
   },
@@ -2470,7 +2473,12 @@ function speichernSperreAus(){
    können den Speicher füllen; ein fehlgeschlagener Versuch muss im Dialog
    bleiben und darf den bisherigen Eintrag nicht im Arbeitsspeicher ersetzen. */
 function eintragAblegen(key, neu){
-  if(!Speicher.schreib(key, neu)) return;
+  if(!Speicher.schreib(key, neu, false)){
+    /* Der Fehlerkasten außerhalb des modalen Dialogs wäre vom Hintergrund
+       verdeckt. Die Meldung muss vor dem noch offenen Eintrag erscheinen. */
+    alert(txt("Speicher voll. Lösche Bilder aus Einträgen oder lege eine Sicherung an."));
+    return;
+  }
   if(key === "eintraege") eintraege = neu;
   else if(key === "sonder") sonder = neu;
   else if(key === "noten") noten = neu;

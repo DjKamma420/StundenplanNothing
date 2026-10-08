@@ -4,6 +4,8 @@ import fs from "node:fs";
 import { starte, ende, pruef } from "../browser.mjs";
 
 const { page, kasten } = await starte({ geraet:"handy" });
+const dialogTexte = [];
+page.on("dialog", d => dialogTexte.push(d.message()));
 const bild = fs.readFileSync(new URL("../../icon-192.png", import.meta.url));
 const dateien = ["eins.png", "zwei.png"].map(name => ({name, mimeType:"image/png", buffer:bild}));
 const kennungen = {};
@@ -142,7 +144,10 @@ for(const typ of ["H","E","G"]){
     Storage.prototype.setItem = () => { throw new DOMException("voll", "QuotaExceededError"); };
   });
   await page.fill("#eText", "Nicht gespeichert");
+  const davor = dialogTexte.length;
   await page.click("#bEintragSpeichern");
+  pruef(typ + " · Speicherfehler vor dem offenen Dialog gemeldet",
+    dialogTexte.length === davor + 1 && dialogTexte.at(-1).startsWith("Speicher voll."));
   pruef(typ + " · bei Speicherfehler bleibt Dialog offen", await page.isVisible("#dlgEintrag"));
   pruef(typ + " · bei Speicherfehler bleibt alter Datensatz", await page.evaluate(() =>
     window.__vorher === JSON.stringify([eintraege,sonder,noten])));

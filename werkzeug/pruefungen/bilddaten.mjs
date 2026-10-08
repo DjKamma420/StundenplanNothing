@@ -97,12 +97,14 @@ for(const typ of ["H","E","G"]){
     if(aendern) k[typ === "E" ? "ereignisId" : typ === "G" ? "noteId" : "bearbeiteId"] = topf(typ).at(-1).id;
     const vorher = JSON.stringify([k.eintraege,k.sonder,k.noten]), vorherDaten = JSON.stringify([...daten]);
     const zeichnungen = gezeichnet;
+    const davor = meldungen.length;
     voll = true; k.bilder = [gut,gut]; el("#bEintragSpeichern").click(); voll = false;
     assert.equal(k.dlgEintrag.open,true);
     assert.equal(k.bilder.length,2);
     assert.equal(JSON.stringify([k.eintraege,k.sonder,k.noten]),vorher);
     assert.equal(JSON.stringify([...daten]),vorherDaten);
     assert.equal(gezeichnet,zeichnungen);
+    assert.equal(meldungen.length,davor+1,"Speicherfehler ist im Dialog sichtbar");
   }
 }
 console.log("  ok    Speicherfehler beim Anlegen und Bearbeiten: Dialog und alte Daten erhalten");
