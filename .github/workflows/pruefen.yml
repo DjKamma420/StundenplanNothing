@@ -27,3 +27,19 @@ jobs:
           else
             node werkzeug/pruefen.mjs
           fi
+          node werkzeug/pruefungen/bilddaten.mjs
+
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Browser nur für die Prüfungen vorbereiten
+        run: |
+          npm install --no-save --package-lock=false playwright
+          npx playwright install --with-deps chromium
+      - name: Grundfunktionen, Sprache, Handyansicht und Bildanhänge
+        run: |
+          node werkzeug/pruefungen/grund.mjs
+          node werkzeug/pruefungen/layout.mjs
+          node werkzeug/pruefungen/sprache.mjs
+          node werkzeug/pruefungen/bilder.mjs

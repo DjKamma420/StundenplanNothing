@@ -64,6 +64,7 @@ let laufend = null;
  *  geraet       "handy" | "desktop" (Vorgabe: desktop)
  *  breite/hoehe eigene Fenstergroesse
  *  profilWeg    Profilauswahl wegklicken (Vorgabe: true)
+ *  sprache      Gebietsschema des Browsers (Vorgabe: "de-DE")
  *  dialogeJa    confirm()/alert() bestaetigen (Vorgabe: true) — ohne das
  *               lehnt Playwright jeden confirm ab und Pruefungen laufen ins Leere
  */
@@ -74,7 +75,7 @@ export async function starte(o = {}) {
   const handy = o.geraet === "handy";
   const ctx = await browser.newContext({
     viewport: { width: o.breite || (handy ? 390 : 1280), height: o.hoehe || (handy ? 844 : 800) },
-    isMobile: handy, hasTouch: handy, locale: "de-DE",
+    isMobile: handy, hasTouch: handy, locale: o.sprache || "de-DE",
   });
   const page = await ctx.newPage();
   const fehler = [];

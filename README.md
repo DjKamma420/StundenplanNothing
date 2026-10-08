@@ -28,12 +28,14 @@ Stundenplan Nothing PWA ersetzt keinen Schulserver. Sie ist eine persönliche Ü
 - Wochenansicht für Montag bis Freitag
 - A-/B-Wochen
 - Hausaufgaben, Klausuren, Notizen und Ereignisse
+- Bildanhänge bei allen Eintragsarten: mehrere Fotos, Zwischenablage, vergrößerbare Vorschau; lokal gespeichert und in Sicherungen enthalten
 - Ausfall und Vertretung für einzelne Stunden
 - Notenübersicht und Zeugnis-Schätzung
 - Fehlzeiten und Archiv
 - Merkblätter mit Bildern
 - Ferien und Feiertage
 - Kalender-Export als `.ics`
+- Oberfläche auf Deutsch oder Englisch
 - mehrere Profile
 - Stundenplan gezielt an Mitschüler weitergeben
 - Sicherungen als JSON-Datei
@@ -69,7 +71,7 @@ Die PWA funktioniert auch direkt im Browser. Installiert ist sie für den tägli
 
 ### 3. Stundenplan einrichten
 
-1. Einstellungen öffnen.
+1. Einstellungen öffnen. Ganz oben steht die Sprache — *Sprache · Language*.
 2. Stundenraster festlegen.
 3. Falls nötig A-/B-Woche aktivieren.
 4. Stunden von Hand eintragen oder einen kopierten Plan importieren.
@@ -77,6 +79,28 @@ Die PWA funktioniert auch direkt im Browser. Installiert ist sie für den tägli
 6. Erste Sicherung erstellen.
 
 Eine Woche reicht; bei A-/B-Wochen werden zwei Wochen gepflegt.
+
+---
+
+## Sprache · Language
+
+Die Oberfläche gibt es auf **Deutsch und Englisch**. Die Wahl steht ganz oben
+unter **⚙**, zweisprachig beschriftet, und wirkt sofort.
+
+- **Automatisch** folgt der Sprache des Geräts. Damit beginnt ein neu
+  angelegtes Profil.
+- **Deutsch** und **English** legen sie fest, unabhängig vom Gerät.
+
+Die Einstellung gehört zum Profil — Geschwister an einem Gerät können die App
+also jeweils in ihrer Sprache lesen. Übersetzt sind die Oberfläche und die
+komplette Anleitung; eigene Einträge, Fächer und Lehrernamen bleiben
+unverändert. Gespeichert wird intern weiterhin Deutsch, damit eine Sicherung
+auf jedem Gerät lesbar bleibt.
+
+> **English:** the app is fully available in English. Open **⚙** and pick
+> *English* in the first row — everything, including the built-in guide,
+> switches over immediately. Your own entries are never translated, and
+> backups stay compatible with the German version.
 
 ---
 
@@ -111,7 +135,7 @@ Diese Plan-Datei enthält nur die für den Stundenplan benötigten Informationen
 - Lehrkräfte
 - Fach- und Lehrkraftnamen
 
-Persönliche Einträge wie Noten, Fehlzeiten, Hausaufgaben oder Merkblattbilder werden dabei nicht mitgegeben.
+Persönliche Einträge wie Noten, Fehlzeiten, Hausaufgaben oder Bildanhänge werden dabei nicht mitgegeben.
 
 Kann der Browser Dateien direkt teilen, öffnet die PWA das Teilen-Menü. Andernfalls wird die Plan-Datei heruntergeladen. Der Empfänger liest sie über **Datei einlesen** ein; bestehende persönliche Einträge bleiben dabei erhalten.
 
@@ -189,6 +213,10 @@ Die PWA wird statisch ausgeliefert. Persönliche Daten werden im Browser gespeic
 
 Änderungen an `index.html` oder `app.js` benötigen eine neue Versionsnummer in `sw.js`, damit installierte PWAs zuverlässig aktualisiert werden.
 
+Der deutsche Satz ist zugleich sein eigener Übersetzungsschlüssel. Wer einen
+Text ändert oder hinzufügt, trägt die englische Fassung in `EN` in `app.js`
+nach; `werkzeug/pruefen.mjs` besteht darauf.
+
 Die GitHub Actions prüfen Änderungen vor der Veröffentlichung. Deployment nach GitHub Pages erfolgt automatisiert über den `main`-Branch.
 
 Weitere Hinweise:
@@ -204,7 +232,7 @@ Weitere Hinweise:
 
 Die PWA sammelt keine Nutzungsstatistiken und betreibt kein eigenes Backend für persönliche Stundenplandaten.
 
-Wichtige Details, einschließlich lokaler Speicherung, Ferien-API und Bildern in Merkblättern, stehen in [PRIVACY.md](PRIVACY.md).
+Wichtige Details, einschließlich lokaler Speicherung, Ferien-API und Bildanhängen, stehen in [PRIVACY.md](PRIVACY.md).
 
 ## Lizenz
 
